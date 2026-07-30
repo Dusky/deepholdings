@@ -19,6 +19,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Lines are nowrap while the teletype runs; keep that from producing a
+     horizontal scrollbar on the screen body. */
+  overflow-x: hidden;
 }
 
 .logRow {

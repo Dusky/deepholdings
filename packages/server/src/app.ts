@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import type { ApiError, UnlockId } from '@deepholdings/shared';
 import { bearerToken, issueToken, verifyToken } from './auth.js';
@@ -34,6 +35,8 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
 
 export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' });
+
+  app.register(cors, { origin: config.corsOrigins, credentials: false });
 
   /** Resolves the bearer token to an account id, or ends the request. */
   const requireAccount = async (request: FastifyRequest, reply: FastifyReply): Promise<string> => {

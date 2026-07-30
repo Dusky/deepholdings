@@ -1,6 +1,5 @@
 import { useState, type CSSProperties } from 'react';
-import { useGame } from '../state/gameContext';
-import { isUnlockOwned } from '../state/gameReducer';
+import { useServer } from '../state/serverContext';
 import { useSettings } from '../state/settingsContext';
 import { Bezel } from './Bezel';
 import { SettingsPanel } from './SettingsPanel';
@@ -11,14 +10,15 @@ import styles from './Desk.module.css';
  * every descendant's CSS reads.
  */
 export function Desk() {
-  const { state } = useGame();
+  const { state } = useServer();
   const { effectsOn, reducedMotion, highContrast, fontScale } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   // High contrast takes the whole effect stack down with it — the palette
   // swap is the point, and glow/aberration would undo it.
   const effectsActive = effectsOn && !highContrast;
-  const greenPhosphor = isUnlockOwned(state, 'green') && !highContrast;
+  // Cosmetic unlock, owned server-side.
+  const greenPhosphor = Boolean(state?.pension.unlocks.includes('green')) && !highContrast;
 
   return (
     <div

@@ -1,6 +1,9 @@
 import type { ScreenId } from '../types';
 
-export type Command = { kind: 'navigate'; screen: ScreenId } | { kind: 'die' } | { kind: 'unknown' };
+export type Command =
+  | { kind: 'navigate'; screen: ScreenId }
+  | { kind: 'refresh' }
+  | { kind: 'unknown' };
 
 const ALIASES: Record<string, ScreenId> = {
   status: 'terminal',
@@ -17,11 +20,11 @@ const ALIASES: Record<string, ScreenId> = {
 
 export function parseCommand(raw: string): Command {
   const token = raw.trim().toLowerCase();
-  // Demo-only: production death is a server event, never a client command.
-  if (token === 'die') return { kind: 'die' };
+  // Death is a server event now, so the old `die` demo trigger is gone.
+  if (token === 'sync' || token === 'refresh') return { kind: 'refresh' };
   const screen = ALIASES[token];
   return screen ? { kind: 'navigate', screen } : { kind: 'unknown' };
 }
 
 export const COMMAND_PLACEHOLDER =
-  'type a command: status, orders, market, tavern, bulletin, die (demo)';
+  'type a command: status, orders, market, tavern, bulletin, sync';

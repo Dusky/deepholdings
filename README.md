@@ -5,10 +5,9 @@ incremental/MUD game. The player is a case officer: you file standing orders for
 an autonomous adventurer, read the incident log, trade on a market, and talk in
 the tavern channel — all through a terminal running on a beige 1983 desktop PC.
 
-Two pieces are in place: the **CRT shell** (all five screens, the effect stack,
-still running on local demo data) and the **server** (schema, HTTP contract, and
-the lazy resolution engine, verified against Postgres). Wiring the shell to the
-API is the next step.
+The shell talks to the server: all five screens render resolved, server-owned
+state. Log lines, resources, market, pension and death all come from the API —
+the client no longer simulates anything.
 
 ## Workspaces
 
@@ -29,6 +28,10 @@ npm run test         # server suites (memory adapter; add TEST_DATABASE_URL for 
 npm run dev          # client on http://localhost:5173
 npm run dev:server   # API on http://localhost:8787
 ```
+
+Run both: the client reads `VITE_API_URL` (default `http://localhost:8787`), and
+the server allows `http://localhost:5173` and `capacitor://localhost` by default
+via `CORS_ORIGINS`.
 
 The server runs on an in-memory adapter when `DATABASE_URL` is unset — useful
 for local UI work, and state is lost on restart. With a database:
@@ -82,6 +85,30 @@ Device tokens are a signed account id and nothing more — enough to get someone
 playing in one round trip. **They must be upgraded to a real sign-in before
 anything is purchasable**: an entitlement bound to a wiped device is a support
 ticket, not a sale.
+
+## How the client talks to the server
+
+`ServerProvider` holds one snapshot of `GET /v1/state` and refreshes it every
+20 seconds, on window focus, and after any mutation. Screens that own their own
+data (ledger, bulletin, tavern) fetch it themselves through `useResource` while
+they are open.
+
+Three rules the client sticks to:
+
+- **It never invents numbers.** Gold, supplies, depth and HP change when the
+  server says they changed. The only thing computed locally is the tick
+  progress bar, which counts toward the next *server* resolution using the
+  server's own clock (`useServerClock` tracks the offset, so a phone with a
+  skewed clock still shows the right countdown).
+- **The activity label mirrors, never advances.** `lib/activity.ts` describes
+  state the server already sent. If the two ever disagree, the next refresh
+  wins.
+- **A failed refresh is degraded, not dead.** The last good snapshot stays on
+  screen, the status LED turns red and the bezel shows LINK FAULT. Only a cold
+  start with no snapshot at all falls back to the fault card.
+
+Standing orders are a local draft until filed: editing the form shows "Unfiled
+amendments on this form", and `FILE ORDERS` is what reaches the server.
 
 ## Client layout
 
@@ -159,20 +186,24 @@ Deliberate, and all in the direction the handoff asked for:
 - **Semantics and keyboard support.** Tabs, chips, unlocks and toggles are real
   buttons with `role`/`aria-*` state; sliders are labelled; the death card is a
   dialog; Escape closes the settings panel.
+- **The `die` command and DEMO: KILL CHARACTER are gone.** Death is a server
+  event; there is no client path to trigger one. The command bar gained `sync`
+  in its place.
+- **The teletype cascade is time-boxed.** A fixed 120ms per line was fine for a
+  22-line fixture; a resolved journal is longer, so the whole cascade now
+  spreads across a 2.4s budget however many lines there are.
 
-## Next: wiring the shell to the API
+## What is left
 
-The client still runs on fixtures. Every client-side fiction is isolated and
-commented, and each now has a server counterpart to replace it:
-
-| Client fiction | Replace with |
-| --- | --- |
-| `gameReducer` `tick` / `heartbeatTick` | `GET /v1/state` — resolved character, `nextBeatInSeconds` |
-| `fileOrders` | `PUT /v1/orders` |
-| `purchaseUnlock` | `POST /v1/pension/unlocks` |
-| `triggerDeath` (demo) | `state.pendingDeath`, then `POST /v1/pension/claim` |
-| `data/fixtures.ts` log lines | `state.journal` (the fixture copy stays as the tone reference) |
-
-Then, for Android: a portrait pass over the fixed 640px screen, self-hosted
-fonts so boot does not wait on a CDN, Capacitor wrapper, and FCM push — "your
-recruit died on Floor 7" is the retention loop for an async game.
+- **Android.** Portrait pass over the fixed 640px screen and 1040px bezel, safe
+  areas, larger touch targets, self-hosted fonts so boot does not wait on a
+  CDN, then the Capacitor wrapper. After that, FCM push — "your recruit died on
+  Floor 7" is the retention loop for an async game.
+- **Accounts and billing.** Device tokens must become a real sign-in before
+  anything is purchasable, then Play Billing with server-side receipt
+  validation.
+- **Balance.** The tuning numbers in `packages/shared/src/tuning.ts` and the
+  encounter curves in `resolve.ts` are first-pass guesses. They need a play
+  test, not another spreadsheet.
+- **Realtime tavern.** Currently polled every 10s while the screen is open; a
+  WebSocket is the obvious upgrade once there is more than one player.

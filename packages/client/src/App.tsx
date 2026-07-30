@@ -1,13 +1,13 @@
 import { Desk } from './components/Desk';
-import { GameProvider } from './state/GameProvider';
+import { ServerProvider } from './state/ServerProvider';
 import { SettingsProvider } from './state/SettingsProvider';
 
 export default function App() {
   return (
     <SettingsProvider>
-      <GameProvider>
+      <ServerProvider>
         <Desk />
-      </GameProvider>
+      </ServerProvider>
     </SettingsProvider>
   );
 }

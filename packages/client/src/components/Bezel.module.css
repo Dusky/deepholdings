@@ -34,8 +34,25 @@
   color: var(--hw-label);
 }
 
+/* The LED is the machine's honest status light: red while the link is down. */
+.led[data-link='degraded'],
+.led[data-link='offline'] {
+  background: var(--hw-alert);
+  box-shadow: none;
+  animation: none;
+}
+
 .spacer {
   flex: 1;
+}
+
+.fault {
+  margin-right: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--hw-alert);
+  white-space: nowrap;
 }
 
 .heartbeat {

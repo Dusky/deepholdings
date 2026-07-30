@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react';
+import type { StandingOrders } from '@deepholdings/shared';
 import { FileButton } from '../components/ui/FileButton';
 import { OptionChip } from '../components/ui/OptionChip';
 import { Slider } from '../components/ui/Slider';
-import { useGame } from '../state/gameContext';
+import { clockOf } from '../lib/activity';
+import { useServer } from '../state/serverContext';
 import type { LootPriority, SpendPolicy } from '../types';
 import styles from './OrdersScreen.module.css';
 
@@ -10,7 +13,44 @@ const SPEND_OPTIONS: readonly SpendPolicy[] = ['resupply', 'hoard', 'insure'];
 
 /** Form SO-1: the four knobs the player actually controls (spec §4). */
 export function OrdersScreen() {
-  const { state, dispatch } = useGame();
+  const { state, fileOrders } = useServer();
+  const filed = state?.orders;
+
+  // The form is a draft until it is filed — nothing takes effect on the
+  // server until the button is pressed, so the UI should say so too.
+  const [draft, setDraft] = useState<StandingOrders | null>(filed ?? null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    // Adopt the server's copy whenever it changes and the form is untouched.
+    setDraft((current) => current ?? filed ?? null);
+  }, [filed]);
+
+  if (!state || !draft || !filed) return null;
+
+  const dirty =
+    draft.targetDepth !== filed.targetDepth ||
+    draft.retreatPct !== filed.retreatPct ||
+    draft.lootPriority !== filed.lootPriority ||
+    draft.spendPolicy !== filed.spendPolicy;
+
+  const update = (patch: Partial<StandingOrders>) => {
+    setDraft({ ...draft, ...patch });
+    setNotice(null);
+  };
+
+  const handleFile = async () => {
+    setSaving(true);
+    try {
+      const filedAt = await fileOrders(draft);
+      setNotice(`Filed at ${clockOf(filedAt)}. Union Standing unaffected.`);
+    } catch {
+      setNotice('Filing rejected. The Authority did not accept the form.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className={styles.paper}>
@@ -24,11 +64,11 @@ export function OrdersScreen() {
           id="target-depth"
           min={1}
           max={12}
-          value={state.targetDepth}
-          valueText={`Floor ${state.targetDepth}`}
-          onChange={(value) => dispatch({ type: 'setTargetDepth', value })}
+          value={draft.targetDepth}
+          valueText={`Floor ${draft.targetDepth}`}
+          onChange={(targetDepth) => update({ targetDepth })}
         />
-        <div className={`text-bright ${styles.value}`}>Floor {state.targetDepth}</div>
+        <div className={`text-bright ${styles.value}`}>Floor {draft.targetDepth}</div>
       </div>
 
       <div className={styles.row}>
@@ -39,11 +79,11 @@ export function OrdersScreen() {
           id="retreat-threshold"
           min={5}
           max={80}
-          value={state.retreatPct}
-          valueText={`${state.retreatPct} percent HP`}
-          onChange={(value) => dispatch({ type: 'setRetreatPct', value })}
+          value={draft.retreatPct}
+          valueText={`${draft.retreatPct} percent HP`}
+          onChange={(retreatPct) => update({ retreatPct })}
         />
-        <div className={`text-bright ${styles.value}`}>{state.retreatPct}% HP</div>
+        <div className={`text-bright ${styles.value}`}>{draft.retreatPct}% HP</div>
       </div>
 
       <div className={styles.row}>
@@ -55,8 +95,8 @@ export function OrdersScreen() {
             <OptionChip
               key={option}
               label={option.toUpperCase()}
-              selected={state.lootPriority === option}
-              onSelect={() => dispatch({ type: 'setLootPriority', value: option })}
+              selected={draft.lootPriority === option}
+              onSelect={() => update({ lootPriority: option })}
             />
           ))}
         </div>
@@ -71,19 +111,17 @@ export function OrdersScreen() {
             <OptionChip
               key={option}
               label={option.toUpperCase()}
-              selected={state.spendPolicy === option}
-              onSelect={() => dispatch({ type: 'setSpendPolicy', value: option })}
+              selected={draft.spendPolicy === option}
+              onSelect={() => update({ spendPolicy: option })}
             />
           ))}
         </div>
       </div>
 
       <div className={styles.fileRow}>
-        <FileButton onClick={() => dispatch({ type: 'fileOrders', at: new Date() })}>
-          FILE ORDERS
-        </FileButton>
+        <FileButton onClick={handleFile}>{saving ? 'FILING...' : 'FILE ORDERS'}</FileButton>
         <div className="text-dim" role="status">
-          {state.ordersFiled && `Filed at ${state.filedTime}. Union Standing unaffected.`}
+          {notice ?? (dirty ? 'Unfiled amendments on this form.' : null)}
         </div>
       </div>
     </div>

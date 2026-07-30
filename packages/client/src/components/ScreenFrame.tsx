@@ -1,9 +1,10 @@
 import { useCallback, useState } from 'react';
 import { useBootSequence } from '../hooks/useBootSequence';
-import { useGame } from '../state/gameContext';
+import { useServer } from '../state/serverContext';
 import { BootSequence } from './BootSequence';
 import { Console } from './Console';
 import { DeathOverlay } from './DeathOverlay';
+import { LinkFault } from './LinkFault';
 import styles from './ScreenFrame.module.css';
 
 /**
@@ -11,7 +12,7 @@ import styles from './ScreenFrame.module.css';
  * scanline/vignette overlays above whatever is on screen.
  */
 export function ScreenFrame() {
-  const { state } = useGame();
+  const { state, error, refresh } = useServer();
   const { booted, visibleLines, skip } = useBootSequence();
   const [revealSkipped, setRevealSkipped] = useState(false);
 
@@ -27,12 +28,13 @@ export function ScreenFrame() {
     <div className={styles.frame}>
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div className={styles.screen} data-tappable={tappable} onClick={handleTap}>
-        {booted ? (
-          <Console revealSkipped={revealSkipped} />
-        ) : (
-          <BootSequence lines={visibleLines} onSkip={skip} />
-        )}
-        {state.isDead && <DeathOverlay />}
+        {!booted && <BootSequence lines={visibleLines} onSkip={skip} />}
+        {/* The boot crawl doubles as the loading state. A cold client that
+            cannot reach the Authority gets a fault card rather than an
+            empty terminal. */}
+        {booted && !state && <LinkFault message={error} onRetry={refresh} />}
+        {booted && state && <Console revealSkipped={revealSkipped} />}
+        {state?.pendingDeath && <DeathOverlay death={state.pendingDeath} />}
         <div className={styles.scanlines} aria-hidden="true" />
         <div className={styles.vignette} aria-hidden="true" />
       </div>

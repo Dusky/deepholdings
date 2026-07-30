@@ -5,6 +5,7 @@ import {
   UNLOCK_CATALOGUE,
   type Account,
   type BulletinResponse,
+  type Character,
   type ClaimPensionResponse,
   type DeathRecord,
   type LedgerResponse,
@@ -54,9 +55,29 @@ export async function authenticateDevice(
       lootPriority: 'gear',
       spendPolicy: 'resupply',
     });
-    await tx.insertCharacter(firstRecruit(account.id));
+    const recruit = firstRecruit(account.id);
+    await tx.insertCharacter(recruit);
+    await tx.appendJournal([assignmentEntry(recruit.character, 'opened')]);
     return account;
   });
+}
+
+/**
+ * The Terminal is the first screen a player sees, and a brand-new account has
+ * no resolved ticks yet — so the assignment itself is journalled. Without it
+ * the flagship screen is blank until the first tick lands.
+ */
+function assignmentEntry(character: Character, kind: 'opened' | 'replacement') {
+  const text =
+    kind === 'opened'
+      ? `Case file opened. ${character.name} assigned as your recruit. Permit D-${character.permitTier} issued. Do not lose the permit.`
+      : `Replacement recruit assigned: ${character.name}. Permit D-${character.permitTier} issued. Effects of the deceased remain in Arbitration.`;
+  return {
+    characterId: character.id,
+    tick: character.lastResolvedTick,
+    at: new Date(),
+    text,
+  };
 }
 
 function firstRecruit(accountId: string): CharacterRecord {
@@ -322,6 +343,7 @@ export async function claimPension(
       permitAppliedTick: null,
       inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
     });
+    await tx.appendJournal([assignmentEntry(character, 'replacement')]);
 
     return { character, pension: banked, orders: await tx.getOrders(accountId) };
   });

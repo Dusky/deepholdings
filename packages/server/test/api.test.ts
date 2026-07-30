@@ -67,6 +67,9 @@ for (const adapter of adapters) {
       assert.ok(state.world.market.length > 0);
       assert.ok(state.nextBeatInSeconds >= 0);
       assert.equal(state.pendingDeath, null);
+      // A new account must not land on an empty Terminal screen.
+      assert.equal(state.journal.length, 1);
+      assert.match(state.journal[0].text, /Case file opened/);
     });
 
     test('validates standing orders', async () => {
@@ -197,6 +200,9 @@ for (const adapter of adapters) {
       assert.equal(body.pension.total, pensionBefore + award);
       assert.match(body.character.name, /^GRIMWALD II,/);
       assert.equal(body.character.alive, true);
+
+      const successorJournal = await repo.listJournal(body.character.id, -1, 10);
+      assert.match(successorJournal[0].text, /Replacement recruit assigned/);
 
       const fresh = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
       assert.equal((fresh.json() as StateResponse).character.alive, true);

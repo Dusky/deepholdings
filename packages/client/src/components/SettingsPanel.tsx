@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useGame } from '../state/gameContext';
 import {
   FONT_SCALE_MAX,
   FONT_SCALE_MIN,
@@ -13,7 +12,6 @@ interface SettingsPanelProps {
 
 /** Quality floor: every effect in the stack has an off switch (spec §7). */
 export function SettingsPanel({ onClose }: SettingsPanelProps) {
-  const { dispatch } = useGame();
   const settings = useSettings();
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -90,18 +88,6 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
           </button>
         </div>
       </div>
-
-      {/* Prototype scaffolding: death is a server event in production. */}
-      <button
-        type="button"
-        className={styles.demoDeath}
-        onClick={() => {
-          dispatch({ type: 'triggerDeath' });
-          onClose();
-        }}
-      >
-        DEMO: KILL CHARACTER
-      </button>
     </div>
   );
 }

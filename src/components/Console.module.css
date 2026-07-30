@@ -1,0 +1,17 @@
+.console {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.body {
+  flex: 1;
+  padding: 18px 26px;
+  overflow: auto;
+}
+
+@media (max-width: 640px) {
+  .body {
+    padding: 14px 16px;
+  }
+}

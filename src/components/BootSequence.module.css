@@ -1,0 +1,30 @@
+.boot {
+  height: 100%;
+  padding: 28px 30px;
+  overflow: hidden;
+  color: var(--phosphor-body);
+  font-family: var(--font-mono);
+  font-size: var(--text-boot);
+  line-height: 1.7;
+}
+
+.line {
+  min-height: 1.4em;
+  white-space: pre-wrap;
+  text-shadow: var(--fx-glow);
+}
+
+.cursor {
+  display: inline-block;
+  color: var(--phosphor-bright);
+  animation: var(--anim-cursor);
+}
+
+.skipHint {
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}

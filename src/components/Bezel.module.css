@@ -1,0 +1,70 @@
+.bezel {
+  position: relative;
+  width: min(1040px, 94vw);
+  padding: 22px 22px 30px;
+  border-radius: var(--radius-bezel);
+  background: var(--bezel-beige);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.55),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ledRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px 14px;
+}
+
+.led {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--hw-amber-bright);
+  box-shadow: var(--fx-led-shadow);
+  animation: var(--anim-led);
+}
+
+.model {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--hw-label);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.heartbeat {
+  margin-right: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--hw-muted);
+  white-space: nowrap;
+}
+
+.gear {
+  padding: 2px 6px;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--hw-muted);
+}
+
+.gear:hover {
+  color: #3f3724;
+}
+
+@media (max-width: 640px) {
+  .bezel {
+    padding: 14px 12px 18px;
+    border-radius: 16px;
+  }
+
+  .model {
+    display: none;
+  }
+}

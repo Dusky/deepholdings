@@ -1,0 +1,55 @@
+.frame {
+  padding: 18px;
+  border-radius: var(--radius-frame);
+  background: var(--case-shadow);
+  box-shadow:
+    inset 0 0 0 3px var(--case-inner-rim),
+    inset 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.screen {
+  position: relative;
+  height: var(--screen-height);
+  overflow: hidden;
+  border-radius: var(--radius-screen);
+  /* Never pure black — the phosphor should always have somewhere to sit. */
+  background: var(--screen-black);
+  animation: var(--anim-screen);
+}
+
+.screen[data-tappable='true'] {
+  cursor: pointer;
+}
+
+/* Scanlines and vignette sit above the content but take no pointer events. */
+.scanlines,
+.vignette {
+  position: absolute;
+  inset: 0;
+  display: var(--fx-overlay-display);
+  pointer-events: none;
+}
+
+.scanlines {
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.vignette {
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+@media (max-width: 640px) {
+  .frame {
+    padding: 10px;
+  }
+
+  .screen {
+    height: min(var(--screen-height), 72vh);
+  }
+}

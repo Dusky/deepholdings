@@ -1,0 +1,17 @@
+.chip {
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: calc(11.5px * var(--font-scale));
+  letter-spacing: 0.04em;
+  color: var(--phosphor-body);
+  background: transparent;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+}
+
+.chip[aria-pressed='true'] {
+  color: var(--phosphor-bright);
+  background: var(--chip-fill);
+  border-color: var(--phosphor-bright);
+  text-shadow: var(--fx-glow-sm);
+}

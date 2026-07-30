@@ -1,0 +1,63 @@
+.statLine {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--phosphor-dim);
+}
+
+.activity {
+  margin-bottom: 16px;
+}
+
+.activityRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logRow {
+  display: flex;
+  gap: 14px;
+  padding: 1px 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+
+.time {
+  flex-shrink: 0;
+}
+
+/* Declared here rather than in global.css: CSS Modules scopes animation
+   names, so the keyframes must live in the same file that references them. */
+@keyframes typeReveal {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Teletype: each line wipes in once, on first mount, then behaves like
+   ordinary wrapping text. */
+.text[data-revealed='false'] {
+  display: inline-block;
+  white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  animation: typeReveal var(--reveal-duration) steps(var(--reveal-steps), end) forwards;
+  animation-delay: var(--reveal-delay);
+}
+
+.text[data-revealed='true'] {
+  display: inline;
+  white-space: normal;
+  clip-path: inset(0 0 0 0);
+  animation: none;
+}

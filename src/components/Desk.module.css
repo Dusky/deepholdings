@@ -1,0 +1,16 @@
+.desk {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: radial-gradient(ellipse at 50% 30%, #241f18 0%, #14110d 70%);
+  font-family: var(--font-mono);
+}
+
+@media (max-width: 640px) {
+  .desk {
+    padding: 16px 10px;
+  }
+}

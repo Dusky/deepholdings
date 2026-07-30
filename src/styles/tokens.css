@@ -1,0 +1,109 @@
+/*
+ * Design tokens — the single source of truth for the CRT palette.
+ *
+ * Everything downstream reads these variables, so a palette swap (green
+ * phosphor unlock, high contrast) is a data-attribute flip on the shell root
+ * rather than a prop threaded through every component.
+ */
+
+:root {
+  /* Phosphor palette (amber, default) */
+  --phosphor-bright: #ffb742;
+  --phosphor-body: #d98a2b;
+  --phosphor-dim: #7a4a18;
+  --screen-black: #14100c;
+  --alert-red: #ff4530;
+  --hairline: rgba(122, 74, 24, 0.25);
+  --paper-tint: rgba(217, 138, 43, 0.05);
+  --chip-fill: rgba(255, 183, 66, 0.08);
+
+  /* Hardware: the case is a physical object, so it never follows the
+     phosphor palette or high-contrast mode. */
+  --bezel-beige: #d8cdb4;
+  --case-shadow: #0c0a08;
+  --case-inner-rim: #2a2620;
+  --hw-amber-bright: #ffb742;
+  --hw-amber-body: #d98a2b;
+  --hw-amber-dim: #7a4a18;
+  --hw-alert: #ff4530;
+  --hw-label: #8a7c5f;
+  --hw-muted: #5c5138;
+  --panel-bg: #1c1811;
+
+  /* Typography */
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  /* Reserved for a bitmap-face pass on boot/headers (spec §8). */
+  --font-display: 'VT323', var(--font-mono);
+  --font-scale: 1;
+  --text-body: calc(13px * var(--font-scale));
+  --text-dim: calc(12px * var(--font-scale));
+  --text-boot: calc(14px * var(--font-scale));
+  --text-tab: calc(11.5px * var(--font-scale));
+  --text-chip: calc(11px * var(--font-scale));
+  --text-author: calc(12.5px * var(--font-scale));
+  --text-button: calc(12px * var(--font-scale));
+
+  /* Shape */
+  --radius-bezel: 22px;
+  --radius-frame: 14px;
+  --radius-screen: 8px;
+  --radius-control: 3px;
+  --radius-paper: 4px;
+  --screen-height: 640px;
+
+  /* Effect stack — neutralised wholesale when effects are off. */
+  --fx-aberration: -0.4px 0 #4fd0ff, 0.4px 0 #ff5a5a;
+  --fx-text: var(--fx-aberration), 0 0 6px currentColor;
+  --fx-glow: 0 0 5px currentColor;
+  --fx-glow-sm: 0 0 4px currentColor;
+  --fx-bar-glow: 0 0 6px var(--phosphor-bright);
+  --fx-overlay-display: block;
+  --fx-led-shadow: 0 0 8px 2px var(--hw-amber-bright);
+  --anim-led: ledPulse 6s ease-in-out infinite;
+  --anim-screen: flicker 9s infinite, roll 13s infinite;
+  --anim-cursor: bootBlink 1s step-start infinite;
+}
+
+/* Cosmetic unlock: "Monitor Swap: Green Phosphor" (spec §7.1). */
+[data-phosphor='green'] {
+  --phosphor-bright: #7cffa4;
+  --phosphor-body: #3fd97a;
+  --phosphor-dim: #1c6b36;
+  --screen-black: #0b1410;
+  --alert-red: #ff6b5c;
+  --hairline: rgba(28, 107, 54, 0.3);
+  --paper-tint: rgba(63, 217, 122, 0.05);
+  --chip-fill: rgba(124, 255, 164, 0.08);
+  --fx-bar-glow: 0 0 6px var(--phosphor-bright);
+}
+
+/* High contrast overrides the phosphor palette entirely. */
+[data-contrast='high'] {
+  --phosphor-bright: #ffffff;
+  --phosphor-body: #e7e7e7;
+  --phosphor-dim: #9a9a9a;
+  --screen-black: #000000;
+  --alert-red: #ff6b5c;
+  --hairline: rgba(154, 154, 154, 0.35);
+  --paper-tint: #111111;
+  --chip-fill: rgba(255, 255, 255, 0.1);
+  --fx-bar-glow: none;
+}
+
+/* Master effects switch: kills glow, aberration, overlays and idle animation. */
+[data-effects='off'] {
+  --fx-text: none;
+  --fx-glow: none;
+  --fx-glow-sm: none;
+  --fx-bar-glow: none;
+  --fx-overlay-display: none;
+  --fx-led-shadow: none;
+  --anim-led: none;
+  --anim-screen: none;
+}
+
+/* Reduced motion keeps the glow but stops anything that moves. */
+[data-motion='reduced'] {
+  --anim-screen: none;
+  --anim-cursor: none;
+}

@@ -1,0 +1,33 @@
+/* Shared column layout for the Ledger and Bulletin screens. */
+.columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.column {
+  flex: 1 1 220px;
+  min-width: 220px;
+}
+
+.head {
+  margin-bottom: 10px;
+}
+
+.headLater {
+  margin-top: 18px;
+  margin-bottom: 10px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.stackedRow {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--hairline);
+}

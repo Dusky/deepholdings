@@ -1,0 +1,20 @@
+.button {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 9px 18px;
+  border-radius: var(--radius-control);
+  background: var(--phosphor-bright);
+  color: var(--screen-black);
+  font-family: var(--font-mono);
+  font-size: var(--text-button);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.button:hover {
+  filter: brightness(1.08);
+}
+
+.button:active {
+  filter: brightness(0.92);
+}

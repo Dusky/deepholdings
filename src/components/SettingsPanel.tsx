@@ -1,0 +1,107 @@
+import { useEffect, useRef } from 'react';
+import { useGame } from '../state/gameContext';
+import {
+  FONT_SCALE_MAX,
+  FONT_SCALE_MIN,
+  useSettings,
+} from '../state/settingsContext';
+import styles from './SettingsPanel.module.css';
+
+interface SettingsPanelProps {
+  onClose: () => void;
+}
+
+/** Quality floor: every effect in the stack has an off switch (spec §7). */
+export function SettingsPanel({ onClose }: SettingsPanelProps) {
+  const { dispatch } = useGame();
+  const settings = useSettings();
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className={styles.panel} ref={panelRef} role="group" aria-label="Quality floor">
+      <div className={styles.title}>QUALITY FLOOR</div>
+
+      <div className={styles.row}>
+        <span className={styles.label}>Effects</span>
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-pressed={settings.effectsOn}
+          onClick={settings.toggleEffects}
+        >
+          {settings.effectsOn ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      <div className={styles.row}>
+        <span className={styles.label}>Reduced motion</span>
+        {/* Pressed state tracks "motion allowed", matching the other rows'
+            lit-means-on reading. */}
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-pressed={!settings.reducedMotion}
+          onClick={settings.toggleReducedMotion}
+        >
+          {settings.reducedMotion ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      <div className={styles.row}>
+        <span className={styles.label}>High contrast</span>
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-pressed={settings.highContrast}
+          onClick={settings.toggleHighContrast}
+        >
+          {settings.highContrast ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      <div className={styles.row}>
+        <span className={styles.label}>Font size</span>
+        <div className={styles.stepRow}>
+          <button
+            type="button"
+            className={styles.stepButton}
+            onClick={settings.decreaseFont}
+            disabled={settings.fontScale <= FONT_SCALE_MIN}
+            aria-label="Decrease font size"
+          >
+            A-
+          </button>
+          <button
+            type="button"
+            className={styles.stepButton}
+            onClick={settings.increaseFont}
+            disabled={settings.fontScale >= FONT_SCALE_MAX}
+            aria-label="Increase font size"
+          >
+            A+
+          </button>
+        </div>
+      </div>
+
+      {/* Prototype scaffolding: death is a server event in production. */}
+      <button
+        type="button"
+        className={styles.demoDeath}
+        onClick={() => {
+          dispatch({ type: 'triggerDeath' });
+          onClose();
+        }}
+      >
+        DEMO: KILL CHARACTER
+      </button>
+    </div>
+  );
+}

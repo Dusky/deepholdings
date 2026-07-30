@@ -1,0 +1,40 @@
+.paper {
+  max-width: 640px;
+  padding: 20px 24px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-paper);
+  background: var(--paper-tint);
+}
+
+.title {
+  margin-bottom: 18px;
+  letter-spacing: 0.05em;
+}
+
+.row {
+  margin-bottom: 18px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 8px;
+  letter-spacing: 0.06em;
+}
+
+.value {
+  margin-top: 4px;
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fileRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}

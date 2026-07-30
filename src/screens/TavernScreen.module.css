@@ -1,0 +1,49 @@
+.header {
+  margin-bottom: 14px;
+  letter-spacing: 0.06em;
+}
+
+.stream {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.author {
+  flex-shrink: 0;
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-author);
+  text-shadow: var(--fx-text);
+}
+
+.inputRow {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--phosphor-dim);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+  outline: none;
+  background: transparent;
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+}
+
+.input::placeholder {
+  color: var(--phosphor-dim);
+}

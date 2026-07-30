@@ -1,0 +1,36 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 26px;
+  border-top: 1px solid var(--phosphor-dim);
+}
+
+.prompt {
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-shadow: var(--fx-text);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+}
+
+.input::placeholder {
+  color: var(--phosphor-dim);
+}
+
+@media (max-width: 640px) {
+  .bar {
+    padding: 10px 16px;
+  }
+}

@@ -1,0 +1,126 @@
+@import './tokens.css';
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #1a1712;
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Shared phosphor text roles. Used across every screen, so they live here
+   rather than being duplicated into each CSS module. */
+.text-dim {
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-dim);
+}
+
+.text-body {
+  color: var(--phosphor-body);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  text-shadow: var(--fx-text);
+}
+
+.text-bright {
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-shadow: var(--fx-text);
+}
+
+.text-head {
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-shadow: var(--fx-text);
+}
+
+/* Controls inherit the terminal look instead of the browser's. */
+button {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+input {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--phosphor-bright);
+  outline-offset: 2px;
+}
+
+@keyframes ledPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes flicker {
+  0%,
+  96%,
+  100% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0.82;
+  }
+  98% {
+    opacity: 1;
+  }
+  99% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes roll {
+  0%,
+  94%,
+  100% {
+    transform: translateY(0);
+  }
+  95% {
+    transform: translateY(2px);
+  }
+  96% {
+    transform: translateY(-1px);
+  }
+  97% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes bootBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}

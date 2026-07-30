@@ -57,16 +57,21 @@ The things every decision gets checked against.
 
 ## Status
 
-| Milestone | State |
-| --- | --- |
-| M0 — Playable loop, end to end | ✅ Done |
-| M1 — On your phone | Next |
-| M2 — Worth opening twice a day | |
-| M3 — A game, not a demo | |
-| M4 — An inhabited world | |
-| M5 — Able to take money | |
-| M6 — Store-ready | |
-| M7 — Launch and learn | |
+| Milestone | State | In v1? |
+| --- | --- | --- |
+| M0 — Playable loop, end to end | ✅ Done | yes |
+| M1 — On your phone | **Next** | yes |
+| M2 — The first session | | yes |
+| M3 — It calls you back | | yes |
+| M4 — It has direction | | yes |
+| M5 — It has depth (crafting) | | *candidate cut* |
+| M6 — An inhabited world | | *candidate cut* |
+| M7 — Able to take money | | yes |
+| M8 — Store-ready | | yes |
+| M9 — Launch and learn | | yes |
+
+See [the cut line](#the-cut-line) for what "candidate cut" means — it is a
+scheduling option, not a deletion.
 
 ---
 
@@ -107,10 +112,38 @@ without a crash or a data loss.
 
 ---
 
-## M2 — Worth opening twice a day
+## M2 — The first session
 
-**Goal:** the async loop actually pulls you back. This milestone is not
-optional — an async game without notifications is a website you forget.
+**Goal:** a stranger installs it and understands what they are doing. This is
+where the genre loses most of the players it loses — competitors' negative
+reviews cluster at 6–30 minutes of playtime, citing an overwhelming interface
+with no direction.
+
+- [ ] **First-session onboarding.** The boot sequence and the log are natural
+      tutorial vehicles that cost us nothing in voice — the Authority explains
+      the job because that is what the Authority would do.
+- [ ] **Progressive disclosure of the screens.** Do not hand a new officer all
+      five tabs. Start on the Terminal; earn the Ledger, Tavern and Bulletin as
+      clearance rises. Fixes the day-one and hour-hundred problems at once.
+- [ ] **Prestige legibility.** A player must understand that death banks a
+      pension, and that pensions are permanent, *before* their first recruit
+      dies. "Not obvious when or why to prestige" is a standing genre complaint.
+- [ ] **"While you were away" digest.** Returning after eight hours currently
+      means reading 60 log lines. Open on a summary — floors gained, gold
+      banked, permits filed — with the raw log underneath.
+- [ ] **Empty and error states in voice.** Every one of them, not just the
+      three that were convenient.
+
+**Exit:** someone who has never seen the game installs it, plays for twenty
+minutes, and can tell you what they are supposed to do next — without asking
+you.
+
+---
+
+## M3 — It calls you back
+
+**Goal:** the async loop actually pulls people back. Not optional: an async
+game nobody is reminded about is an app nobody opens.
 
 - [ ] **FCM push.** Recruit died; permit approved; descent stalled; guild
       objective closing.
@@ -118,33 +151,20 @@ optional — an async game without notifications is a website you forget.
       requires a way to turn them off, and so does basic decency.
 - [ ] **Deep links.** A death notification opens the death card, not the
       Terminal.
-- [ ] **"While you were away" digest.** Returning after eight hours currently
-      means reading 60 log lines. It should open on a summary — floors gained,
-      gold banked, permits filed — with the raw log underneath.
 - [ ] **Resume behaviour.** Refresh on foreground (done), plus handling for a
       device that slept through the heartbeat.
-- [ ] **First-session onboarding.** The genre's biggest churn cause is the
-      first thirty minutes: competitors' negative reviews cluster at 6–30
-      minutes of playtime, citing an overwhelming interface with no direction.
-      The boot sequence and the log are natural tutorial vehicles that cost us
-      nothing in voice.
-- [ ] **Progressive disclosure of the screens.** Do not hand a new officer all
-      five tabs. Start on the Terminal; earn the Ledger, Tavern and Bulletin as
-      clearance rises. Fixes the day-one and hour-hundred problems at once.
-- [ ] **Prestige legibility.** A player must understand that death banks a
-      pension, and that pensions are permanent, *before* their first recruit
-      dies. "Not obvious when or why to prestige" is a standing complaint
-      across the genre.
+- [ ] **Send rate discipline.** A notification the player did not want is worse
+      than none. Cap the daily count and never push twice for the same event.
 
-**Exit:** a push arrives, you tap it, and the app opens on something that
-matters.
+**Exit:** a push arrives, you tap it, and the app opens on the thing it was
+about.
 
 ---
 
-## M3 — A game, not a demo
+## M4 — It has direction
 
-**Goal:** two weeks of progression that doesn't repeat itself. This is the
-milestone most likely to be underestimated.
+**Goal:** two weeks of progression that doesn't repeat itself, and a player who
+always knows what they are working toward.
 
 - [ ] **Balance pass.** The numbers in `packages/shared/src/tuning.ts` and the
       curves in `resolve.ts` are first-pass guesses. Needs a target death rate,
@@ -158,15 +178,6 @@ milestone most likely to be underestimated.
 - [ ] **Market that trades.** Selling inventory, not just reading prices.
 - [ ] **Prestige depth.** Five unlocks is a demo. Needs tiers, and a reason to
       let a recruit die on purpose.
-- [ ] **Requisition & Arbitration** — gear with affixes, where the crafting
-      system is the bureaucracy: items are case files, crafting actions are
-      forms, and forms take real time to process. Designed in
-      [`docs/design/crafting.md`](docs/design/crafting.md). Also does most of
-      the "make the four knobs matter" work, since Loot Priority decides which
-      clause pools drop.
-- [ ] **ARMOURY screen**, gated behind clearance like the other late screens.
-- [ ] **Equipment policy** as a fifth standing order, with countersigned slots
-      that automatic equipping may never override.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
 - [ ] **A legible ladder.** The player should always see the next permit tier,
@@ -180,7 +191,29 @@ milestone most likely to be underestimated.
 
 ---
 
-## M4 — An inhabited world
+## M5 — It has depth
+
+**Goal:** items that feel like yours. The largest single addition on the
+roadmap, designed in full at [`docs/design/crafting.md`](docs/design/crafting.md).
+
+- [ ] **Requisition & Arbitration** — gear with affixes, where the crafting
+      system is the bureaucracy: items are case files, crafting actions are
+      forms, and forms take real time to process. Also does most of the "make
+      the four knobs matter" work, since Loot Priority decides which clause
+      pools drop.
+- [ ] **ARMOURY screen**, gated behind clearance like the other late screens.
+- [ ] **Equipment policy** as a fifth standing order, with countersigned slots
+      that automatic equipping may never override.
+- [ ] **~40 clauses to start.** Our competitor has 100+ after years. A shallow
+      pool shipped beats a deep pool planned.
+- [ ] **Staging plan.** If this milestone slips, ship items and clauses first
+      and the full form catalogue second. Do not cut it to nothing.
+
+**Exit:** a player can show you an item they built and explain why it is theirs.
+
+---
+
+## M6 — An inhabited world
 
 **Goal:** other case officers are visible and matter. Cuttable if time is short
 — but the tavern is a lot of the charm.
@@ -202,7 +235,7 @@ people played.
 
 ---
 
-## M5 — Able to take money
+## M7 — Able to take money
 
 **Goal:** a purchase grants an entitlement that survives a reinstall.
 
@@ -232,7 +265,7 @@ device.
 
 ---
 
-## M6 — Store-ready
+## M8 — Store-ready
 
 **Goal:** production access on Google Play. Mostly paperwork, and the long pole
 is a calendar constraint you cannot compress.
@@ -240,8 +273,8 @@ is a calendar constraint you cannot compress.
 - [ ] **Play Console account** (one-time registration fee).
 - [ ] **Closed testing: 12 testers, opted in, 14 continuous days.** Required for
       personal developer accounts created after late 2023. **Start recruiting
-      testers during M3** — this is a waiting requirement, not a work
-      requirement, and it can run in parallel with everything else.
+      testers from M4** — this is a waiting requirement, not a work
+      requirement, and it runs in parallel with everything else.
 - [ ] **Privacy policy** and the **Data Safety** form.
 - [ ] **Content rating** questionnaire.
 - [ ] **Target API level** for the current Play requirement; minimal
@@ -257,7 +290,7 @@ is a calendar constraint you cannot compress.
 
 ---
 
-## M7 — Launch and learn
+## M9 — Launch and learn
 
 - [ ] **Soft launch** to one market or an open test.
 - [ ] **Analytics:** D1/D7 retention, session length, funnel to first purchase.
@@ -266,6 +299,52 @@ is a calendar constraint you cannot compress.
       Paying to fill a leaky bucket is the classic indie mistake.
 
 **Exit:** D7 retention measured, unit economics known.
+
+---
+
+## The cut line
+
+A solo part-time developer does not get to ship everything before launching.
+This is the honest version of what v1 needs.
+
+**v1 must have:** M1–M4 (it runs on a phone, a stranger understands it, it calls
+you back, and it has direction), plus M7–M8 (money and store compliance).
+
+**v1 could ship without:** M5 (crafting) and M6 (the social layer).
+
+That is not a demotion. Shipping M5 as the first major post-launch update is
+arguably *better* than launching with it:
+
+- A new player will not hit the depth wall crafting solves for several weeks.
+  Launch-day retention is decided by M2 and M4, not by affixes.
+- It gives you a reason to be in front of people again six weeks after launch,
+  when the initial attention has faded. Launching with a content pipeline
+  already loaded is a live-ops advantage, not an admission.
+- It converts the roadmap's biggest scope risk into a scheduling decision you
+  make with real retention data instead of a guess.
+
+The same logic applies to M6, with one exception: **the chat safety work is not
+cuttable if chat ships at all.** Either the tavern launches moderated, or it
+does not launch.
+
+**Decide this at the end of M4, not now** — by then you will know how M2 and M3
+actually landed.
+
+---
+
+## Parallel tracks
+
+Things that are not milestones because they run alongside all of them.
+
+- **Tester recruitment.** Start from M4. Play's closed-testing gate is 12
+  testers for 14 continuous days; it is a calendar cost, not a work cost, and
+  it is the single easiest thing to be blocked by at the end.
+- **Writing.** Budget copy time in every milestone. Tone is the moat, and it
+  wears out faster than the mechanics do.
+- **Ops hygiene.** Backups, migrations, alerting — grow these as the player
+  count does, not in one heroic sprint before launch.
+- **Play a build every week** from M1 onward. Nothing in this document
+  substitutes for that.
 
 ---
 

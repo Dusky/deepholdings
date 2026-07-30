@@ -165,6 +165,8 @@ milestone most likely to be underestimated.
       the "make the four knobs matter" work, since Loot Priority decides which
       clause pools drop.
 - [ ] **ARMOURY screen**, gated behind clearance like the other late screens.
+- [ ] **Equipment policy** as a fifth standing order, with countersigned slots
+      that automatic equipping may never override.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
 - [ ] **A legible ladder.** The player should always see the next permit tier,
@@ -289,7 +291,6 @@ Not a milestone; pick these up as they start to hurt.
 | Hosting | Fly.io / Railway / Render / VPS | Whichever you'll actually operate. Lazy resolution means idle players cost nothing, so start on the cheapest tier. |
 | Tavern scope | Full realtime / keep polling / cut for v1 | Keep polling through M3. It works, and WebSockets can wait for real concurrency. |
 | Launch shape | Soft launch / open test / full release | Open test. It gets you real retention numbers without a launch you only get once. |
-| Auto-equip | Policy-driven / manual / hybrid | Hybrid: a fifth standing order sets the equip policy, with manual override. Raised by the crafting design. |
 
 ### Settled
 
@@ -298,6 +299,7 @@ Not a milestone; pick these up as they start to hurt.
 | Monetisation model | **Convenience and cosmetics only.** Time skips are capped rewarded-video, free to all, never sold. Offline catch-up is never touched. |
 | Gear/affix crafting | **Build it in M3** as Requisition & Arbitration — crafting as bureaucracy, forms that take real time to process. |
 | Standing-order slots | **Earned only.** More concurrent policy is power, not convenience. |
+| Equipment policy | **Automatic with a sticky manual override.** A fifth standing order sets the metric; an item issued by hand is countersigned and never auto-substituted until released. |
 
 ## Known risks
 

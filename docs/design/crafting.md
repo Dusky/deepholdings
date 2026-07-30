@@ -116,6 +116,64 @@ Consistent with everything else:
 - Gear modifies the combat maths in `resolve.ts` through a computed stat block,
   not by touching the resolver's structure.
 
+## Equipment policy
+
+**Decided:** automatic by default, with a sticky manual override. An item the
+officer issues by hand is never swapped out by the system unless the officer
+releases it.
+
+In voice, the two halves are:
+
+- **Quartermaster's Discretion** — the default. New loot is equipped
+  automatically if it beats what the recruit is carrying, by whichever metric
+  the officer's standing order selects.
+- **Direct Issue (Form 5-E)** — the officer equips a specific item into a
+  specific slot. That slot is now **countersigned**: the quartermaster may not
+  substitute it. Releasing the countersignature returns the slot to discretion.
+
+This is the fifth standing order, and it belongs on Form SO-1 with the others:
+
+```
+5. EQUIPMENT POLICY
+   [ VIGOUR ] [ SURVIVAL ] [ LOOT VALUE ] [ BALANCED ] [ OFFICER ONLY ]
+```
+
+`OFFICER ONLY` disables the quartermaster entirely — nothing is equipped
+without a Form 5-E. For the player who wants to run every slot by hand.
+
+### Rules
+
+1. A countersigned slot is never touched by automatic equipping, even by a
+   strictly better item. The system may *suggest* in the log; it may not act.
+2. Releasing the countersignature returns the slot to discretion immediately,
+   and the next resolution equips by policy.
+3. Countersignatures survive death **for the inherited item only** — the
+   officer's standing instruction outlives the recruit, which is the joke and
+   also the behaviour a player would expect.
+4. If a countersigned item leaves the file — seized in an audit, consumed by a
+   Form 19 requisition — the countersignature clears and the slot returns to
+   discretion, with a log line saying so. No silent empty slots.
+5. Automatic equipping happens **inside resolution**, so it must be
+   deterministic: the comparison metric is a pure function of the stat block,
+   and ties break on item id. Same rule as every other roll.
+
+### The edge case worth watching
+
+A countersigned item that the *next* recruit cannot use — wrong grade, revoked
+certification — must not be silently swapped, because that breaks rule 1 and
+therefore the promise. The design leaves it equipped and inert, with a loud
+line on the Terminal:
+
+```
+09:04  Case #4417-C remains countersigned but is not certified for Grade I.
+       Recruit is proceeding without a sidearm. This has been noted.
+```
+
+That is correct but potentially punishing: a player who does not read the log
+could run a recruit half-equipped for hours. If playtesting shows people
+getting stuck, the fix is a sixth policy option — `SUBSTITUTE IN EMERGENCY` —
+rather than weakening rule 1. Never quietly override an explicit instruction.
+
 ## Guardrails
 
 - **Numbers stay human.** Clauses give small integers and modest percentages.
@@ -130,13 +188,9 @@ Consistent with everything else:
 
 ## Open questions
 
-1. **Does the recruit equip automatically, or does the officer decide?** Auto is
-   more in voice (you file policy, not micromanagement) and less busywork.
-   Manual gives the player a real decision. Leaning: auto-equip by a policy the
-   player sets — a fifth standing order — with manual override.
-2. **Should Disputed items be seizable?** Audits are funny and create urgency,
+1. **Should Disputed items be seizable?** Audits are funny and create urgency,
    but losing a good item to a timer is the kind of thing that generates
    negative reviews. Probably yes, but heavily telegraphed and always
    preventable via Form 44.
-3. **How much of this survives death?** Currently one slot. If the answer is
+2. **How much of this survives death?** Currently one slot. If the answer is
    "almost nothing", players may not invest in crafting at all.

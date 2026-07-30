@@ -12,6 +12,12 @@ export interface Config {
    * (capacitor://localhost), so CORS is not a dev-only concern.
    */
   corsOrigins: string[];
+  /**
+   * Apply pending migrations on boot. Convenient in dev and tests; in
+   * production the deploy runs `npm run migrate` so a schema change is a
+   * deliberate step, not a side effect of a restart.
+   */
+  autoMigrate: boolean;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -26,7 +32,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL ?? null,
     tokenSecret,
     runHeartbeat: env.RUN_HEARTBEAT !== 'false',
-    corsOrigins: (env.CORS_ORIGINS ?? 'http://localhost:5173,capacitor://localhost')
+    autoMigrate: env.AUTO_MIGRATE
+      ? env.AUTO_MIGRATE === 'true'
+      : env.NODE_ENV !== 'production',
+    // Capacitor Android serves the app from https://localhost by default.
+    corsOrigins: (env.CORS_ORIGINS ??
+      'http://localhost:5173,capacitor://localhost,https://localhost')
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),

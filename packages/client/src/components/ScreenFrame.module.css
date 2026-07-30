@@ -44,12 +44,28 @@
   background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%);
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) and (orientation: portrait) {
   .frame {
-    padding: 10px;
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    padding: 0;
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .screen {
-    height: min(var(--screen-height), 72vh);
+    /* Fill the remaining column instead of a fixed 640px box. */
+    height: auto;
+    min-height: 0;
+    flex: 1;
+    border-radius: 0;
+  }
+}
+
+/* Landscape on a short phone: the machine stays, but 640px will not fit. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .screen {
+    height: min(var(--screen-height), 78vh);
   }
 }

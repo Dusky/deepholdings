@@ -21,23 +21,26 @@ export function TabRow({ activeScreen, onNavigate }: TabRowProps) {
   const character = state?.character;
 
   return (
-    <div className={styles.tabRow} role="tablist" aria-label="Terminal screens">
-      {TABS.map((tab) => (
-        <button
-          key={tab.id}
-          type="button"
-          role="tab"
-          className={styles.tab}
-          aria-selected={activeScreen === tab.id}
-          aria-controls="screen-body"
-          onClick={() => onNavigate(tab.id)}
-        >
-          {tab.label}
-        </button>
-      ))}
-      <div className={styles.spacer} />
-      <div className={styles.chip}>{character?.gold ?? 0}g</div>
-      <div className={styles.chip}>{character?.supplies ?? 0} supplies</div>
+    <div className={styles.tabRow}>
+      <div className={styles.tabs} role="tablist" aria-label="Terminal screens">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            className={styles.tab}
+            aria-selected={activeScreen === tab.id}
+            aria-controls="screen-body"
+            onClick={() => onNavigate(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className={styles.chips}>
+        <div className={styles.chip}>{character?.gold ?? 0}g</div>
+        <div className={styles.chip}>{character?.supplies ?? 0} supplies</div>
+      </div>
     </div>
   );
 }

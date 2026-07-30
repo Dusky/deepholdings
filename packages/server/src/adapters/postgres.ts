@@ -1,6 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import type {
   Account,
@@ -14,6 +12,7 @@ import type {
   WorldState,
 } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
+import { pendingMigrations, runMigrations } from '../migrations/runner.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
 
 const { Pool } = pg;
@@ -46,9 +45,24 @@ export class PostgresRepository implements Repository {
     }
   }
 
-  async init(): Promise<void> {
-    const sqlPath = fileURLToPath(new URL('../migrations/001_init.sql', import.meta.url));
-    await this.db.query(await readFile(sqlPath, 'utf8'));
+  /**
+   * Brings the schema up to date when `autoMigrate` is on, and otherwise
+   * refuses to start against a schema it does not recognise — a server quietly
+   * serving an old shape is worse than one that will not boot.
+   */
+  async init(options: { autoMigrate?: boolean } = {}): Promise<void> {
+    const autoMigrate = options.autoMigrate ?? true;
+    if (autoMigrate) {
+      await runMigrations(this.pool);
+    } else {
+      const pending = await pendingMigrations(this.pool);
+      if (pending.length > 0) {
+        throw new Error(
+          `Database is behind: ${pending.map((m) => m.version).join(', ')}. Run \`npm run migrate\`.`,
+        );
+      }
+    }
+
     await this.db.query(
       `INSERT INTO world (id, beat, event, guild_name, guild_objective, guild_progress, guild_target, market, next_beat_at)
        VALUES (1, $1, $2, $3, $4, $5, $6, $7::jsonb, $8)

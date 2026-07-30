@@ -10,8 +10,10 @@
   overflow: auto;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) and (orientation: portrait) {
   .body {
-    padding: 14px 16px;
+    padding: 14px calc(var(--safe-right) + 16px) 14px calc(var(--safe-left) + 16px);
+    /* Momentum scrolling without the rubber-banding of the page behind it. */
+    overscroll-behavior: contain;
   }
 }

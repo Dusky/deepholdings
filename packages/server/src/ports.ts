@@ -32,7 +32,7 @@ export interface NewJournalEntry {
  * /v1/state at once must not both replay the same ticks.
  */
 export interface Repository {
-  init(): Promise<void>;
+  init(options?: { autoMigrate?: boolean }): Promise<void>;
   close(): Promise<void>;
 
   transaction<T>(fn: (repo: Repository) => Promise<T>): Promise<T>;

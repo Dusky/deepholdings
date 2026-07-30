@@ -92,18 +92,23 @@ CRT shell, server-authoritative resolution, client wired to the API.
 
 **Goal:** install an APK and play it for a week against a hosted server.
 
-- [ ] **Portrait pass.** The 640px fixed screen and 1040px bezel are desktop
-      shapes. Needs: fluid screen height, wrapping tab row, touch targets ≥44px,
-      safe-area insets, and a command bar that survives the software keyboard.
-- [ ] **Self-host the fonts.** Boot currently waits on Google Fonts; an app
-      that opens on a train should not.
-- [ ] **Capacitor wrapper.** Android project, app icon, splash screen, back
-      button behaviour.
+- [x] **Portrait pass.** Portrait below 720px goes full-bleed — desk and bezel
+      drop to a slim beige strip, the screen takes the viewport, tabs scroll
+      with the resource read-out pinned, touch targets ≥44px on coarse
+      pointers, safe-area insets throughout. Landscape and up are unchanged.
+- [x] **Self-host the fonts.** Bundled via `@fontsource/ibm-plex-mono`; boot no
+      longer touches the network. VT323 dropped.
+- [x] **Capacitor wrapper.** `android/` generated and committed, config set,
+      hardware back returns to the Terminal. **Native build unverified** — no
+      Android SDK in the dev environment; `./gradlew assembleDebug` is yours.
+- [ ] **App icon and splash screen.** Placeholders from the Capacitor template
+      are still in place.
 - [ ] **Deploy the server.** Managed Postgres + a small container host. Set
       `TOKEN_SECRET`, `DATABASE_URL`, `CORS_ORIGINS` (must include
       `capacitor://localhost`). TLS.
-- [ ] **Migration tooling.** `001_init.sql` runs on boot today; needs a numbered
-      migration table before there is data worth keeping.
+- [x] **Migration tooling.** Numbered migrations in `schema_migrations`, each
+      applied in its own transaction. Production refuses to boot against a
+      schema that is behind rather than silently serving an old shape.
 - [ ] **Backups.** Automated, plus one restore drill. Before real players, not
       after.
 

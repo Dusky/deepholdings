@@ -6,6 +6,37 @@
   border-bottom: 1px solid var(--phosphor-dim);
 }
 
+/* Tabs scroll; the resource read-out stays pinned. Five tabs never fit a phone
+   width, and wrapping to a second row wastes space that progressive disclosure
+   will reclaim anyway. */
+.tabs {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  scroll-snap-align: start;
+}
+
+.chips {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  /* Opaque, so tabs scrolling underneath disappear cleanly instead of showing
+     a sliver at the boundary. */
+  background: var(--screen-black);
+  box-shadow: -14px 0 14px -8px var(--screen-black);
+}
+
 .tab {
   padding: 8px 14px;
   font-family: var(--font-mono);
@@ -25,10 +56,6 @@
   text-shadow: none;
 }
 
-.spacer {
-  flex: 1;
-}
-
 .chip {
   margin-left: 12px;
   font-family: var(--font-mono);
@@ -38,13 +65,25 @@
   white-space: nowrap;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) and (orientation: portrait) {
   .tabRow {
-    flex-wrap: wrap;
-    padding: 8px 10px 0;
+    padding: 6px calc(var(--safe-right) + 10px) 0 calc(var(--safe-left) + 10px);
   }
 
+  .chip {
+    margin-left: 8px;
+  }
+
+  .chips {
+    padding-left: 10px;
+  }
+}
+
+/* Touch targets, keyed on pointer type rather than width so it also covers
+   touchscreen laptops. */
+@media (pointer: coarse) {
   .tab {
-    padding: 7px 9px;
+    min-height: 44px;
+    padding: 12px 14px;
   }
 }

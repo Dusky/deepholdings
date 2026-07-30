@@ -54,3 +54,21 @@
   background: var(--phosphor-bright);
   box-shadow: var(--fx-bar-glow);
 }
+
+/* Fingers need a bigger thumb than a mouse does. */
+@media (pointer: coarse) {
+  .slider {
+    height: 28px;
+  }
+
+  .slider::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -6.5px;
+  }
+
+  .slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+  }
+}

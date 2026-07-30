@@ -75,13 +75,49 @@
   color: #3f3724;
 }
 
-@media (max-width: 640px) {
+/* The gear is the only interactive control on the hardware strip, so it is the
+   only one that has to meet the touch minimum. */
+@media (pointer: coarse) {
+  .gear {
+    display: flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+}
+
+@media (max-width: 720px) and (orientation: portrait) {
   .bezel {
-    padding: 14px 12px 18px;
-    border-radius: 16px;
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  /* The one piece of hardware that stays: a status strip in case beige. */
+  .ledRow {
+    padding: calc(var(--safe-top) + 2px) calc(var(--safe-right) + 12px) 2px
+      calc(var(--safe-left) + 12px);
+    background: var(--bezel-beige);
   }
 
   .model {
     display: none;
+  }
+
+  .heartbeat {
+    margin-right: 4px;
+  }
+
+  .gear {
+    padding: 4px 8px;
+    font-size: 20px;
   }
 }

@@ -11,7 +11,7 @@ const repo: Repository = config.databaseUrl
   ? new PostgresRepository(config.databaseUrl)
   : new MemoryRepository();
 
-await repo.init();
+await repo.init({ autoMigrate: config.autoMigrate });
 
 const app = buildApp({ repo, config });
 

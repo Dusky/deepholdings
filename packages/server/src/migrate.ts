@@ -1,6 +1,7 @@
-/** Applies the schema and seeds the world row. Idempotent. */
-import { PostgresRepository } from './adapters/postgres.js';
+/** Applies pending migrations and reports what it did. Idempotent. */
+import pg from 'pg';
 import { loadConfig } from './config.js';
+import { runMigrations } from './migrations/runner.js';
 
 const config = loadConfig();
 if (!config.databaseUrl) {
@@ -8,7 +9,14 @@ if (!config.databaseUrl) {
   process.exit(1);
 }
 
-const repo = new PostgresRepository(config.databaseUrl);
-await repo.init();
-await repo.close();
-console.log('Migrations applied.');
+const pool = new pg.Pool({ connectionString: config.databaseUrl });
+try {
+  const applied = await runMigrations(pool);
+  console.log(
+    applied.length === 0
+      ? 'Schema is up to date; nothing to apply.'
+      : `Applied ${applied.length} migration(s): ${applied.join(', ')}`,
+  );
+} finally {
+  await pool.end();
+}

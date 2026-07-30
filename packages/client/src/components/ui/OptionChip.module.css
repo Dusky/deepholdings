@@ -15,3 +15,10 @@
   border-color: var(--phosphor-bright);
   text-shadow: var(--fx-glow-sm);
 }
+
+@media (pointer: coarse) {
+  .chip {
+    min-height: 44px;
+    padding: 11px 14px;
+  }
+}

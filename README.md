@@ -42,6 +42,17 @@ npm run migrate --workspace @deepholdings/server
 npm run dev:server
 ```
 
+### Migrations
+
+`packages/server/src/migrations/*.sql` are applied in filename order, each in
+its own transaction, and recorded in `schema_migrations`. `npm run migrate`
+applies what is outstanding and reports it.
+
+Outside production the server migrates on boot; in production it refuses to
+start against a schema that is behind, naming the pending migrations, so a
+deploy is a deliberate step rather than a side effect of a restart. Override
+with `AUTO_MIGRATE=true|false`.
+
 ## Server architecture
 
 **Nothing runs per player between requests.** Characters carry a
@@ -110,6 +121,36 @@ Three rules the client sticks to:
 Standing orders are a local draft until filed: editing the form shows "Unfiled
 amendments on this form", and `FILE ORDERS` is what reaches the server.
 
+## Mobile (Android)
+
+The client is wrapped with Capacitor. **The native build has not been run from
+this repository's development environment** — there is no Android SDK there —
+so the `android/` project is scaffolded and configured but unproven until you
+build it.
+
+```bash
+cd packages/client
+VITE_API_URL=https://your-api.example npm run build:android   # vite build + cap sync
+cd android && ./gradlew assembleDebug                          # or: npm run open:android
+```
+
+`VITE_API_URL` must be a real host: a device cannot reach your laptop's
+`localhost`. The server's CORS allowlist already includes `https://localhost`
+and `capacitor://localhost`, which is where the WebView serves the app from.
+
+Layout rules on a phone:
+
+- **Portrait drops the machine.** Below 720px in portrait the desk and bezel
+  disappear and the screen takes the whole viewport, keeping only a slim beige
+  status strip. Landscape and larger keep the full 1983 desktop.
+- **The command bar collapses** to a `>` button; tapping expands and focuses
+  the input. `interactive-widget=resizes-content` makes the keyboard shrink the
+  layout viewport rather than cover it.
+- **Tabs scroll horizontally** with the resource read-out pinned.
+- **Touch targets** are raised to 44px under `@media (pointer: coarse)`, which
+  also covers touchscreen laptops.
+- **Hardware back** returns to the Terminal, and exits from there.
+
 ## Client layout
 
 ```
@@ -154,8 +195,10 @@ Type scales off `--font-scale` (0.85–1.4), stepped by the A-/A+ control. The
 hardware chrome (`--hw-*`) is deliberately excluded from palette swaps — the case
 is a physical object.
 
-Fonts load from Google Fonts: IBM Plex Mono for everything, VT323 preloaded and
-reserved for a future bitmap-face pass on the boot sequence and screen headers.
+Fonts are bundled, not fetched: `@fontsource/ibm-plex-mono` weights 400/500/600
+are imported in `main.tsx` and emitted into the build, so boot never waits on a
+CDN and the APK ships them. VT323 is no longer loaded — add `@fontsource/vt323`
+if the bitmap-header pass happens.
 
 ## Interaction notes
 

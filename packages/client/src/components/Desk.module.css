@@ -9,8 +9,21 @@
   font-family: var(--font-mono);
 }
 
-@media (max-width: 640px) {
+/*
+ * Compact = a phone held upright. The machine is charming and it costs a
+ * quarter of the screen, so portrait drops the desk and bezel entirely and
+ * gives the glass the whole viewport. Landscape and up keep the machine.
+ */
+@media (max-width: 720px) and (orientation: portrait) {
   .desk {
-    padding: 16px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    /* dvh, not vh: mobile browser chrome makes vh lie. */
+    min-height: 100dvh;
+    height: 100dvh;
+    padding: 0;
+    background: var(--screen-black);
   }
 }

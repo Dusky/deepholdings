@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { useBackButton } from '../native/useBackButton';
 import { useServer } from '../state/serverContext';
 import { useSettings } from '../state/settingsContext';
 import { Bezel } from './Bezel';
@@ -13,6 +14,7 @@ export function Desk() {
   const { state } = useServer();
   const { effectsOn, reducedMotion, highContrast, fontScale } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  useBackButton();
 
   // High contrast takes the whole effect stack down with it — the palette
   // swap is the point, and glow/aberration would undo it.

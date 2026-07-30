@@ -36,7 +36,8 @@ export class MemoryRepository implements Repository {
   private tavernSeq = 0;
   private queue: Promise<unknown> = Promise.resolve();
 
-  async init(): Promise<void> {}
+  // No schema to migrate; the option exists to satisfy the port.
+  async init(_options?: { autoMigrate?: boolean }): Promise<void> {}
   async close(): Promise<void> {}
 
   transaction<T>(fn: (repo: Repository) => Promise<T>): Promise<T> {

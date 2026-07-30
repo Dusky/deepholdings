@@ -4,7 +4,8 @@ Living document. Milestones are ordered by dependency, not by date. Each has an
 **exit criterion**: a thing that is either true or not, so "done" is never a
 judgement call.
 
-Competitive research behind several of these decisions lives in
+Design decisions live in [`docs/design/`](docs/design/) — monetization policy
+and the crafting system. Competitive research behind several of these lives in
 [`docs/research/genre-cues.md`](docs/research/genre-cues.md) and
 [`docs/research/idle-hacking.md`](docs/research/idle-hacking.md).
 
@@ -27,8 +28,10 @@ The things every decision gets checked against.
 2. **Respect the player's time.** Two check-ins a day should be plenty. Absence
    is never punished — the recruit works while you're gone, and the log is
    waiting when you come back.
-3. **No pay-to-win.** There is a public death feed and a shared world. Bought
-   advantage poisons both.
+3. **Pay for convenience, never pay to win.** There is a public death feed and
+   a shared world; bought advantage poisons both. The line is testable — see
+   [`docs/design/monetization.md`](docs/design/monetization.md): given equal
+   time played, a buyer must never end up ahead.
 4. **Quality floor.** Every effect is defeatable: effects off, reduced motion,
    high contrast, font scale. Already built; keep it that way.
 5. **Server is the only truth.** The client renders. It never invents a number
@@ -155,6 +158,13 @@ milestone most likely to be underestimated.
 - [ ] **Market that trades.** Selling inventory, not just reading prices.
 - [ ] **Prestige depth.** Five unlocks is a demo. Needs tiers, and a reason to
       let a recruit die on purpose.
+- [ ] **Requisition & Arbitration** — gear with affixes, where the crafting
+      system is the bureaucracy: items are case files, crafting actions are
+      forms, and forms take real time to process. Designed in
+      [`docs/design/crafting.md`](docs/design/crafting.md). Also does most of
+      the "make the four knobs matter" work, since Loot Priority decides which
+      clause pools drop.
+- [ ] **ARMOURY screen**, gated behind clearance like the other late screens.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
 - [ ] **A legible ladder.** The player should always see the next permit tier,
@@ -203,9 +213,12 @@ people played.
       itself anything.
 - [ ] **Restore, refund, revoke.** Including the unhappy paths: chargebacks and
       Play-initiated refunds have to remove the entitlement.
-- [ ] **The SKUs.** Cosmetic monitor swaps (the green phosphor unlock is the
-      prototype) and rewarded-video "permit expediting" — a time skip that
-      reads as bureaucratic bribery.
+- [ ] **The SKUs.** Per [`docs/design/monetization.md`](docs/design/monetization.md):
+      monitor swaps, additional filing cabinets (storage), standing-order
+      templates, extended journal retention, and an optional Union membership
+      bundling them. Permit expediting ships as a capped rewarded video —
+      free to everyone — rather than a purchase, because in an idle game a
+      time skip bought with money is power.
 - [ ] **Rule: offline catch-up is never sold.** The nearest competitor puts
       extended offline progression behind a subscription and is steadily
       criticised for it — charging for the core promise of the genre. Automation
@@ -267,16 +280,24 @@ Not a milestone; pick these up as they start to hurt.
 
 ---
 
-## Decisions needed
+## Decisions
+
+### Still open
 
 | Decision | Options | Recommendation |
 | --- | --- | --- |
-| Monetisation mix | Cosmetics only / + time skips / + rewarded ads | Cosmetics + rewarded video. Both fit the fiction; neither sells power. |
 | Hosting | Fly.io / Railway / Render / VPS | Whichever you'll actually operate. Lazy resolution means idle players cost nothing, so start on the cheapest tier. |
 | Tavern scope | Full realtime / keep polling / cut for v1 | Keep polling through M3. It works, and WebSockets can wait for real concurrency. |
 | Launch shape | Soft launch / open test / full release | Open test. It gets you real retention numbers without a launch you only get once. |
-| Gear/affix crafting | Build it (M3) / skip it | Undecided — it is the most-praised system in the closest competitor and our biggest structural gap, but it is a large addition. Scope it deliberately or skip it deliberately. |
-| Standing-order slots | Earned only / purchasable | Earned only. Convenience shades into power here. |
+| Auto-equip | Policy-driven / manual / hybrid | Hybrid: a fifth standing order sets the equip policy, with manual override. Raised by the crafting design. |
+
+### Settled
+
+| Decision | Outcome |
+| --- | --- |
+| Monetisation model | **Convenience and cosmetics only.** Time skips are capped rewarded-video, free to all, never sold. Offline catch-up is never touched. |
+| Gear/affix crafting | **Build it in M3** as Requisition & Arbitration — crafting as bureaucracy, forms that take real time to process. |
+| Standing-order slots | **Earned only.** More concurrent policy is power, not convenience. |
 
 ## Known risks
 
@@ -288,6 +309,10 @@ Not a milestone; pick these up as they start to hurt.
   between "finished" and "launched".
 - **Solo scope.** M4 is the most cuttable milestone. Cut it before cutting M2 or
   M3.
+- **Crafting scope.** Requisition & Arbitration is the largest single addition
+  on the roadmap and lands in the milestone already most at risk of being
+  underestimated. If M3 slips, it is the piece to stage rather than cut — ship
+  items and clauses before the full form catalogue.
 - **Content treadmill.** The joke wears out faster than the mechanics. Budget
   writing time in every milestone, not just M3. Tone is the one thing a
   better-funded competitor cannot copy convincingly — in the genre's biggest

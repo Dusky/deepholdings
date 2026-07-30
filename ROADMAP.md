@@ -4,6 +4,10 @@ Living document. Milestones are ordered by dependency, not by date. Each has an
 **exit criterion**: a thing that is either true or not, so "done" is never a
 judgement call.
 
+Competitive research behind several of these decisions lives in
+[`docs/research/genre-cues.md`](docs/research/genre-cues.md) and
+[`docs/research/idle-hacking.md`](docs/research/idle-hacking.md).
+
 **Assumptions** (correct these and the plan changes):
 
 - Solo developer, part-time, no fixed launch date.
@@ -29,6 +33,11 @@ The things every decision gets checked against.
    high contrast, font scale. Already built; keep it that way.
 5. **Server is the only truth.** The client renders. It never invents a number
    that someone could sell, buy, or brag about.
+6. **Reveal the machine slowly.** Everything-unlocked-at-once is the genre's
+   most common fatal mistake — it reads as overwhelming on day one and hollow
+   at hour one hundred. Clearance is our in-fiction unlock mechanism.
+7. **Numbers stay human.** Gold in the hundreds, permits in tiers, pensions in
+   round numbers. Never ship scientific notation.
 
 ### Success metrics (targets to beat, not predictions)
 
@@ -111,6 +120,18 @@ optional — an async game without notifications is a website you forget.
       gold banked, permits filed — with the raw log underneath.
 - [ ] **Resume behaviour.** Refresh on foreground (done), plus handling for a
       device that slept through the heartbeat.
+- [ ] **First-session onboarding.** The genre's biggest churn cause is the
+      first thirty minutes: competitors' negative reviews cluster at 6–30
+      minutes of playtime, citing an overwhelming interface with no direction.
+      The boot sequence and the log are natural tutorial vehicles that cost us
+      nothing in voice.
+- [ ] **Progressive disclosure of the screens.** Do not hand a new officer all
+      five tabs. Start on the Terminal; earn the Ledger, Tavern and Bulletin as
+      clearance rises. Fixes the day-one and hour-hundred problems at once.
+- [ ] **Prestige legibility.** A player must understand that death banks a
+      pension, and that pensions are permanent, *before* their first recruit
+      dies. "Not obvious when or why to prestige" is a standing complaint
+      across the genre.
 
 **Exit:** a push arrives, you tap it, and the app opens on something that
 matters.
@@ -136,6 +157,12 @@ milestone most likely to be underestimated.
       let a recruit die on purpose.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
+- [ ] **A legible ladder.** The player should always see the next permit tier,
+      what it unlocks, and how far away it is. Competitors churn hundred-hour
+      players with "nothing is ahead of me"; our permit ladder is the structure
+      they lack, but only if it is visible.
+- [ ] **Milestone cadence.** Something visible moves every session. No
+      multi-week walls — they are churn events with a countdown attached.
 
 **Exit:** a tester plays for two weeks and can explain their strategy to you.
 
@@ -147,8 +174,11 @@ milestone most likely to be underestimated.
 — but the tavern is a lot of the charm.
 
 - [ ] **Realtime tavern.** WebSocket instead of the 10s poll, with presence.
-- [ ] **Chat safety.** Rate limiting, length caps (done), a report path, and a
-      block list. Required before any public launch.
+- [ ] **Chat safety — non-negotiable.** Rate limiting, length caps (done), a
+      report path, and a block list. A competitor has negative reviews from a
+      451-hour player written purely about other players.
+- [ ] **No public wealth display.** Visible spending hierarchies are what
+      produced "whale overlords" in a comparable game's chat.
 - [ ] **Guild objectives fed by real play.** Contribution should come from
       resolution, not a fixture.
 - [ ] **Leaderboards.** Depth reached, pension banked, most creative death.
@@ -174,8 +204,13 @@ people played.
 - [ ] **Restore, refund, revoke.** Including the unhappy paths: chargebacks and
       Play-initiated refunds have to remove the entitlement.
 - [ ] **The SKUs.** Cosmetic monitor swaps (the green phosphor unlock is the
-      prototype), extra standing-order slots, and rewarded-video "permit
-      expediting" — a time skip that reads as bureaucratic bribery.
+      prototype) and rewarded-video "permit expediting" — a time skip that
+      reads as bureaucratic bribery.
+- [ ] **Rule: offline catch-up is never sold.** The nearest competitor puts
+      extended offline progression behind a subscription and is steadily
+      criticised for it — charging for the core promise of the genre. Automation
+      is earned by default, too; an extra standing-order slot is convenience
+      *and* power, and selling power breaks goal #3.
 
 **Exit:** a test purchase survives an uninstall/reinstall cycle on a fresh
 device.
@@ -240,6 +275,8 @@ Not a milestone; pick these up as they start to hurt.
 | Hosting | Fly.io / Railway / Render / VPS | Whichever you'll actually operate. Lazy resolution means idle players cost nothing, so start on the cheapest tier. |
 | Tavern scope | Full realtime / keep polling / cut for v1 | Keep polling through M3. It works, and WebSockets can wait for real concurrency. |
 | Launch shape | Soft launch / open test / full release | Open test. It gets you real retention numbers without a launch you only get once. |
+| Gear/affix crafting | Build it (M3) / skip it | Undecided — it is the most-praised system in the closest competitor and our biggest structural gap, but it is a large addition. Scope it deliberately or skip it deliberately. |
+| Standing-order slots | Earned only / purchasable | Earned only. Convenience shades into power here. |
 
 ## Known risks
 
@@ -252,4 +289,9 @@ Not a milestone; pick these up as they start to hurt.
 - **Solo scope.** M4 is the most cuttable milestone. Cut it before cutting M2 or
   M3.
 - **Content treadmill.** The joke wears out faster than the mechanics. Budget
-  writing time in every milestone, not just M3.
+  writing time in every milestone, not just M3. Tone is the one thing a
+  better-funded competitor cannot copy convincingly — in the genre's biggest
+  hit, the writing is the second most-praised quality after progression.
+- **Onboarding cliff.** Worth restating as a risk, not just a task: competitors
+  lose most churned players inside thirty minutes, to the interface rather than
+  the game.

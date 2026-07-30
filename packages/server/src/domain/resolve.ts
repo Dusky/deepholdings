@@ -51,8 +51,20 @@ export interface DeathOutcome {
   atTick: number;
 }
 
+/** Counted as the resolver runs, so it describes what actually happened. */
+export interface ResolveCounters {
+  goldBefore: number;
+  goldAfter: number;
+  levelsGained: number;
+  deepestFloor: number;
+  encounters: number;
+  acquisitions: number;
+  permitsApproved: number;
+}
+
 export interface ResolveResult {
   character: Character;
+  counters: ResolveCounters;
   journal: PendingJournalEntry[];
   death: DeathOutcome | null;
   /** Carried back to storage so a stalled permit keeps processing. */
@@ -100,15 +112,27 @@ export function resolve(options: ResolveOptions): ResolveResult {
   let death: DeathOutcome | null = null;
   let permitAppliedTick = options.permitAppliedTick;
 
-  if (!character.alive) {
-    return { character, journal, death: null, permitAppliedTick, ticksResolved: 0 };
-  }
+  const counters: ResolveCounters = {
+    goldBefore: character.gold,
+    goldAfter: character.gold,
+    levelsGained: 0,
+    deepestFloor: character.depth,
+    encounters: 0,
+    acquisitions: 0,
+    permitsApproved: 0,
+  };
+  const finish = (): ResolveResult => {
+    counters.goldAfter = character.gold;
+    return { character, counters, journal, death, permitAppliedTick, ticksResolved };
+  };
+
+  let ticksResolved = 0;
+
+  if (!character.alive) return finish();
 
   let fromTick = character.lastResolvedTick + 1;
   const toTick = options.toTick;
-  if (toTick < fromTick) {
-    return { character, journal, death: null, permitAppliedTick, ticksResolved: 0 };
-  }
+  if (toTick < fromTick) return finish();
 
   // A player gone for a month gets a readable summary, not 40,000 lines.
   if (toTick - fromTick + 1 > MAX_CATCHUP_TICKS) {
@@ -126,8 +150,6 @@ export function resolve(options: ResolveOptions): ResolveResult {
     journal.push({ tick, at: tickToDate(tick), text });
   };
 
-  let ticksResolved = 0;
-
   for (let tick = fromTick; tick <= toTick; tick += 1) {
     ticksResolved += 1;
     const rng = makeRng(tickSeed(character.id, tick));
@@ -138,6 +160,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     if (permitAppliedTick !== null && tick - permitAppliedTick >= processingTicks) {
       character.permitTier += 1;
       permitAppliedTick = null;
+      counters.permitsApproved += 1;
       log(tick, `Permit D-${character.permitTier} approved. Descent authorized to Depth ${permitLimit(character.permitTier)}.`);
     }
 
@@ -187,6 +210,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     // 4. Descend toward the ordered depth.
     if (character.depth < Math.min(targetDepth, limit)) {
       character.depth += 1;
+      counters.deepestFloor = Math.max(counters.deepestFloor, character.depth);
       log(tick, `Descending. Floor ${character.depth} reached. Permit D-${character.permitTier} verified.`);
     }
 
@@ -207,6 +231,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     }
 
     if (rngChance(rng, 0.28)) {
+      counters.encounters += 1;
       const creature = rngPick(rng, FAUNA);
       const damage = encounterDamage(character.depth, rng());
       character.hp -= damage;
@@ -231,7 +256,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
         log(tick, `Encountered: ${creature}. Combat not resolved.`);
         log(tick, `${character.name} died on Floor ${character.depth}. Cause of death: ${cause}. Next of kin notified by form letter.`);
         character.lastResolvedTick = tick;
-        return { character, journal, death, permitAppliedTick, ticksResolved };
+        return finish();
       }
 
       log(tick, `Encountered: ${creature}. ${rngPick(rng, COMBAT_NOTES)}`);
@@ -240,12 +265,14 @@ export function resolve(options: ResolveOptions): ResolveResult {
         const item = rngPick(rng, LOOT_BY_PRIORITY[orders.lootPriority]);
         const value = encounterReward(character.depth, rng());
         character.gold += value;
+        counters.acquisitions += 1;
         log(tick, `Acquired: ${item}. ${rngPick(rng, LOOT_NOTES)}`);
       } else if (rngChance(rng, 0.3)) {
         log(tick, `Loot priority: ${orders.lootPriority}. Nothing recovered. Complaint filed against the floor.`);
       }
 
       const levels = applyLevelUps(character);
+      counters.levelsGained += levels;
       if (levels > 0) {
         log(tick, `Grade review passed. Now Level ${character.level}. Union Standing +${levels}.`);
       }
@@ -256,7 +283,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
   }
 
   character.lastResolvedTick = toTick;
-  return { character, journal, death, permitAppliedTick, ticksResolved };
+  return finish();
 }
 
 export { permitLimit };

@@ -19,11 +19,14 @@ interface TabRowProps {
 export function TabRow({ activeScreen, onNavigate }: TabRowProps) {
   const { state } = useServer();
   const character = state?.character;
+  // Screens the officer has not been cleared for do not exist as far as the
+  // client is concerned; the server decides.
+  const clearance = state?.clearance ?? ['terminal'];
 
   return (
     <div className={styles.tabRow}>
       <div className={styles.tabs} role="tablist" aria-label="Terminal screens">
-        {TABS.map((tab) => (
+        {TABS.filter((tab) => clearance.includes(tab.id)).map((tab) => (
           <button
             key={tab.id}
             type="button"

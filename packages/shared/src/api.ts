@@ -8,6 +8,8 @@
 import type {
   Account,
   Character,
+  ScreenId,
+  ShiftDigest,
   DeathRecord,
   InventoryItem,
   JournalEntry,
@@ -62,6 +64,12 @@ export interface StateResponse {
   nextBeatInSeconds: number;
   /** Set when the recruit died and the pension has not been filed for yet. */
   pendingDeath: DeathRecord | null;
+  /** Screens this officer has clearance for. The client shows no others. */
+  clearance: ScreenId[];
+  /** Present when enough happened since the last visit to be worth summarising. */
+  digest: ShiftDigest | null;
+  /** False until Form SO-1 has been filed at least once. */
+  ordersFiled: boolean;
 }
 
 /** POST /v1/pension/claim — banks the award and assigns the next recruit. */

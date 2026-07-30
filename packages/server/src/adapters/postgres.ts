@@ -171,18 +171,34 @@ export class PostgresRepository implements Repository {
     };
   }
 
-  async saveOrders(accountId: string, orders: StandingOrders): Promise<void> {
+  async saveOrders(
+    accountId: string,
+    orders: StandingOrders,
+    options?: { markFiled?: boolean },
+  ): Promise<void> {
+    const filed = options?.markFiled ?? false;
     await this.db.query(
-      `INSERT INTO standing_orders (account_id, target_depth, retreat_pct, loot_priority, spend_policy, updated_at)
-       VALUES ($1, $2, $3, $4, $5, now())
+      `INSERT INTO standing_orders
+         (account_id, target_depth, retreat_pct, loot_priority, spend_policy, updated_at, filed_at)
+       VALUES ($1, $2, $3, $4, $5, now(), CASE WHEN $6 THEN now() ELSE NULL END)
        ON CONFLICT (account_id) DO UPDATE SET
          target_depth = EXCLUDED.target_depth,
          retreat_pct = EXCLUDED.retreat_pct,
          loot_priority = EXCLUDED.loot_priority,
          spend_policy = EXCLUDED.spend_policy,
-         updated_at = now()`,
-      [accountId, orders.targetDepth, orders.retreatPct, orders.lootPriority, orders.spendPolicy],
+         updated_at = now(),
+         -- Once filed, always filed.
+         filed_at = COALESCE(standing_orders.filed_at, EXCLUDED.filed_at)`,
+      [accountId, orders.targetDepth, orders.retreatPct, orders.lootPriority, orders.spendPolicy, filed],
     );
+  }
+
+  async hasFiledOrders(accountId: string): Promise<boolean> {
+    const { rows } = await this.db.query(
+      'SELECT filed_at IS NOT NULL AS filed FROM standing_orders WHERE account_id = $1',
+      [accountId],
+    );
+    return Boolean(rows[0]?.filed);
   }
 
   async appendJournal(entries: NewJournalEntry[]): Promise<void> {
@@ -201,11 +217,15 @@ export class PostgresRepository implements Repository {
 
   async listJournal(characterId: string, sinceTick: number, limit: number): Promise<JournalEntry[]> {
     const { rows } = await this.db.query(
+      // Ordered by id, not tick: id is the order things were actually written,
+      // which is what "the most recent lines" means to a reader. Several lines
+      // can share a tick, and a catch-up can write a line whose tick is older
+      // than one already on file.
       `SELECT * FROM (
          SELECT id, character_id, tick, at, text FROM journal
          WHERE character_id = $1 AND tick > $2
-         ORDER BY tick DESC, id DESC LIMIT $3
-       ) recent ORDER BY tick ASC, id ASC`,
+         ORDER BY id DESC LIMIT $3
+       ) recent ORDER BY id ASC`,
       [characterId, sinceTick, limit],
     );
     return rows.map((row) => ({

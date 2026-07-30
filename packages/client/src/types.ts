@@ -6,10 +6,8 @@
 export type {
   Character,
   LootPriority,
+  ScreenId,
   SpendPolicy,
   StandingOrders,
   UnlockId,
 } from '@deepholdings/shared';
-
-/** Which screen the shell is showing; never leaves the client. */
-export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin';

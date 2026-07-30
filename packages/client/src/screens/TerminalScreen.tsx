@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
+import { useCallback, useState } from 'react';
 import { ProgressBar } from '../components/ui/ProgressBar';
+import { ShiftDigest } from '../components/ShiftDigest';
 import { useServerClock } from '../hooks/useServerClock';
 import { clockOf, currentActivity, secondsToNextTick, tickProgress } from '../lib/activity';
 import { useServer } from '../state/serverContext';
@@ -31,6 +33,14 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
   const { state, receivedAt } = useServer();
   const { effectsOn, reducedMotion, highContrast } = useSettings();
   const serverNow = useServerClock(state?.now, receivedAt);
+  const [digestDismissed, setDigestDismissed] = useState(false);
+  // A line is nowrap while it types, so it has to be released back to normal
+  // wrapping when its animation ends — otherwise long lines stay clipped at
+  // the right edge for good, which is most lines on a phone.
+  const [typed, setTyped] = useState<ReadonlySet<string>>(() => new Set());
+  const markTyped = useCallback((id: string) => {
+    setTyped((previous) => (previous.has(id) ? previous : new Set(previous).add(id)));
+  }, []);
 
   const animate = effectsOn && !highContrast && !reducedMotion;
   const revealed = revealSkipped || !animate;
@@ -45,6 +55,18 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
         {character.depth} — Permit D-{character.permitTier}
       </div>
 
+      {state.digest && !digestDismissed && (
+        <ShiftDigest digest={state.digest} onDismiss={() => setDigestDismissed(true)} />
+      )}
+
+      {/* The first session's only nudge: the recruit is descending on defaults
+          until the officer says otherwise. */}
+      {!state.ordersFiled && (
+        <div className={`text-dim ${styles.nudge}`}>
+          Form SO-1 has not been filed. Descent proceeds on default orders.
+        </div>
+      )}
+
       <div className={styles.activity}>
         <div className={styles.activityRow}>
           <span className="text-bright">{currentActivity(character, orders)}</span>
@@ -55,18 +77,22 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       </div>
 
       <div className={styles.log} role="log">
-        {journal.map((entry, i) => (
-          <div key={entry.id} className={styles.logRow}>
-            <span className={`text-dim ${styles.time}`}>{clockOf(entry.at)}</span>
-            <span
-              className={`text-body ${styles.text}`}
-              data-revealed={revealed}
-              style={revealed ? undefined : revealStyle(entry.text, i, journal.length)}
-            >
-              {entry.text}
-            </span>
-          </div>
-        ))}
+        {journal.map((entry, i) => {
+          const done = revealed || typed.has(entry.id);
+          return (
+            <div key={entry.id} className={styles.logRow}>
+              <span className={`text-dim ${styles.time}`}>{clockOf(entry.at)}</span>
+              <span
+                className={`text-body ${styles.text}`}
+                data-revealed={done}
+                style={done ? undefined : revealStyle(entry.text, i, journal.length)}
+                onAnimationEnd={() => markTyped(entry.id)}
+              >
+                {entry.text}
+              </span>
+            </div>
+          );
+        })}
       </div>
     </>
   );

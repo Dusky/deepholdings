@@ -3,6 +3,7 @@ import {
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
   UNLOCK_CATALOGUE,
+  TICK_SECONDS,
   type Account,
   type BulletinResponse,
   type Character,
@@ -10,13 +11,16 @@ import {
   type DeathRecord,
   type LedgerResponse,
   type StandingOrders,
+  type ScreenId,
+  type ShiftDigest,
   type StateResponse,
   type TavernResponse,
   type UnlockId,
   type UnlockOffer,
 } from '@deepholdings/shared';
 import { newRecruit, recruitName, STARTING_INVENTORY } from './domain/character.js';
-import { resolve, tickOf } from './domain/resolve.js';
+import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
+import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
 import type { CharacterRecord, Repository } from './ports.js';
 
 export class ServiceError extends Error {
@@ -57,27 +61,54 @@ export async function authenticateDevice(
     });
     const recruit = firstRecruit(account.id);
     await tx.insertCharacter(recruit);
-    await tx.appendJournal([assignmentEntry(recruit.character, 'opened')]);
+    await tx.appendJournal(onboardingEntries(recruit.character));
     return account;
   });
 }
 
-/**
- * The Terminal is the first screen a player sees, and a brand-new account has
- * no resolved ticks yet — so the assignment itself is journalled. Without it
- * the flagship screen is blank until the first tick lands.
- */
-function assignmentEntry(character: Character, kind: 'opened' | 'replacement') {
-  const text =
-    kind === 'opened'
-      ? `Case file opened. ${character.name} assigned as your recruit. Permit D-${character.permitTier} issued. Do not lose the permit.`
-      : `Replacement recruit assigned: ${character.name}. Permit D-${character.permitTier} issued. Effects of the deceased remain in Arbitration.`;
+function entry(character: Character, text: string, offset = 0) {
   return {
     characterId: character.id,
     tick: character.lastResolvedTick,
-    at: new Date(),
+    at: new Date(Date.now() + offset),
     text,
   };
+}
+
+/**
+ * The first thing a new officer reads.
+ *
+ * A brand-new account has no resolved ticks, so without this the flagship
+ * screen is blank. It also carries the onboarding: what you have, what you
+ * control, and — the line that matters most — that death is how progress is
+ * banked. "Not obvious when or why to prestige" is a standing complaint across
+ * the genre, and it costs nothing to say so up front, in voice.
+ */
+function onboardingEntries(character: Character) {
+  return [
+    entry(
+      character,
+      `Case file opened. ${character.name} assigned as your recruit. Permit D-${character.permitTier} issued. Do not lose the permit.`,
+      0,
+    ),
+    entry(
+      character,
+      'Your recruit descends without supervision. You file the orders; they file the paperwork. Form SO-1 governs depth, retreat, loot and spending.',
+      1,
+    ),
+    entry(
+      character,
+      'Pensions are paid on death and are permanent. Your recruit is not. Plan accordingly.',
+      2,
+    ),
+  ];
+}
+
+function replacementEntry(character: Character) {
+  return entry(
+    character,
+    `Replacement recruit assigned: ${character.name}. Permit D-${character.permitTier} issued. Effects of the deceased remain in Arbitration.`,
+  );
 }
 
 function firstRecruit(accountId: string): CharacterRecord {
@@ -107,6 +138,12 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
 
     let pendingDeath: DeathRecord | null = null;
     let current = record;
+    let digest: ShiftDigest | null = null;
+    // Clearance is derived, so the "before" picture has to be taken before the
+    // ticks are replayed — that difference is what gets journalled.
+    const clearanceBefore: ScreenId[] = record
+      ? clearanceFor(record.character, pension)
+      : ['terminal'];
 
     if (record) {
       const result = resolve({
@@ -134,7 +171,26 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
         inventory: record.inventory,
       };
 
-      if (result.ticksResolved > 0) await tx.saveCharacter(current);
+      if (result.ticksResolved > 0) {
+        await tx.saveCharacter(current);
+        digest = digestOf(result.counters, result.ticksResolved, Boolean(result.death));
+      }
+
+      // New screens are announced in the log, so clearance feels granted
+      // rather than silently appearing.
+      const granted = clearanceFor(result.character, pension).filter(
+        (screen) => !clearanceBefore.includes(screen),
+      );
+      if (granted.length > 0) {
+        await tx.appendJournal(
+          granted.map((screen, i) => ({
+            characterId: result.character.id,
+            tick: result.character.lastResolvedTick,
+            at: new Date(Date.now() + i),
+            text: clearanceGrantedText(screen),
+          })),
+        );
+      }
 
       if (result.death) {
         pendingDeath = {
@@ -162,6 +218,9 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
 
     return {
       account,
+      clearance: clearanceFor(current.character, pension),
+      digest,
+      ordersFiled: await tx.hasFiledOrders(accountId),
       character: current.character,
       orders,
       pension,
@@ -174,6 +233,30 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
   });
 }
 
+/**
+ * Worth showing only if enough happened to be worth reading. A player who
+ * tabbed away for two minutes does not need a summary of two minutes.
+ */
+const DIGEST_MIN_TICKS = 15;
+
+function digestOf(
+  counters: ResolveCounters,
+  ticksResolved: number,
+  died: boolean,
+): ShiftDigest | null {
+  if (ticksResolved < DIGEST_MIN_TICKS && !died) return null;
+  return {
+    minutes: Math.round((ticksResolved * TICK_SECONDS) / 60),
+    goldDelta: counters.goldAfter - counters.goldBefore,
+    levelsGained: counters.levelsGained,
+    deepestFloor: counters.deepestFloor,
+    encounters: counters.encounters,
+    acquisitions: counters.acquisitions,
+    permitsApproved: counters.permitsApproved,
+    died,
+  };
+}
+
 export async function updateOrders(
   repo: Repository,
   accountId: string,
@@ -183,7 +266,7 @@ export async function updateOrders(
   await repo.transaction(async (tx) => {
     // Resolve first: orders must not retroactively change ticks already lived.
     await loadStateInside(tx, accountId);
-    await tx.saveOrders(accountId, clean);
+    await tx.saveOrders(accountId, clean, { markFiled: true });
   });
   return clean;
 }
@@ -343,7 +426,7 @@ export async function claimPension(
       permitAppliedTick: null,
       inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
     });
-    await tx.appendJournal([assignmentEntry(character, 'replacement')]);
+    await tx.appendJournal([replacementEntry(character)]);
 
     return { character, pension: banked, orders: await tx.getOrders(accountId) };
   });

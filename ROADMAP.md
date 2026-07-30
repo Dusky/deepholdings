@@ -61,7 +61,7 @@ The things every decision gets checked against.
 | --- | --- | --- |
 | M0 — Playable loop, end to end | ✅ Done | yes |
 | M1 — On your phone | **Next** | yes |
-| M2 — The first session | | yes |
+| M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | | yes |
 | M4 — It has direction | | yes |
 | M5 — It has depth (crafting) | | *candidate cut* |
@@ -124,20 +124,25 @@ where the genre loses most of the players it loses — competitors' negative
 reviews cluster at 6–30 minutes of playtime, citing an overwhelming interface
 with no direction.
 
-- [ ] **First-session onboarding.** The boot sequence and the log are natural
-      tutorial vehicles that cost us nothing in voice — the Authority explains
-      the job because that is what the Authority would do.
-- [ ] **Progressive disclosure of the screens.** Do not hand a new officer all
-      five tabs. Start on the Terminal; earn the Ledger, Tavern and Bulletin as
-      clearance rises. Fixes the day-one and hour-hundred problems at once.
-- [ ] **Prestige legibility.** A player must understand that death banks a
-      pension, and that pensions are permanent, *before* their first recruit
-      dies. "Not obvious when or why to prestige" is a standing genre complaint.
-- [ ] **"While you were away" digest.** Returning after eight hours currently
-      means reading 60 log lines. Open on a summary — floors gained, gold
-      banked, permits filed — with the raw log underneath.
-- [ ] **Empty and error states in voice.** Every one of them, not just the
-      three that were convenient.
+- [x] **First-session onboarding.** Three journalled lines at account creation:
+      what you have, what you control, and what death is for. The Authority
+      explains the job because that is what the Authority would do.
+- [x] **Progressive disclosure of the screens.** A new officer gets Terminal
+      and Orders. Ledger arrives with a promotion, Bulletin with the second
+      permit, Tavern at grade four — each announced in the log. Clearance is
+      derived, not stored, and every condition is monotone across death so a
+      screen is never taken away by a funeral.
+- [x] **Prestige legibility.** "Pensions are paid on death and are permanent.
+      Your recruit is not. Plan accordingly." — in the first three lines a new
+      player reads.
+- [x] **"While you were away" digest.** Counted by the resolver as it runs, so
+      it describes the ticks actually simulated. Shown above the log for
+      absences over fifteen minutes, dismissible.
+- [x] **Empty and error states in voice.** Quiet channel, unavailable ledger,
+      empty death feed, link fault, rejected filing, refused redemption.
+- [ ] **The exit criterion still needs a stranger.** Everything above is built;
+      whether it *works* is a question only someone who has never seen the game
+      can answer.
 
 **Exit:** someone who has never seen the game installs it, plays for twenty
 minutes, and can tell you what they are supposed to do next — without asking

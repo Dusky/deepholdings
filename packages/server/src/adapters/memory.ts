@@ -27,6 +27,7 @@ export class MemoryRepository implements Repository {
   private accounts = new Map<string, Account & { deviceId: string; lastSeenAt: Date }>();
   private characters = new Map<string, CharacterRecord & { diedAt: Date | null }>();
   private orders = new Map<string, StandingOrders>();
+  private filedOrders = new Set<string>();
   private journal: JournalEntry[] = [];
   private pensions = new Map<string, Pension>();
   private deaths: (DeathRecord & { accountId: string })[] = [];
@@ -99,8 +100,17 @@ export class MemoryRepository implements Repository {
     return this.orders.get(accountId) ?? { ...DEFAULT_ORDERS };
   }
 
-  async saveOrders(accountId: string, orders: StandingOrders): Promise<void> {
+  async saveOrders(
+    accountId: string,
+    orders: StandingOrders,
+    options?: { markFiled?: boolean },
+  ): Promise<void> {
     this.orders.set(accountId, { ...orders });
+    if (options?.markFiled) this.filedOrders.add(accountId);
+  }
+
+  async hasFiledOrders(accountId: string): Promise<boolean> {
+    return this.filedOrders.has(accountId);
   }
 
   async appendJournal(entries: NewJournalEntry[]): Promise<void> {

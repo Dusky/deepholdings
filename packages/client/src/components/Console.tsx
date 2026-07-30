@@ -4,6 +4,7 @@ import { OrdersScreen } from '../screens/OrdersScreen';
 import { TavernScreen } from '../screens/TavernScreen';
 import { TerminalScreen } from '../screens/TerminalScreen';
 import { useScreen } from '../state/screenContext';
+import { useServer } from '../state/serverContext';
 import { CommandBar } from './CommandBar';
 import { TabRow } from './TabRow';
 import styles from './Console.module.css';
@@ -18,7 +19,12 @@ interface ConsoleProps {
  * showing lives in ScreenContext so the Android back button can reach it.
  */
 export function Console({ revealSkipped }: ConsoleProps) {
-  const { activeScreen, goTo } = useScreen();
+  const { activeScreen: requested, goTo } = useScreen();
+  const { state } = useServer();
+  const clearance = state?.clearance ?? ['terminal'];
+  // A command or a stale tap can name a screen this officer has not been
+  // cleared for; the Terminal is always available.
+  const activeScreen = clearance.includes(requested) ? requested : 'terminal';
 
   return (
     <div className={styles.console}>

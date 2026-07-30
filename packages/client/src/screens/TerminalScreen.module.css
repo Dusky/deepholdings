@@ -4,6 +4,12 @@
   border-bottom: 1px solid var(--phosphor-dim);
 }
 
+.nudge {
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--phosphor-dim);
+}
+
 .activity {
   margin-bottom: 16px;
 }

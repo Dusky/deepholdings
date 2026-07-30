@@ -1,0 +1,34 @@
+.digest {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-paper);
+  background: var(--paper-tint);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rows {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.dismiss {
+  margin-top: 10px;
+  letter-spacing: 0.05em;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

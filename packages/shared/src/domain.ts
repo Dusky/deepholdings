@@ -6,6 +6,26 @@ export type SpendPolicy = 'resupply' | 'hoard' | 'insure';
 
 export type UnlockId = 'permits' | 'recruit' | 'inherit' | 'green' | 'stipend';
 
+/** The screens of the terminal. Which ones a player has is server-decided. */
+export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin';
+
+/**
+ * What happened while the player was away. Counted by the resolver as it runs,
+ * so it describes the ticks actually simulated rather than being re-derived
+ * from the journal afterwards.
+ */
+export interface ShiftDigest {
+  /** Real minutes covered. */
+  minutes: number;
+  goldDelta: number;
+  levelsGained: number;
+  deepestFloor: number;
+  encounters: number;
+  acquisitions: number;
+  permitsApproved: number;
+  died: boolean;
+}
+
 /** The four knobs a case officer actually controls (spec §4). */
 export interface StandingOrders {
   targetDepth: number;

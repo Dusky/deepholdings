@@ -50,7 +50,14 @@ export interface Repository {
   saveCharacter(record: CharacterRecord): Promise<void>;
 
   getOrders(accountId: string): Promise<StandingOrders>;
-  saveOrders(accountId: string, orders: StandingOrders): Promise<void>;
+  /** `markFiled` records that the player filed these deliberately. */
+  saveOrders(
+    accountId: string,
+    orders: StandingOrders,
+    options?: { markFiled?: boolean },
+  ): Promise<void>;
+  /** False while the account is still running on the defaults it was given. */
+  hasFiledOrders(accountId: string): Promise<boolean>;
 
   appendJournal(entries: NewJournalEntry[]): Promise<void>;
   listJournal(characterId: string, sinceTick: number, limit: number): Promise<JournalEntry[]>;

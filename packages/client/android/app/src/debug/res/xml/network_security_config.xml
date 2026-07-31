@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug builds only.
+
+  Android 9+ blocks cleartext HTTP by default, so a debug build pointed at a
+  development server on the LAN (http://192.168.x.x:8787) fails with an opaque
+  network error that the app can only report as "link unavailable". This
+  permits it for debug builds; release builds keep the secure default and must
+  talk to the API over TLS.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

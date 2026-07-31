@@ -122,7 +122,7 @@ export class ApiClient {
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch (cause) {
-      throw new ApiRequestError('network', 'link to the Authority is down', 0);
+      throw new ApiRequestError('network', `link to the Authority is down (${BASE_URL})`, 0);
     }
 
     if (!response.ok) {

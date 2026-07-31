@@ -37,8 +37,13 @@ export function ServerProvider({ children }: { children: ReactNode }) {
       setLink('online');
       setError(null);
     } catch (cause) {
+      console.error('refresh failed', cause);
       const message =
-        cause instanceof ApiRequestError ? cause.message : 'unexpected fault';
+        cause instanceof ApiRequestError
+          ? cause.message
+          : cause instanceof Error
+            ? cause.message || cause.constructor.name
+            : `unexpected: ${String(cause)}`;
       setError(message);
       // A failed refresh on top of good data is degraded, not dead: the last
       // snapshot stays on screen rather than dumping the player back to boot.

@@ -31,7 +31,9 @@ function resolveBaseUrl(): string {
 
   try {
     const fromQuery = new URLSearchParams(window.location.search).get('api');
-    if (fromQuery) window.localStorage.setItem(API_OVERRIDE_KEY, fromQuery);
+    if (fromQuery) {
+      try { window.localStorage.setItem(API_OVERRIDE_KEY, fromQuery); } catch { /* no storage */ }
+    }
     const override = fromQuery ?? window.localStorage.getItem(API_OVERRIDE_KEY);
     if (override) return override.replace(/\/$/, '');
   } catch {
@@ -40,7 +42,7 @@ function resolveBaseUrl(): string {
   return configured.replace(/\/$/, '');
 }
 
-const BASE_URL = resolveBaseUrl();
+export const BASE_URL = resolveBaseUrl();
 const DEVICE_KEY = 'deepholdings.deviceId';
 const TOKEN_KEY = 'deepholdings.token';
 

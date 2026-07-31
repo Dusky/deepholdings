@@ -13,7 +13,7 @@ import type {
   DeathRecord,
   InventoryItem,
   JournalEntry,
-  MarketLot,
+  MarketQuote,
   Pension,
   StandingOrders,
   TavernMessage,
@@ -112,10 +112,24 @@ export interface UpdateOrdersResponse {
   filedAt: string;
 }
 
+/**
+ * A cabinet stack with the depot's current offer attached.
+ *
+ * The offer is quoted server-side rather than multiplied out on the client:
+ * demand, hoarding and rounding all live in one place, so the number shown is
+ * exactly the number a sale pays.
+ */
+export interface LedgerStack extends InventoryItem {
+  /** Gold for one unit at today's demand, including any policy bonus. */
+  unitOffer: number;
+  /** Gold for the whole stack. */
+  stackOffer: number;
+}
+
 /** GET /v1/ledger */
 export interface LedgerResponse {
-  inventory: InventoryItem[];
-  market: MarketLot[];
+  inventory: LedgerStack[];
+  market: MarketQuote[];
   pension: Pension;
   unlocks: UnlockOffer[];
 }
@@ -126,6 +140,20 @@ export interface UnlockOffer {
   cost: number;
   owned: boolean;
   affordable: boolean;
+}
+
+/** POST /v1/ledger/sell */
+export interface SellItemRequest {
+  name: string;
+  /** Omit to sell the whole stack. */
+  quantity?: number;
+}
+
+export interface SellItemResponse {
+  sold: number;
+  goldReceived: number;
+  gold: number;
+  inventory: LedgerStack[];
 }
 
 /** POST /v1/pension/unlocks */

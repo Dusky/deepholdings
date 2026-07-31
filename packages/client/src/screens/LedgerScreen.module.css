@@ -29,3 +29,37 @@
     padding: 11px 0;
   }
 }
+
+.stock {
+  margin-bottom: 6px;
+}
+
+.stockActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0 6px;
+}
+
+.sell {
+  padding: 3px 10px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: calc(10.5px * var(--font-scale));
+  letter-spacing: 0.06em;
+}
+
+.sell:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (pointer: coarse) {
+  .sell {
+    min-height: 44px;
+    padding: 0 16px;
+  }
+}

@@ -12,6 +12,7 @@ import {
   getTavern,
   loadState,
   purchaseUnlock,
+  sellItem,
   sendTavernMessage,
   ServiceError,
   updateOrders,
@@ -89,6 +90,12 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   app.get('/v1/ledger', async (request, reply) => {
     const accountId = await requireAccount(request, reply);
     return getLedger(repo, accountId);
+  });
+
+  app.post('/v1/ledger/sell', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { name, quantity } = (request.body ?? {}) as { name?: string; quantity?: number };
+    return sellItem(repo, accountId, name ?? '', quantity);
   });
 
   app.post('/v1/pension/unlocks', async (request, reply) => {

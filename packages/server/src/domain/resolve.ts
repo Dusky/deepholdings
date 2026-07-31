@@ -13,6 +13,8 @@ import {
   LOOT_EFFECT,
   GRIEVOUS_MAX_FRACTION,
   GRIEVOUS_MULTIPLIER,
+  HOARD_SALE_BONUS,
+  INVENTORY_CAP,
   MAX_HIT_FRACTION,
   authorisedDepth,
   gradeMismatchMultiplier,
@@ -27,6 +29,8 @@ import {
   rngPick,
   tickSeed,
   type Character,
+  type InventoryItem,
+  type LootPriority,
   type StandingOrders,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -73,6 +77,7 @@ export interface ResolveCounters {
 
 export interface ResolveResult {
   character: Character;
+  inventory: InventoryItem[];
   counters: ResolveCounters;
   journal: PendingJournalEntry[];
   death: DeathOutcome | null;
@@ -84,6 +89,8 @@ export interface ResolveResult {
 
 export interface ResolveOptions {
   character: Character;
+  /** Carried through resolution: acquisitions land here, not just in the log. */
+  inventory: InventoryItem[];
   orders: StandingOrders;
   unlocks: readonly UnlockId[];
   /** Absolute tick index for "now". */
@@ -142,8 +149,43 @@ function encounterXp(depth: number): number {
   return Math.round(5 + Math.pow(depth, 1.4) * 2);
 }
 
+/**
+ * Puts an acquisition in the filing cabinet, or sells it if there is no room.
+ *
+ * Nothing a player earned is ever destroyed: at capacity the item is liquidated
+ * at depot rates and the gold banked instead. `hoard` holds out for a better
+ * buyer, which is what pays for its refusal to resupply.
+ */
+function stow(
+  inventory: InventoryItem[],
+  item: string,
+  category: LootPriority,
+  value: number,
+  hoarding: boolean,
+): { gold: number; liquidated: boolean } {
+  const existing = inventory.find((entry) => entry.name === item);
+  if (existing) {
+    // Re-appraise the stack: the same base found on Floor 9 is worth more than
+    // the one from Floor 2, and a stack frozen at its first price would value
+    // deep work at shallow rates.
+    const total = existing.unitValue * existing.quantity + value;
+    existing.quantity += 1;
+    existing.unitValue = Math.round(total / existing.quantity);
+    existing.note = `x${existing.quantity}`;
+    return { gold: 0, liquidated: false };
+  }
+
+  if (inventory.length >= INVENTORY_CAP) {
+    return { gold: Math.round(value * (hoarding ? HOARD_SALE_BONUS : 1)), liquidated: true };
+  }
+
+  inventory.push({ name: item, note: 'x1', quantity: 1, unitValue: value, category });
+  return { gold: 0, liquidated: false };
+}
+
 export function resolve(options: ResolveOptions): ResolveResult {
   const character: Character = { ...options.character };
+  const inventory: InventoryItem[] = options.inventory.map((item) => ({ ...item }));
   const { orders, unlocks } = options;
   const journal: PendingJournalEntry[] = [];
   let death: DeathOutcome | null = null;
@@ -161,7 +203,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
   };
   const finish = (): ResolveResult => {
     counters.goldAfter = character.gold;
-    return { character, counters, journal, death, permitAppliedTick, ticksResolved };
+    return { character, inventory, counters, journal, death, permitAppliedTick, ticksResolved };
   };
 
   let ticksResolved = 0;
@@ -219,6 +261,19 @@ export function resolve(options: ResolveOptions): ResolveResult {
         log(tick, 'Rest concluded at Depot 3. Standing orders unchanged.');
       }
       if (orders.spendPolicy === 'resupply' && character.supplies < 6) {
+        // Short of coin at the depot? The quartermaster buys the cheapest thing
+        // on the cart. Loot is stock now, and a recruit should not starve
+        // beside a full filing cabinet.
+        const needed = (12 - character.supplies) * RESUPPLY_COST_PER_UNIT;
+        while (character.gold < needed && inventory.length > 0) {
+          const cheapest = inventory.reduce((low, item) =>
+            item.unitValue < low.unitValue ? item : low,
+          );
+          character.gold += cheapest.unitValue * cheapest.quantity;
+          log(tick, `Sold ${cheapest.quantity} x ${cheapest.name} to Depot 3 to cover resupply.`);
+          inventory.splice(inventory.indexOf(cheapest), 1);
+        }
+
         const affordable = Math.floor(character.gold / RESUPPLY_COST_PER_UNIT);
         const wanted = 12 - character.supplies;
         const bought = Math.min(affordable, wanted);
@@ -292,8 +347,12 @@ export function resolve(options: ResolveOptions): ResolveResult {
         const cause: string =
           character.supplies === 0 ? DEATH_CAUSES[4] : rngPick(rng, COMBAT_DEATH_CAUSES);
         const insured = orders.spendPolicy === 'insure';
+        // The estate includes the filing cabinet, not just the coins.
+        const estate =
+          character.gold +
+          inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
         const award = Math.round(
-          pensionAward(tick - character.bornTick, counters.deepestFloor, character.gold) *
+          pensionAward(tick - character.bornTick, counters.deepestFloor, estate) *
             (insured ? INSURANCE_PENSION_BONUS : 1),
         );
         character.hp = 0;
@@ -321,9 +380,18 @@ export function resolve(options: ResolveOptions): ResolveResult {
       if (rngChance(rng, 0.45 * loot.findChance)) {
         const item = rngPick(rng, LOOT_BY_PRIORITY[orders.lootPriority]);
         const value = Math.round(encounterReward(character.depth, rng()) * loot.value);
-        character.gold += value;
         counters.acquisitions += 1;
-        log(tick, `Acquired: ${item}. ${rngPick(rng, LOOT_NOTES)}`);
+
+        const stowed = stow(
+          inventory, item, orders.lootPriority, value, orders.spendPolicy === 'hoard',
+        );
+        character.gold += stowed.gold;
+        log(
+          tick,
+          stowed.liquidated
+            ? `Acquired: ${item}. Filing cabinet at capacity; liquidated at depot rates for ${stowed.gold} gold.`
+            : `Acquired: ${item}. ${rngPick(rng, LOOT_NOTES)}`,
+        );
       } else if (rngChance(rng, 0.3)) {
         log(tick, `Loot priority: ${orders.lootPriority}. Nothing recovered. Complaint filed against the floor.`);
       }

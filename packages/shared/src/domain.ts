@@ -84,12 +84,29 @@ export interface Pension {
 
 export interface InventoryItem {
   name: string;
+  /** Right-aligned annotation on the Ledger: "x3", "disputed". */
   note: string;
+  quantity: number;
+  /** Book value of one unit at depot rates, before demand. */
+  unitValue: number;
+  /** Which market quote prices this stack. */
+  category: LootPriority;
 }
 
-export interface MarketLot {
-  name: string;
-  price: number;
+/**
+ * A category's standing demand, published by the world heartbeat.
+ *
+ * The market does not list individual goods — every officer's cabinet holds
+ * different things, and quoting absolute prices for four fixed items next to a
+ * real appraisal only ever read as a contradiction. It quotes the multiplier
+ * applied to the book value instead, which is the number a decision to sell
+ * now or hold actually turns on.
+ */
+export interface MarketQuote {
+  category: LootPriority;
+  label: string;
+  /** Multiplier on book value. 1 is par. */
+  demand: number;
 }
 
 export interface WorldState {
@@ -100,7 +117,7 @@ export interface WorldState {
   guildObjective: string;
   guildProgress: number;
   guildTarget: number;
-  market: MarketLot[];
+  market: MarketQuote[];
   /** ISO timestamp of the next scheduled heartbeat. */
   nextBeatAt: string;
 }

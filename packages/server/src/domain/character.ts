@@ -39,9 +39,9 @@ export function recruitName(recruitNum: number): string {
 }
 
 export const STARTING_INVENTORY: InventoryItem[] = [
-  { name: 'Torch, Municipal Issue', note: 'x3' },
-  { name: 'Rations, Adequate', note: 'x5' },
-  { name: 'Rope, 50ft', note: 'x1' },
+  { name: 'Torch, Municipal Issue', note: 'x3', quantity: 3, unitValue: 4, category: 'gear' },
+  { name: 'Rations, Adequate', note: 'x5', quantity: 5, unitValue: 3, category: 'gear' },
+  { name: 'Rope, 50ft', note: 'x1', quantity: 1, unitValue: 12, category: 'gear' },
 ];
 
 /** Permanent unlocks are the only thing that crosses a death. */

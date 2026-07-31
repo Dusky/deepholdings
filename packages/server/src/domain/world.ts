@@ -1,19 +1,30 @@
 import {
   HEARTBEAT_SECONDS,
+  MARKET_DEMAND_FLOOR,
+  MARKET_DEMAND_SPREAD,
   makeRng,
   rngInt,
   rngPick,
   tickSeed,
-  type MarketLot,
+  type LootPriority,
   type WorldState,
 } from '@deepholdings/shared';
 
-const BASE_MARKET: readonly MarketLot[] = [
-  { name: 'Sword, Adequate (+2)', price: 340 },
-  { name: 'Shield, Dented', price: 60 },
-  { name: 'Relic, Unidentified', price: 1200 },
-  { name: 'Torch, Municipal Issue', price: 4 },
+const CATEGORIES: readonly { category: LootPriority; label: string }[] = [
+  { category: 'gold', label: 'Specie & Coin' },
+  { category: 'gear', label: 'Serviceable Equipment' },
+  { category: 'relics', label: 'Relics, Unappraised' },
+  { category: 'knowledge', label: 'Documents & Intelligence' },
 ];
+
+/**
+ * Demand swings by beat, seeded on the beat index so a replayed heartbeat
+ * publishes the same market. The band is deliberately narrow: waiting for a
+ * good day should be worth something, never worth more than descending.
+ */
+function driftDemand(rng: () => number): number {
+  return Math.round((MARKET_DEMAND_FLOOR + rng() * MARKET_DEMAND_SPREAD) * 100) / 100;
+}
 
 const EVENTS = [
   'Region "The Undersill" danger elevated. Contribution window open through Sunday.',
@@ -30,7 +41,7 @@ export function initialWorld(now: Date): WorldState {
     guildObjective: 'Contribute 500 Supplies to the regional stockpile.',
     guildProgress: 312,
     guildTarget: 500,
-    market: BASE_MARKET.map((lot) => ({ ...lot })),
+    market: CATEGORIES.map((entry) => ({ ...entry, demand: 1 })),
     nextBeatAt: new Date(now.getTime() + HEARTBEAT_SECONDS * 1000).toISOString(),
   };
 }
@@ -43,10 +54,7 @@ export function advanceWorld(world: WorldState, now: Date): WorldState {
   const beat = world.beat + 1;
   const rng = makeRng(tickSeed('world', beat));
 
-  const market = BASE_MARKET.map((lot) => {
-    const drift = 0.85 + rng() * 0.35;
-    return { name: lot.name, price: Math.max(1, Math.round(lot.price * drift)) };
-  });
+  const market = CATEGORIES.map((entry) => ({ ...entry, demand: driftDemand(rng) }));
 
   const guildProgress = Math.min(world.guildTarget, world.guildProgress + rngInt(rng, 0, 9));
   const event = beat % 12 === 0 ? rngPick(rng, EVENTS) : world.event;

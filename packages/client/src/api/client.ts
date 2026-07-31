@@ -5,6 +5,7 @@ import type {
   DeviceAuthResponse,
   LedgerResponse,
   PurchaseUnlockResponse,
+  SellItemResponse,
   SendTavernMessageResponse,
   StandingOrders,
   StateResponse,
@@ -160,6 +161,10 @@ export class ApiClient {
 
   getLedger(): Promise<LedgerResponse> {
     return this.request('GET', '/v1/ledger');
+  }
+
+  sellItem(name: string, quantity?: number): Promise<SellItemResponse> {
+    return this.request('POST', '/v1/ledger/sell', { name, quantity });
   }
 
   purchaseUnlock(id: UnlockId): Promise<PurchaseUnlockResponse> {

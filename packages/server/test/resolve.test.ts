@@ -20,6 +20,7 @@ test('resolving the same span twice produces identical results', () => {
   const start = character();
   const options = {
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: start.lastResolvedTick + 300,
@@ -43,6 +44,7 @@ test('resolving in two halves matches resolving in one pass', () => {
 
   const wholeRun = resolve({
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: endTick,
@@ -51,6 +53,7 @@ test('resolving in two halves matches resolving in one pass', () => {
 
   const firstHalf = resolve({
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: midTick,
@@ -58,6 +61,7 @@ test('resolving in two halves matches resolving in one pass', () => {
   });
   const secondHalf = resolve({
     character: firstHalf.character,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: endTick,
@@ -75,6 +79,7 @@ test('a resolved character never rewinds', () => {
   const start = character();
   const result = resolve({
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: start.lastResolvedTick - 5,
@@ -92,6 +97,7 @@ test('long absences are clamped and summarised', () => {
   const cautious: StandingOrders = { ...ORDERS, targetDepth: 1, retreatPct: 80 };
   const result = resolve({
     character: start,
+    inventory: [],
     orders: cautious,
     unlocks: [],
     toTick: start.lastResolvedTick + MAX_CATCHUP_TICKS * 10,
@@ -116,6 +122,7 @@ test('the permit ceiling stalls the descent and then clears it', () => {
   // processing time, which is now measured in hours rather than minutes.
   const result = resolve({
     character: start,
+    inventory: [],
     orders: deepOrders,
     unlocks: [],
     toTick: start.lastResolvedTick + 1200,
@@ -132,6 +139,7 @@ test('the stipend unlock pays out every tick', () => {
   const start = character();
   const base = resolve({
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: [],
     toTick: start.lastResolvedTick + 50,
@@ -139,6 +147,7 @@ test('the stipend unlock pays out every tick', () => {
   });
   const withStipend = resolve({
     character: start,
+    inventory: [],
     orders: ORDERS,
     unlocks: ['stipend'],
     toTick: start.lastResolvedTick + 50,
@@ -159,6 +168,7 @@ test('death stops resolution at the tick it happened', () => {
   for (let i = 0; i < 40 && !death; i += 1) {
     const result = resolve({
       character: state,
+      inventory: [],
       orders,
       unlocks: [],
       toTick: state.lastResolvedTick + MAX_CATCHUP_TICKS,

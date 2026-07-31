@@ -13,6 +13,23 @@ export function LedgerScreen() {
   const { data, error, loading, reload } = useResource(load, 60_000);
   const [pending, setPending] = useState<UnlockId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [selling, setSelling] = useState<string | null>(null);
+  const [saleNotice, setSaleNotice] = useState<string | null>(null);
+
+  const sell = async (name: string) => {
+    setSelling(name);
+    setSaleNotice(null);
+    try {
+      const result = await api.sellItem(name);
+      setSaleNotice(`Sold ${result.sold}. ${result.goldReceived} gold received, in triplicate.`);
+      // The sale changes both the cabinet and the purse.
+      await Promise.all([reload(), refresh()]);
+    } catch {
+      setSaleNotice('Sale refused. The depot disputes the appraisal.');
+    } finally {
+      setSelling(null);
+    }
+  };
 
   const buy = async (id: UnlockId) => {
     setPending(id);
@@ -36,22 +53,53 @@ export function LedgerScreen() {
     <div className={columns.columns}>
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>INVENTORY</div>
+        {data.inventory.length === 0 && (
+          <div className="text-dim">Filing cabinet empty. The Authority is unimpressed.</div>
+        )}
         {data.inventory.map((item) => (
-          <div key={item.name} className={columns.row}>
-            <span className="text-body">{item.name}</span>
-            <span className="text-dim">{item.note}</span>
+          <div key={item.name} className={styles.stock}>
+            <div className={columns.row}>
+              <span className="text-body">{item.name}</span>
+              <span className="text-dim">{item.note}</span>
+            </div>
+            <div className={styles.stockActions}>
+              <span className="text-dim">
+                {item.unitOffer}g each · {item.stackOffer}g the lot
+              </span>
+              <button
+                type="button"
+                className={styles.sell}
+                disabled={selling !== null}
+                onClick={() => void sell(item.name)}
+              >
+                {selling === item.name ? 'FILING...' : 'SELL'}
+              </button>
+            </div>
           </div>
         ))}
+        {saleNotice && <div className="text-dim">{saleNotice}</div>}
       </div>
 
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>MARKET</div>
-        {data.market.map((lot) => (
-          <div key={lot.name} className={columns.row}>
-            <span className="text-body">{lot.name}</span>
-            <span className="text-bright">{lot.price}g</span>
-          </div>
-        ))}
+        <div className={`text-dim ${styles.hint}`}>
+          Standing demand, revised each world tick. Applied to every sale.
+        </div>
+        {data.market.map((quote) => {
+          const swing = Math.round((quote.demand - 1) * 100);
+          return (
+            <div key={quote.category} className={columns.row}>
+              <span className="text-body">{quote.label}</span>
+              <span
+                className={swing >= 0 ? 'text-bright' : 'text-dim'}
+                data-demand={swing >= 0 ? 'up' : 'down'}
+              >
+                {swing >= 0 ? '+' : ''}
+                {swing}%
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       <div className={columns.column}>

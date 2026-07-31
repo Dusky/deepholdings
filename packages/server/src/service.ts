@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
+  HOARD_SALE_BONUS,
   UNLOCK_CATALOGUE,
   TICK_SECONDS,
   type Account,
@@ -9,14 +10,19 @@ import {
   type Character,
   type ClaimPensionResponse,
   type DeathRecord,
+  type InventoryItem,
   type LedgerResponse,
+  type LedgerStack,
+  type LootPriority,
   type StandingOrders,
+  type WorldState,
   PERMIT_PROCESSING_TICKS,
   PERMIT_PROCESSING_TICKS_FAST,
   TICK_SECONDS as TICK_SECS,
   permitDepthLimit,
   type PendingPermit,
   type ScreenId,
+  type SellItemResponse,
   type ShiftDigest,
   type StateResponse,
   type TavernResponse,
@@ -69,6 +75,10 @@ export async function authenticateDevice(
     await tx.appendJournal(onboardingEntries(recruit.character));
     return account;
   });
+}
+
+function entry_(character: Character, text: string, offset = 0) {
+  return entry(character, text, offset);
 }
 
 function entry(character: Character, text: string, offset = 0) {
@@ -153,6 +163,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
     if (record) {
       const result = resolve({
         character: record.character,
+        inventory: record.inventory,
         orders,
         unlocks: pension.unlocks,
         toTick: tickOf(now),
@@ -173,7 +184,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       current = {
         character: result.character,
         permitAppliedTick: result.permitAppliedTick,
-        inventory: record.inventory,
+        inventory: result.inventory,
       };
 
       if (result.ticksResolved > 0) {
@@ -331,6 +342,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
   const pension = await tx.getPension(accountId);
   const result = resolve({
     character: record.character,
+    inventory: record.inventory,
     orders,
     unlocks: pension.unlocks,
     toTick: tickOf(new Date()),
@@ -353,7 +365,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
   const updated: CharacterRecord = {
     character: result.character,
     permitAppliedTick: result.permitAppliedTick,
-    inventory: record.inventory,
+    inventory: result.inventory,
   };
   await tx.saveCharacter(updated);
 
@@ -372,13 +384,39 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
   return updated;
 }
 
+/** Par for anything the market has no quote for, rather than a free item. */
+function demandFor(world: WorldState, category: LootPriority): number {
+  return world.market.find((quote) => quote.category === category)?.demand ?? 1;
+}
+
+/** What the depot pays per unit right now, demand and spend policy included. */
+function saleRate(world: WorldState, category: LootPriority, orders: StandingOrders): number {
+  return demandFor(world, category) * (orders.spendPolicy === 'hoard' ? HOARD_SALE_BONUS : 1);
+}
+
+function quote(
+  inventory: readonly InventoryItem[],
+  world: WorldState,
+  orders: StandingOrders,
+): LedgerStack[] {
+  return inventory.map((item) => {
+    const rate = saleRate(world, item.category, orders);
+    return {
+      ...item,
+      unitOffer: Math.round(item.unitValue * rate),
+      stackOffer: Math.round(item.unitValue * item.quantity * rate),
+    };
+  });
+}
+
 export async function getLedger(repo: Repository, accountId: string): Promise<LedgerResponse> {
   return repo.transaction(async (tx) => {
     const record = await tx.getActiveCharacterForUpdate(accountId);
     const pension = await tx.getPension(accountId);
     const world = await tx.getWorld();
+    const orders = await tx.getOrders(accountId);
     return {
-      inventory: record?.inventory ?? [],
+      inventory: quote(record?.inventory ?? [], world, orders),
       market: world.market,
       pension,
       unlocks: offers(pension.unlocks, pension.total),
@@ -394,6 +432,62 @@ function offers(owned: readonly UnlockId[], available: number): UnlockOffer[] {
     owned: owned.includes(entry.id),
     affordable: !owned.includes(entry.id) && available >= entry.cost,
   }));
+}
+
+/**
+ * Sells from the filing cabinet. Server-priced, server-validated: the client
+ * says what and how many, never what it is worth.
+ */
+export async function sellItem(
+  repo: Repository,
+  accountId: string,
+  name: string,
+  quantity?: number,
+): Promise<SellItemResponse> {
+  if (!name || typeof name !== 'string') {
+    throw new ServiceError('invalid_request', 'name required');
+  }
+
+  return repo.transaction(async (tx) => {
+    // Resolve first: a sale must not race a tick that changes the cabinet.
+    const record = (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+
+    const orders = await tx.getOrders(accountId);
+    const entry = record.inventory.find((item) => item.name === name);
+    if (!entry) throw new ServiceError('not_found', 'no such item on file');
+
+    // Whole units only. Rounding a fractional request would quietly sell
+    // something other than what was asked for.
+    const wanted = quantity === undefined ? entry.quantity : Number(quantity);
+    if (!Number.isInteger(wanted) || wanted < 1 || wanted > entry.quantity) {
+      throw new ServiceError('invalid_request', 'invalid quantity');
+    }
+
+    // Price at the world's published demand for this category, so the number
+    // on the MARKET column is the number the depot actually pays.
+    const world = await tx.getWorld();
+    const goldReceived = Math.round(
+      entry.unitValue * wanted * saleRate(world, entry.category, orders),
+    );
+
+    entry.quantity -= wanted;
+    entry.note = `x${entry.quantity}`;
+    const inventory = record.inventory.filter((item) => item.quantity > 0);
+
+    const character = { ...record.character, gold: record.character.gold + goldReceived };
+    await tx.saveCharacter({ ...record, character, inventory });
+    await tx.appendJournal([
+      entry_(character, `Sold ${wanted} x ${name} for ${goldReceived} gold. Receipt filed in triplicate.`),
+    ]);
+
+    return {
+      sold: wanted,
+      goldReceived,
+      gold: character.gold,
+      inventory: quote(inventory, world, orders),
+    };
+  });
 }
 
 /** Prestige spend. Validated here because the client is never trusted with it. */

@@ -16,7 +16,11 @@ describe('migrations', { skip: databaseUrl ? false : 'TEST_DATABASE_URL not set'
   before(async () => {
     adminPool = new pg.Pool({ connectionString: databaseUrl });
     await adminPool.query(`CREATE DATABASE ${dbName}`);
-    url = databaseUrl!.replace(/\/deepholdings/, `/${dbName}`);
+    // Swap the database out by path, not by substring — a maintenance URL
+    // pointing at `deepholdings_test` would otherwise keep the `_test` suffix.
+    const parsed = new URL(databaseUrl!);
+    parsed.pathname = `/${dbName}`;
+    url = parsed.toString();
     pool = new pg.Pool({ connectionString: url });
   });
 

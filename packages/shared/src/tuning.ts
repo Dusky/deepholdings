@@ -162,6 +162,37 @@ export const LOOT_EFFECT = {
   knowledge: { value: 0.8, xp: 1.35, findChance: 1 },
 } as const;
 
+/**
+ * Distinct stacks a recruit can carry before the filing cabinet is full.
+ *
+ * At capacity, further loot is liquidated at depot rates rather than lost —
+ * nothing a player earned ever evaporates. Extra capacity is the one storage
+ * convenience we are willing to sell (see docs/design/monetization.md), and it
+ * sells nothing but the choice of what to keep.
+ */
+export const INVENTORY_CAP = 12;
+
+/**
+ * Spend Policy: three genuinely different bargains.
+ *
+ * `hoard` was close to strictly worse — it saved gold and risked unsupplied
+ * descent, which mostly just kills you. Holding out for the right buyer gives
+ * it an edge to pay for that risk.
+ */
+export const HOARD_SALE_BONUS = 1.15;
+
+/**
+ * Market demand band: 0.8x to 1.2x book value, redrawn each world heartbeat.
+ *
+ * Wide enough that checking the market before clearing the cabinet is worth
+ * doing, narrow enough that it never beats simply descending again. The band
+ * is centred on par on purpose — an officer who ignores the market entirely
+ * averages exactly book value, so timing is an option and never a tax on
+ * people who don't want one.
+ */
+export const MARKET_DEMAND_FLOOR = 0.8;
+export const MARKET_DEMAND_SPREAD = 0.4;
+
 /** Gold per tick granted by the stipend unlock. */
 export const STIPEND_PER_TICK = 2;
 

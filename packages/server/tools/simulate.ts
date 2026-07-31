@@ -8,7 +8,12 @@
  *
  *   npm run simulate --workspace @deepholdings/server -- --days 7 --runs 200
  */
-import { MAX_CATCHUP_TICKS, TICK_SECONDS, type StandingOrders } from '@deepholdings/shared';
+import {
+  MAX_CATCHUP_TICKS,
+  TICK_SECONDS,
+  type InventoryItem,
+  type StandingOrders,
+} from '@deepholdings/shared';
 import { newRecruit } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
 
@@ -41,6 +46,7 @@ interface RunResult {
 function simulateOne(profile: Profile, seed: number, totalTicks: number): RunResult {
   const accountId = `sim-${seed}`;
   let character = newRecruit(`${accountId}-1`, accountId, 1, [], 0);
+  let inventory: InventoryItem[] = [];
   let permitAppliedTick: number | null = null;
 
   const result: RunResult = {
@@ -63,15 +69,24 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
   const CHUNK = Math.min(MAX_CATCHUP_TICKS, 240);
   while (tick < totalTicks) {
     const to = Math.min(tick + CHUNK, totalTicks);
-    const out = resolve({ character, orders: profile.orders, unlocks: [], toTick: to, permitAppliedTick });
+    const out = resolve({
+      character, inventory, orders: profile.orders, unlocks: [], toTick: to, permitAppliedTick,
+    });
 
-    result.goldEarned += Math.max(0, out.counters.goldAfter - out.counters.goldBefore);
+    // Value now accrues as items as well as coin, so measure the portfolio.
+    const stockBefore = inventoryValue(inventory);
+    const stockAfter = inventoryValue(out.inventory);
+    result.goldEarned += Math.max(
+      0,
+      out.counters.goldAfter - out.counters.goldBefore + (stockAfter - stockBefore),
+    );
     result.deepestFloor = Math.max(result.deepestFloor, out.counters.deepestFloor);
     result.permitsApproved += out.counters.permitsApproved;
     result.encounters += out.counters.encounters;
     result.stalledTicks += out.counters.stalledTicks;
 
     character = out.character;
+    inventory = out.inventory;
     permitAppliedTick = out.permitAppliedTick;
     tick = character.lastResolvedTick;
 
@@ -86,6 +101,7 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
         out.character.permitTier, out.character.level,
       );
       permitAppliedTick = null;
+      inventory = [];
     } else if (out.ticksResolved === 0) {
       break;
     }
@@ -93,6 +109,10 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
 
   result.finalLevel = character.level;
   return result;
+}
+
+function inventoryValue(items: readonly InventoryItem[]): number {
+  return items.reduce((total, item) => total + item.unitValue * item.quantity, 0);
 }
 
 function median(values: number[]): number {
@@ -118,7 +138,7 @@ function main(): void {
 
   console.log(`\nDeep Holdings balance run — ${days} day(s), ${runs} recruits per profile\n`);
   console.log(
-    ['profile', 'deaths/wk', 'h/death', 'gold/h', 'pens/h', 'floor', 'lvl', 'stalled%', 'enc/h']
+    ['profile', 'deaths/wk', 'h/death', 'value/h', 'pens/h', 'floor', 'lvl', 'stalled%', 'enc/h']
       .map((h) => h.padStart(10))
       .join(''),
   );

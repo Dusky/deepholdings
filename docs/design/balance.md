@@ -110,6 +110,41 @@ server.
 The general rule this suggests: **a wait shorter than a check-in gap is not a
 wait, it is a rounding error.**
 
+## Loot as inventory: an agency layer, not a nerf
+
+Value used to arrive as coin. It now arrives as items, in a filing cabinet
+capped at twelve stacks, and the officer decides when to sell.
+
+The first simulation after that change showed gold/hour collapsing from 265 to
+4, which looked catastrophic and was two separate faults. The supply loop was
+unfunded — a recruit could starve to death beside a cabinet worth three hundred
+gold — and the metric only counted coins, so a full cabinet read as poverty.
+Fixed by having the quartermaster buy the cheapest stack to cover resupply, and
+by measuring portfolio value rather than purse. Balanced play came back at 253,
+then 255 once stacks re-appraise on the weighted average instead of freezing at
+the first unit's price. Against 265 pre-inventory, that is a rounding error: the
+cabinet adds a decision without moving the income curve.
+
+Nothing a player earned is ever destroyed. At capacity the item is liquidated at
+depot rates instead of being dropped, because "your loot was deleted while you
+were at work" is the kind of thing an idle player quits over.
+
+## The market is a demand index, not a price list
+
+MARKET used to quote absolute prices for four fixed goods — "Sword, Adequate
+(+2), 340g" — while the cabinet appraised the same sword at 23g. Two numbers for
+one item on one screen, and the honest reading of that is that the game is
+cheating you.
+
+It now publishes a multiplier per loot category, drifting each world heartbeat
+inside a band of 0.8x–1.2x, and that multiplier is what the depot pays. The
+band is centred on par deliberately: an officer who never looks at the market
+averages exactly book value. Timing a sale is an option worth up to ~40% on a
+cabinet, and never a tax on someone who doesn't want to play that game.
+
+This is also the first real argument for `hoard`. Holding inventory to sell into
+a spike is a reason to hold inventory.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the
@@ -118,7 +153,8 @@ wait, it is a rounding error.**
   losses" should probably pay better than it does.
 - **Loot Priority is thin** until crafting lands. `LOOT_EFFECT` makes it a real
   choice, but the interesting version is clause pools (see `crafting.md`).
-- **Spend Policy's `hoard` is close to strictly worse** — it saves gold and
-  risks unsupplied descent, which mostly just kills you.
+- **Spend Policy's `hoard` is better but still unproven.** The sale bonus and
+  market timing give it a case; no simulation yet measures an officer who
+  actually *times* sales, because the harness sells on a fixed schedule.
 - **These are simulations, not play.** They measure the resolver, not whether
   any of it is fun. That still needs a human.

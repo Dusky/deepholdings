@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import type { StateResponse } from '@deepholdings/shared';
+import { HOARD_SALE_BONUS, type StateResponse } from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
 import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
@@ -164,6 +164,123 @@ for (const adapter of adapters) {
       assert.equal((state.json() as StateResponse).orders.lootPriority, 'relics');
     });
 
+    test('sells from the cabinet at the server price', async () => {
+      const account = await accountId(app, token);
+      await repo.saveOrders(account, {
+        targetDepth: 2, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply',
+      });
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.inventory = [
+        { name: 'Requisition Stamp', note: 'x3', quantity: 3, unitValue: 40, category: 'gear' },
+        { name: 'Tarnished Sigil', note: 'x1', quantity: 1, unitValue: 90, category: 'relics' },
+      ];
+      await repo.saveCharacter(record);
+      await pinDemand(repo, 1);
+      const goldBefore = record.character.gold;
+
+      // Part of a stack: the remainder stays on file, re-noted.
+      const partial = await app.inject({
+        method: 'POST',
+        url: '/v1/ledger/sell',
+        headers: auth(),
+        payload: { name: 'Requisition Stamp', quantity: 2 },
+      });
+      assert.equal(partial.statusCode, 200);
+      assert.equal(partial.json().sold, 2);
+      assert.equal(partial.json().goldReceived, 80);
+      assert.equal(partial.json().gold, goldBefore + 80);
+      const left = partial.json().inventory.find((i: { name: string }) => i.name === 'Requisition Stamp');
+      assert.equal(left.quantity, 1);
+      assert.equal(left.note, 'x1');
+
+      // No quantity means the whole stack, and an emptied stack leaves the cabinet.
+      const whole = await app.inject({
+        method: 'POST',
+        url: '/v1/ledger/sell',
+        headers: auth(),
+        payload: { name: 'Requisition Stamp' },
+      });
+      assert.equal(whole.statusCode, 200);
+      assert.equal(whole.json().sold, 1);
+      assert.equal(
+        whole.json().inventory.some((i: { name: string }) => i.name === 'Requisition Stamp'),
+        false,
+      );
+
+      // The price is the server's, so a client cannot invent one.
+      const unknown = await app.inject({
+        method: 'POST',
+        url: '/v1/ledger/sell',
+        headers: auth(),
+        payload: { name: 'Bearer Bonds, Fictitious' },
+      });
+      assert.equal(unknown.statusCode, 404);
+
+      for (const quantity of [0, -1, 99, 1.5]) {
+        const bad = await app.inject({
+          method: 'POST',
+          url: '/v1/ledger/sell',
+          headers: auth(),
+          payload: { name: 'Tarnished Sigil', quantity },
+        });
+        assert.equal(bad.statusCode, 400, `quantity ${quantity} should be refused`);
+      }
+    });
+
+    test('the quoted offer is what the sale pays', async () => {
+      const account = await accountId(app, token);
+      await repo.saveOrders(account, {
+        targetDepth: 2, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply',
+      });
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.inventory = [
+        { name: 'Bearer Note, Countersigned', note: 'x4', quantity: 4, unitValue: 55, category: 'gold' },
+      ];
+      await repo.saveCharacter(record);
+      await pinDemand(repo, 1.2);
+
+      const ledger = await app.inject({ method: 'GET', url: '/v1/ledger', headers: auth() });
+      const stack = ledger.json().inventory.find(
+        (i: { name: string }) => i.name === 'Bearer Note, Countersigned',
+      );
+      // Demand is priced in, and the two columns agree with each other.
+      assert.equal(stack.unitOffer, 66);
+      assert.equal(stack.stackOffer, 264);
+
+      const sold = await app.inject({
+        method: 'POST',
+        url: '/v1/ledger/sell',
+        headers: auth(),
+        payload: { name: 'Bearer Note, Countersigned' },
+      });
+      assert.equal(sold.json().goldReceived, stack.stackOffer);
+    });
+
+    test('hoarding orders sell at a premium', async () => {
+      const account = await accountId(app, token);
+      await repo.saveOrders(account, {
+        targetDepth: 2, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'hoard',
+      });
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.inventory = [
+        { name: 'Sealed Docket', note: 'x1', quantity: 1, unitValue: 100, category: 'knowledge' },
+      ];
+      await repo.saveCharacter(record);
+      await pinDemand(repo, 1);
+
+      const sold = await app.inject({
+        method: 'POST',
+        url: '/v1/ledger/sell',
+        headers: auth(),
+        payload: { name: 'Sealed Docket' },
+      });
+      assert.equal(sold.statusCode, 200);
+      assert.equal(sold.json().goldReceived, Math.round(100 * HOARD_SALE_BONUS));
+    });
+
     test('refuses unlocks the pension cannot cover', async () => {
       const response = await app.inject({
         method: 'POST',
@@ -280,6 +397,15 @@ for (const adapter of adapters) {
       const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin' });
       assert.ok(bulletin.json().deaths.length > 0);
     });
+  });
+}
+
+/** Fix every category's demand so a sale's arithmetic is checkable. */
+async function pinDemand(repo: Repository, demand: number): Promise<void> {
+  const world = await repo.getWorld();
+  await repo.saveWorld({
+    ...world,
+    market: world.market.map((quote) => ({ ...quote, demand })),
   });
 }
 

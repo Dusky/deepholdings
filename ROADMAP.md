@@ -196,7 +196,13 @@ always knows what they are working toward.
       deaths cost enough grade that it never reaches its target depth.
 - [ ] **Content volume.** More fauna, loot, journal copy, and permit tiers.
       The tone reference is `packages/server/src/domain/flavor.ts`.
-- [ ] **Market that trades.** Selling inventory, not just reading prices.
+- [x] **Market that trades.** Loot goes into a 12-slot filing cabinet as
+      stacks with a real appraisal, and the Ledger sells them. The MARKET
+      column is now a demand index over the four loot categories rather than
+      absolute prices for four hardcoded items — the two columns used to
+      contradict each other on the same screen. Demand is redrawn each world
+      heartbeat and is priced into every sale, which finally gives `hoard`
+      something to hoard *for*.
 - [ ] **Prestige depth.** Five unlocks is a demo. Needs tiers, and a reason to
       let a recruit die on purpose.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for

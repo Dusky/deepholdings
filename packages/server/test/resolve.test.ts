@@ -61,7 +61,11 @@ test('resolving in two halves matches resolving in one pass', () => {
   });
   const secondHalf = resolve({
     character: firstHalf.character,
-    inventory: [],
+    // The cabinet has to carry over, exactly as the service carries it. Handing
+    // the second half an empty one makes this compare two different games: the
+    // quartermaster sells the cheapest stack to cover resupply, so an empty
+    // cabinet resolves to less gold and the mismatch reads as non-determinism.
+    inventory: firstHalf.inventory,
     orders: ORDERS,
     unlocks: [],
     toTick: endTick,

@@ -36,13 +36,20 @@ export function inheritedPermitTier(previousTier: number): number {
   return Math.max(STARTING_PERMIT_TIER, previousTier - 1);
 }
 
-/** Permit D-{tier} authorises descent to this depth. */
+/**
+ * Permit D-{tier} authorises descent to this depth.
+ *
+ * Every rung must authorise something. D-5 used to grant Depth 6, exactly what
+ * D-4 already granted, so an officer waited three hours to be told in writing
+ * that nothing had changed — a milestone that is legibly worth nothing is worse
+ * than no milestone, because the player did the work of noticing it.
+ */
 export const PERMIT_DEPTH_LIMIT: Record<number, number> = {
   1: 2,
   2: 3,
   3: 5,
   4: 6,
-  5: 6,
+  5: 7,
   6: 8,
   7: 10,
   8: 12,

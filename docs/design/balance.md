@@ -226,6 +226,63 @@ a short catalogue, and inflating seven items until a week cannot clear them
 would price conveniences absurdly. The four designed-but-unbuilt entries in
 [`requisitions.md`](requisitions.md) are what extend it, not bigger numbers.
 
+## Flavour must not spend the simulation's entropy
+
+The content pass — generated encounter names, more journal copy — moved the
+balance table by a third. Balanced play went from 2.6 deaths a week to 1.9
+without a single tuning number changing.
+
+The cause is worth writing down because it is invisible and it will happen
+again. Every tick seeds one rng, and the resolver drew from it in order:
+encounter check, creature name, grievous check, damage. Generating a name
+instead of picking one consumed three or four values instead of one, so the
+grievous check and the damage roll read *different positions in the stream*.
+Combat outcomes moved because a writer added a form number to a sentence.
+
+Prose now draws from its own stream — `tickSeed(id, tick, 'prose')` — so text
+generation cannot reach the simulation. This restores the promise the flavour
+file has always made in its header, that writers can work there without
+touching the rules, which was not true for as long as the file has existed.
+
+**The general rule: anything that only produces words gets its own rng.** If a
+change to copy can move a number, the number was never measuring what you
+thought.
+
+## Where it landed after the content pass
+
+Separating the streams re-seeded the mechanical draws, so these numbers are not
+directly comparable to the table above — but the difference that survives at
+600 runs is real and has a cause:
+
+| profile | deaths/wk | h/death | value/h | pens/h | floor | lvl |
+| --- | --- | --- | --- | --- | --- | --- |
+| timid | 0.0 | never | 109 | 0 | 2 | 10 |
+| cautious | 0.0 | never | 193 | 0 | 4 | 13 |
+| **balanced** | **2.0** | **85.6** | **269** | **12** | **6** | **13** |
+| greedy | 16.6 | 10.1 | 144 | 66 | 5 | 3 |
+| reckless | 140.0 | 1.2 | 122 | 71 | 2 | 2 |
+| insured | 2.2 | 77.8 | 251 | 20 | 6 | 13 |
+| retirer | 4.3 | 39.0 | 208 | 87 | 6 | 5 |
+| equipper | 2.0 | 85.6 | 270 | 6 | 6 | 13 |
+| retirer+eq | 4.3 | 39.0 | 207 | 75 | 6 | 5 |
+
+Balanced play gained about 6% income and lost about a fifth of its deaths, and
+the reason is the loot catalogue rather than the rng. Six loot names per depth
+band instead of three means the twelve-slot cabinet holds a wider spread before
+it fills, so less is liquidated at depot rates and the quartermaster has more
+stock to sell against starvation.
+
+That is a mild buff delivered by writing prose, which sounds like exactly the
+mistake described above — but it is not the same fault. It is a real mechanical
+consequence of a real mechanical quantity (how many distinct stacks exist), and
+the curve it produces is better than the old one: capacity pressure now arrives
+when an officer works two bands at once, around Floor 7, instead of pressing
+constantly from Floor 1.
+
+**Estimator noise:** `deaths/wk` is a rare-event count and moves ±0.2 between
+150-run and 600-run batches. Do not read a tenth of a death as a signal. The
+income columns are stable to within a point or two at 150 runs.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the

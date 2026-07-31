@@ -37,13 +37,15 @@ import {
 import { applyLevelUps, permitLimit } from './character.js';
 import {
   COMBAT_DEATH_CAUSES,
-  COMBAT_NOTES,
-  DEATH_CAUSES,
-  FAUNA,
+  combatNote,
+  emptyHandedNote,
+  faunaFor,
+  lootFor,
+  lootNote,
+  quietNote,
+  STARVATION_CAUSE,
   HOARD_NOTE,
   INSURE_NOTE,
-  LOOT_BY_PRIORITY,
-  LOOT_NOTES,
   RECESS_NOTE,
   RESUPPLY_NOTE,
 } from './flavor.js';
@@ -234,6 +236,11 @@ export function resolve(options: ResolveOptions): ResolveResult {
   for (let tick = fromTick; tick <= toTick; tick += 1) {
     ticksResolved += 1;
     const rng = makeRng(tickSeed(character.id, tick));
+    // Prose draws from its own stream, so writing never moves the simulation.
+    // Sharing one stream meant a note that mentioned a form number consumed an
+    // extra value and re-rolled that tick's combat — the balance table shifted
+    // by a third the first time the journal copy was expanded.
+    const prose = makeRng(tickSeed(character.id, tick, 'prose'));
 
     if (stipendPerTick > 0) character.gold += stipendPerTick;
 
@@ -336,7 +343,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     if (rngChance(rng, ENCOUNTER_CHANCE_BASE + character.depth * ENCOUNTER_CHANCE_PER_DEPTH)) {
       counters.encounters += 1;
       const loot = LOOT_EFFECT[orders.lootPriority];
-      const creature = rngPick(rng, FAUNA);
+      const creature = faunaFor(character.depth, prose);
       const grievous = rngChance(rng, GRIEVOUS_CHANCE);
       const damage = encounterDamage(
         character.depth, character.level, rng(), character.maxHp, grievous,
@@ -346,7 +353,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
 
       if (character.hp <= 0) {
         const cause: string =
-          character.supplies === 0 ? DEATH_CAUSES[4] : rngPick(rng, COMBAT_DEATH_CAUSES);
+          character.supplies === 0 ? STARVATION_CAUSE : rngPick(prose, COMBAT_DEATH_CAUSES);
         const insured = orders.spendPolicy === 'insure';
         // The estate includes the filing cabinet, not just the coins.
         const estate =
@@ -375,11 +382,11 @@ export function resolve(options: ResolveOptions): ResolveResult {
         tick,
         grievous
           ? `Encountered: ${creature}. Grievous injury sustained. Form 9 (Industrial Injury) filed on the recruit's behalf.`
-          : `Encountered: ${creature}. ${rngPick(rng, COMBAT_NOTES)}`,
+          : `Encountered: ${creature}. ${combatNote(prose)}`,
       );
 
       if (rngChance(rng, 0.45 * loot.findChance)) {
-        const item = rngPick(rng, LOOT_BY_PRIORITY[orders.lootPriority]);
+        const item = lootFor(orders.lootPriority, character.depth, prose);
         const value = Math.round(encounterReward(character.depth, rng()) * loot.value);
         counters.acquisitions += 1;
 
@@ -391,10 +398,10 @@ export function resolve(options: ResolveOptions): ResolveResult {
           tick,
           stowed.liquidated
             ? `Acquired: ${item}. Filing cabinet at capacity; liquidated at depot rates for ${stowed.gold} gold.`
-            : `Acquired: ${item}. ${rngPick(rng, LOOT_NOTES)}`,
+            : `Acquired: ${item}. ${lootNote(prose)}`,
         );
       } else if (rngChance(rng, 0.3)) {
-        log(tick, `Loot priority: ${orders.lootPriority}. Nothing recovered. Complaint filed against the floor.`);
+        log(tick, emptyHandedNote(orders.lootPriority, prose));
       }
 
       const levels = applyLevelUps(character);
@@ -404,7 +411,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
       }
     } else if (rngChance(rng, 0.04)) {
       character.gold += rngInt(rng, 1, 4 + character.depth);
-      log(tick, 'Uneventful shift. Per diem claimed.');
+      log(tick, quietNote(prose));
     }
   }
 

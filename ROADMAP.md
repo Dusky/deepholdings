@@ -214,8 +214,20 @@ always knows what they are working toward.
       entries are designed and unbuilt — they are what lengthens the sink, since
       pricing seven conveniences higher is not the answer. See
       [`docs/design/requisitions.md`](docs/design/requisitions.md).
-- [ ] **Content volume.** More fauna, loot, journal copy, and permit tiers.
-      The tone reference is `packages/server/src/domain/flavor.ts`.
+- [x] **Content volume.** Encounter names are generated from a grammar —
+      `{species}, {qualifier} (Grade N)`, with species banded by depth — which
+      turns a flat list of seven into roughly nine hundred per band. Journal
+      copy roughly quadrupled, with form and case numbers generated inside
+      otherwise fixed sentences. **Loot names stay written and bounded**,
+      because they are inventory stack keys: a generated name means every
+      acquisition is its own stack and a twelve-slot cabinet liquidates
+      everything forever. They are depth-banded instead, so Floor 12 pays in
+      things Floor 1 has never seen.
+      Two findings came out of it, both in
+      [`docs/design/balance.md`](docs/design/balance.md): prose must draw from
+      its own rng or writing copy silently re-rolls combat, and permit D-5
+      used to authorise the same depth as D-4 — a three-hour wait for a
+      milestone that granted nothing.
 - [x] **Market that trades.** Loot goes into a 12-slot filing cabinet as
       stacks with a real appraisal, and the Ledger sells them. The MARKET
       column is now a demand index over the four loot categories rather than

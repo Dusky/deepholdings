@@ -13,36 +13,24 @@ import type {
   UnlockId,
   UpdateOrdersResponse,
 } from '@deepholdings/shared';
+import { resolveBaseUrl, type OverrideStorage } from './baseUrl';
 
-const API_OVERRIDE_KEY = 'deepholdings.apiUrl';
-
-/**
- * Where the API lives.
- *
- * Baked in at build time, because a device cannot reach the build machine's
- * localhost. In dev builds only, `?api=http://192.168.1.42:8787` overrides it
- * and is remembered — that lets one dev server be pointed at any host from a
- * phone without rebuilding. Never honoured in a release build, where the API
- * address is not something a URL should be able to change.
- */
-function resolveBaseUrl(): string {
-  const configured = import.meta.env.VITE_API_URL ?? 'http://localhost:8787';
-  if (!import.meta.env.DEV) return configured.replace(/\/$/, '');
-
+/** Chrome throws on the property itself when storage is blocked, not just on use. */
+function browserStorage(): OverrideStorage | null {
   try {
-    const fromQuery = new URLSearchParams(window.location.search).get('api');
-    if (fromQuery) {
-      try { window.localStorage.setItem(API_OVERRIDE_KEY, fromQuery); } catch { /* no storage */ }
-    }
-    const override = fromQuery ?? window.localStorage.getItem(API_OVERRIDE_KEY);
-    if (override) return override.replace(/\/$/, '');
+    return window.localStorage;
   } catch {
-    // No storage, no override.
+    return null;
   }
-  return configured.replace(/\/$/, '');
 }
 
-export const BASE_URL = resolveBaseUrl();
+export const BASE_URL = resolveBaseUrl({
+  configured: import.meta.env.VITE_API_URL ?? 'http://localhost:8787',
+  dev: import.meta.env.DEV,
+  search: window.location.search,
+  storage: browserStorage(),
+});
+
 const DEVICE_KEY = 'deepholdings.deviceId';
 const TOKEN_KEY = 'deepholdings.token';
 

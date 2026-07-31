@@ -188,8 +188,10 @@ officer for paying attention to *when* rather than *how deep*.
   actually *times* sales, because the harness sells on a fixed schedule.
 - **Retiring may be too strong.** 87 pension/h against balanced play's 19 is a
   4.5x gap, and prestige unlocks are permanent while gold currently buys
-  nothing but resupply. Until gold has real sinks — crafting is the intended
-  one — "retire on a daily cycle" is close to the answer rather than an option.
-  Worth re-measuring once there is something to spend on.
+  nothing but resupply. Until gold has real sinks, "retire on a daily cycle" is
+  close to the answer rather than an option. Two sinks are designed and
+  unbuilt: requisitions ([`requisitions.md`](requisitions.md)) and crafting
+  ([`crafting.md`](crafting.md)). Re-run this with a requisition-buying profile
+  before tuning anything — the fix may be a sink rather than a nerf.
 - **These are simulations, not play.** They measure the resolver, not whether
   any of it is fun. That still needs a human.

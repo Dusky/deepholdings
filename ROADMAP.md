@@ -140,6 +140,12 @@ with no direction.
       absences over fifteen minutes, dismissible.
 - [x] **Empty and error states in voice.** Quiet channel, unavailable ledger,
       empty death feed, link fault, rejected filing, refused redemption.
+- [ ] **The command line has to be genuinely good.** It is a power-user path
+      that some players should *prefer*, not a fallback — history, autocomplete,
+      and more verbs than navigation. This became load-bearing the moment
+      interface upgrades went on the M7 SKU list: the free path being pleasant
+      is what stops those from being a toll (see
+      [`docs/design/monetization.md`](docs/design/monetization.md)).
 - [ ] **The exit criterion still needs a stranger.** Everything above is built;
       whether it *works* is a question only someone who has never seen the game
       can answer.
@@ -194,6 +200,18 @@ always knows what they are working toward.
       `hoard` is close to strictly worse and needs a reason to exist.
 - [ ] **Greedy play should pay better.** It trades gold for pension but the
       deaths cost enough grade that it never reaches its target depth.
+- [ ] **Requisitions — a gold sink.** Gold buys supplies and nothing else, which
+      is why retiring on a daily cycle is close to strictly correct: the income
+      you give up buys nothing. Gold now buys **permanent office equipment** —
+      bulk filing, cabinet sort, order presets, command history, split view,
+      pinned readouts, stationery. Permanent is the load-bearing word: gold
+      dies with the recruit and equipment does not, so a requisition is the one
+      way to move value across that line by choice, and Form R-1 gains the
+      tension it lacks ("retire now, or run longer for the trolley").
+      **Rule: a requisition may add a faster path, never be the only path** —
+      so screen tabs are explicitly out, since on a phone the "free" path is a
+      software keyboard. Clearance keeps granting tabs. Full design and open
+      questions in [`docs/design/requisitions.md`](docs/design/requisitions.md).
 - [ ] **Content volume.** More fauna, loot, journal copy, and permit tiers.
       The tone reference is `packages/server/src/domain/flavor.ts`.
 - [x] **Market that trades.** Loot goes into a 12-slot filing cabinet as
@@ -288,6 +306,11 @@ people played.
       bundling them. Permit expediting ships as a capped rewarded video —
       free to everyone — rather than a purchase, because in an idle game a
       time skip bought with money is power.
+- [ ] **Real money never touches requisitions.** Office equipment is a gold
+      sink (M4, [`docs/design/requisitions.md`](docs/design/requisitions.md)),
+      and a gold sink that can be topped up with a card is a gold sink with a
+      price tag. Cosmetics are the only overlap, because a palette confers
+      nothing.
 - [ ] **Rule: offline catch-up is never sold.** The nearest competitor puts
       extended offline progression behind a subscription and is steadily
       criticised for it — charging for the core promise of the genre. Automation

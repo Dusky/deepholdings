@@ -60,6 +60,25 @@ Our resolution:
   contribution
 - Loot boxes of any description. Our crafting already has randomness in it;
   selling randomness on top is where regulators and app stores are looking.
+- **Gold, or anything priced in gold.** Gold is a sink currency now (see
+  [`requisitions.md`](requisitions.md)); selling it would convert every
+  requisition into a purchase.
+
+## The interface is requisitioned, not sold
+
+Office equipment — bulk filing, cabinet sort, split view, pinned readouts — is
+bought with **in-game gold**, and is not a real-money SKU. It is described in
+full in [`requisitions.md`](requisitions.md).
+
+It is listed here only to state the boundary: **real money never buys any of
+it, and never buys a discount on it.** A gold sink that can be topped up with
+a card is a gold sink with a price tag, and the whole catalogue would fail
+test 1 the moment it became skippable.
+
+Cosmetics are the one overlap. A phosphor palette is buyable with pension today
+and may also be sold for money later, because a palette confers nothing. If a
+requisition ever confers *anything* beyond taps saved, it leaves the money list
+immediately.
 
 ## Guardrails
 

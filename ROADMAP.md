@@ -200,18 +200,20 @@ always knows what they are working toward.
       `hoard` is close to strictly worse and needs a reason to exist.
 - [ ] **Greedy play should pay better.** It trades gold for pension but the
       deaths cost enough grade that it never reaches its target depth.
-- [ ] **Requisitions — a gold sink.** Gold buys supplies and nothing else, which
-      is why retiring on a daily cycle is close to strictly correct: the income
-      you give up buys nothing. Gold now buys **permanent office equipment** —
-      bulk filing, cabinet sort, order presets, command history, split view,
-      pinned readouts, stationery. Permanent is the load-bearing word: gold
-      dies with the recruit and equipment does not, so a requisition is the one
-      way to move value across that line by choice, and Form R-1 gains the
-      tension it lacks ("retire now, or run longer for the trolley").
-      **Rule: a requisition may add a faster path, never be the only path** —
-      so screen tabs are explicitly out, since on a phone the "free" path is a
-      software keyboard. Clearance keeps granting tabs. Full design and open
-      questions in [`docs/design/requisitions.md`](docs/design/requisitions.md).
+- [x] **Requisitions — a gold sink.** Gold buys **permanent office equipment**:
+      four tracks, seven rungs — bulk filing, cabinet index, journal retention,
+      pinned readouts. Permanent is the load-bearing word: gold dies with the
+      recruit and equipment does not, so a requisition is the one way to move
+      value across that line by choice, and Form R-1 gains the tension it
+      lacked. **Rule: a requisition may add a faster path, never be the only
+      path** — screen tabs stay out, because on a phone the "free" path would be
+      a software keyboard. Clearance keeps granting tabs.
+      Measured: a daily retirer's pension rate falls 87 → 76 once gold has
+      somewhere to go, and the two strategies now buy visibly different things
+      (a complete office, or pension and half an office). Four more catalogue
+      entries are designed and unbuilt — they are what lengthens the sink, since
+      pricing seven conveniences higher is not the answer. See
+      [`docs/design/requisitions.md`](docs/design/requisitions.md).
 - [ ] **Content volume.** More fauna, loot, journal copy, and permit tiers.
       The tone reference is `packages/server/src/domain/flavor.ts`.
 - [x] **Market that trades.** Loot goes into a 12-slot filing cabinet as
@@ -230,8 +232,10 @@ always knows what they are working toward.
       the way to prestige — it pays exactly what death pays, so the only thing
       it buys is choosing the moment. Retiring at the legal minimum is a
       measured trap; see [`docs/design/balance.md`](docs/design/balance.md).
-- [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
-      players who want the whole shift.
+- [ ] **Journal pagination.** Retention is now 60/150/400 lines depending on
+      the Extended Journal Retention requisition, which raises the ceiling
+      without solving the problem: there is still no way to page back past
+      whatever the ceiling is.
 - [x] **A legible ladder.** The Terminal shows the permit in processing, the
       depth it authorises and an estimate — and permit processing was
       lengthened to three hours so the wait is actually visible to someone who

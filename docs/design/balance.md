@@ -175,6 +175,57 @@ four and a half times the pension rate. That is a genuine strategic axis rather
 than a dominant line, and it is the first thing in the game that rewards an
 officer for paying attention to *when* rather than *how deep*.
 
+## Requisitions: what happens when gold finally buys something
+
+The retirement finding above ended with an instruction — *re-run this with a
+requisition-buying profile before tuning anything, the fix may be a sink rather
+than a nerf.* Requisitions are built now, so here is that run.
+
+Two profiles were added. Both play the balanced orders; `equipper` never
+retires, `retirer+eq` retires daily. Both **sell the cabinet on every visit and
+spend what it realises**, because gold is realised at the Ledger and an officer
+who never clears the cabinet has no coin to requisition with.
+
+That last detail was the first result, and it was not the one being looked for.
+The initial run had the equipper buying **one** rung in a week and the retiring
+equipper buying **none** — not because the prices were wrong, but because the
+harness modelled an officer who never sells. Value accrues as items; the purse
+stays near empty; a sink priced in coin is invisible to someone holding stock.
+The harness was wrong, not the catalogue.
+
+With selling modelled:
+
+| profile | value/h | pens/h | equip | floor | lvl |
+| --- | --- | --- | --- | --- | --- |
+| balanced (never retires, never sells) | 253 | 21 | 0 | 6 | 13 |
+| retirer (retires daily) | 206 | 87 | 0 | 6 | 5 |
+| **equipper (never retires, buys)** | **264** | **11** | **7/7** | **6** | **13** |
+| **retirer+eq (retires daily, buys)** | **206** | **76** | **4/7** | **6** | **5** |
+
+The sink bites, and it bites the thing it was supposed to: a daily retirer's
+pension rate falls from 87 to 76 once gold has somewhere else to go, and a
+never-retirer's falls from 21 to 11. More usefully, **the two strategies now
+buy different things.** Not retiring buys the complete office. Retiring buys
+pension and about half an office. That is a trade an officer can have an
+opinion about, which is more than "retire daily or fall behind" ever was.
+
+`value/h` goes *up* slightly for the equipper — 253 to 264 — because an officer
+who clears the cabinet never hits capacity, and a cabinet at capacity liquidates
+at depot rates. Selling on a schedule is worth about 4%.
+
+### The first prices were a third of what shipped
+
+The catalogue started at 11,000 gold total and **both** buying profiles cleared
+all seven rungs inside a week. A sink that empties is a purchase, not a
+decision. Upper rungs roughly tripled — the catalogue is 26,700 now, with first
+rungs untouched at 600–900 so the system still teaches itself in the first
+evening.
+
+The honest limit: the equipper still clears all seven in a week. Seven rungs is
+a short catalogue, and inflating seven items until a week cannot clear them
+would price conveniences absurdly. The four designed-but-unbuilt entries in
+[`requisitions.md`](requisitions.md) are what extend it, not bigger numbers.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the
@@ -186,12 +237,16 @@ officer for paying attention to *when* rather than *how deep*.
 - **Spend Policy's `hoard` is better but still unproven.** The sale bonus and
   market timing give it a case; no simulation yet measures an officer who
   actually *times* sales, because the harness sells on a fixed schedule.
-- **Retiring may be too strong.** 87 pension/h against balanced play's 19 is a
-  4.5x gap, and prestige unlocks are permanent while gold currently buys
-  nothing but resupply. Until gold has real sinks, "retire on a daily cycle" is
-  close to the answer rather than an option. Two sinks are designed and
-  unbuilt: requisitions ([`requisitions.md`](requisitions.md)) and crafting
-  ([`crafting.md`](crafting.md)). Re-run this with a requisition-buying profile
-  before tuning anything — the fix may be a sink rather than a nerf.
+- **Retiring is still the better pension rate**, 76/h against 11/h, though it
+  is no longer the only thing gold is for. Whether "a complete office" is worth
+  what it costs in pension is not a question the harness can answer — it turns
+  on how much the conveniences are worth to a person using them, which needs a
+  human. Do not tune this number again without one.
+- **The 40% estate-to-pension rate now competes with the sink it feeds.** Every
+  coin spent on equipment is a coin that would have become 0.4 pension on Form
+  R-1. That is the intended tension, but the rate was set when gold had nowhere
+  else to go and has not been revisited since.
+- **Crafting is still an unbuilt sink** ([`crafting.md`](crafting.md)), and it
+  is the one that would give `hoard` and Loot Priority something to do.
 - **These are simulations, not play.** They measure the resolver, not whether
   any of it is fun. That still needs a human.

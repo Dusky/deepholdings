@@ -10,10 +10,13 @@
  */
 import {
   MAX_CATCHUP_TICKS,
+  REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
   TICK_SECONDS,
   pensionAward,
+  requisitionTier,
   type InventoryItem,
+  type RequisitionId,
   type StandingOrders,
 } from '@deepholdings/shared';
 import { newRecruit } from '../src/domain/character.js';
@@ -31,7 +34,44 @@ interface Profile {
    * meaning anything.
    */
   retireAfter?: number;
+  /**
+   * Whether the officer spends gold on office equipment as soon as they can.
+   *
+   * Requisitions change nothing the recruit does underground — by design, a
+   * requisition that moved a number in here would not be a requisition. What
+   * they change is where the gold goes: equipment is permanent, and gold left
+   * in the purse converts to pension the moment the career ends. This profile
+   * exists to measure that competition, which is the open question the
+   * retirement finding left behind.
+   *
+   * Buying implies selling: gold is realised at the Ledger, and an officer who
+   * never clears the cabinet has no coin to requisition with. So this also
+   * models a visit that liquidates the cabinet at book value — the average a
+   * seller gets, since the demand band is centred on par.
+   */
+  buysEquipment?: boolean;
 }
+
+/**
+ * The cheapest rung the office does not yet hold, respecting tier order.
+ *
+ * An officer buying on price alone is the least favourable case for the sink:
+ * they clear the cheap rungs early and spend the rest of the week with nothing
+ * left to want, which is exactly the failure mode worth measuring.
+ */
+function nextRung(owned: readonly RequisitionId[]) {
+  const candidates = REQUISITION_CATALOGUE.filter(
+    (entry) =>
+      !owned.includes(entry.id) && requisitionTier(owned, entry.track) === entry.tier - 1,
+  );
+  return candidates.reduce<(typeof REQUISITION_CATALOGUE)[number] | null>(
+    (cheapest, entry) => (cheapest === null || entry.cost < cheapest.cost ? entry : cheapest),
+    null,
+  );
+}
+
+/** Gold held back so a spree cannot starve the resupply the recruit lives on. */
+const EQUIPMENT_RESERVE = 200;
 
 const PROFILES: Profile[] = [
   { name: 'timid', orders: { targetDepth: 2, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply' } },
@@ -50,6 +90,17 @@ const PROFILES: Profile[] = [
     orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
     retireAfter: 1440,
   },
+  {
+    name: 'equipper',
+    orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
+    buysEquipment: true,
+  },
+  {
+    name: 'retirer+eq',
+    orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
+    retireAfter: 1440,
+    buysEquipment: true,
+  },
 ];
 
 interface RunResult {
@@ -63,6 +114,8 @@ interface RunResult {
   permitsApproved: number;
   stalledTicks: number;
   encounters: number;
+  equipmentSpend: number;
+  requisitions: number;
 }
 
 function simulateOne(profile: Profile, seed: number, totalTicks: number): RunResult {
@@ -82,7 +135,13 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
     permitsApproved: 0,
     stalledTicks: 0,
     encounters: 0,
+    equipmentSpend: 0,
+    requisitions: 0,
   };
+
+  // Account-scoped, so it deliberately survives every death and retirement
+  // below — that is the whole property being measured.
+  const owned: RequisitionId[] = [];
 
   let tick = 0;
   let recruitNum = 1;
@@ -113,6 +172,23 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
     inventory = out.inventory;
     permitAppliedTick = out.permitAppliedTick;
     tick = character.lastResolvedTick;
+
+    if (profile.buysEquipment) {
+      // The visit: clear the cabinet, then spend what it realised.
+      const realised = inventoryValue(inventory);
+      if (realised > 0) {
+        character = { ...character, gold: character.gold + realised };
+        inventory = [];
+      }
+      for (;;) {
+        const rung = nextRung(owned);
+        if (!rung || character.gold - rung.cost < EQUIPMENT_RESERVE) break;
+        character = { ...character, gold: character.gold - rung.cost };
+        owned.push(rung.id);
+        result.equipmentSpend += rung.cost;
+        result.requisitions += 1;
+      }
+    }
 
     if (out.death) {
       result.deaths += 1;
@@ -177,11 +253,11 @@ function main(): void {
 
   console.log(`\nDeep Holdings balance run — ${days} day(s), ${runs} recruits per profile\n`);
   console.log(
-    ['profile', 'deaths/wk', 'h/death', 'value/h', 'pens/h', 'floor', 'lvl', 'stalled%', 'enc/h']
+    ['profile', 'deaths/wk', 'h/death', 'value/h', 'pens/h', 'equip', 'floor', 'lvl', 'stalled%', 'enc/h']
       .map((h) => h.padStart(10))
       .join(''),
   );
-  console.log('-'.repeat(90));
+  console.log('-'.repeat(100));
 
   for (const profile of PROFILES) {
     const results = Array.from({ length: runs }, (_, i) => simulateOne(profile, i, totalTicks));
@@ -197,6 +273,7 @@ function main(): void {
     const pensionPerHour = median(results.map((r) => r.pensionBanked)) / hoursOf(totalTicks);
     const stalled = (median(results.map((r) => r.stalledTicks)) / totalTicks) * 100;
     const encPerHour = median(results.map((r) => r.encounters)) / hoursOf(totalTicks);
+    const equipment = median(results.map((r) => r.requisitions));
 
     console.log(
       [
@@ -205,6 +282,7 @@ function main(): void {
         Number.isFinite(lifeHours) ? lifeHours.toFixed(1) : 'never',
         goldPerHour.toFixed(0),
         pensionPerHour.toFixed(0),
+        equipment.toFixed(0),
         floor.toFixed(0),
         level.toFixed(0),
         stalled.toFixed(0),
@@ -217,6 +295,7 @@ function main(): void {
 
   console.log(
     '\nh/death = hours of play per death, survivors included.\n' +
+      'equip = requisitions owned at the end of the run, of 7 in the catalogue.\n' +
       'stalled% = share of ticks spent waiting on the permit office.\n',
   );
 }

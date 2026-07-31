@@ -301,21 +301,26 @@ export const RETIREMENT_MIN_SERVICE_TICKS = 120;
  * requisition, it is power with a receipt.
  *
  * Costs are set against roughly 255 gold/hour of balanced play: a first rung is
- * three or four hours, and clearing the whole catalogue is around forty. The
- * point is not that it is expensive, it is that gold now competes with the
- * pension it would otherwise have converted into on Form R-1.
+ * three or four hours, and clearing the catalogue is several days of
+ * deliberate saving. The first draft was a third of this and the harness
+ * cleared all seven rungs inside a week on two different profiles — a sink
+ * that empties is a purchase, not a decision.
+ *
+ * The point is not that it is expensive. It is that gold now competes with the
+ * pension it would otherwise have converted into on Form R-1: buying the
+ * catalogue costs a daily retirer about a quarter of their pension rate.
  */
 export const REQUISITION_CATALOGUE = [
   { id: 'bulk1', track: 'bulk', tier: 1, label: 'Bulk Filing Authorisation I', detail: 'Sell an entire loot category on one form.', cost: 900 },
-  { id: 'bulk2', track: 'bulk', tier: 2, label: 'Bulk Filing Authorisation II', detail: 'Also clear every stack under a value you set.', cost: 3200 },
+  { id: 'bulk2', track: 'bulk', tier: 2, label: 'Bulk Filing Authorisation II', detail: 'Also clear every stack under a value you set.', cost: 9000 },
 
   { id: 'index1', track: 'index', tier: 1, label: 'Cabinet Index I', detail: 'Sort the filing cabinet by value, category or demand.', cost: 700 },
-  { id: 'index2', track: 'index', tier: 2, label: 'Cabinet Index II', detail: 'Filter to a single category, remembered between visits.', cost: 2400 },
+  { id: 'index2', track: 'index', tier: 2, label: 'Cabinet Index II', detail: 'Filter to a single category, remembered between visits.', cost: 7000 },
 
   { id: 'journal1', track: 'journal', tier: 1, label: 'Extended Journal Retention I', detail: 'The journal keeps 150 lines instead of 60.', cost: 600 },
-  { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The journal keeps 400 lines.', cost: 2100 },
+  { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The journal keeps 400 lines.', cost: 6000 },
 
-  { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Depth and permit ETA stay on the strip, on every screen.', cost: 1100 },
+  { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Depth and permit ETA stay on the strip, on every screen.', cost: 2500 },
 ] as const satisfies readonly LadderEntry<RequisitionId, RequisitionTrack>[];
 
 export function requisitionTier(

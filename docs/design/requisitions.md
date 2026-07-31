@@ -1,7 +1,7 @@
 # Requisitions — buying the interface with gold
 
-**Status:** designed, not built. Targeted at M4 (it fixes an M4 balance
-finding) with the screen landing alongside the upgrades UI.
+**Status:** built, in four tracks of seven rungs. The remaining catalogue
+entries below are designed and unbuilt.
 
 ## The problem it solves
 
@@ -64,39 +64,71 @@ it has stopped being a feature and started being leverage.
 
 ## The catalogue
 
-Costs are placeholders until the sim says otherwise. The shape that matters:
-tier one of anything is roughly one good career, and the list is long enough
-that no single career clears it.
-
-| Requisition | Effect | Notes |
-| --- | --- | --- |
-| **Bulk Filing Authorisation** | Sell all stacks below a threshold, or a whole category, in one filing | The single biggest tap-saver once the cabinet is large |
-| **Cabinet Index** | Sort and filter the cabinet by value, category, demand | Reading convenience; changes nothing about contents |
-| **Form SO-1 Carbon Copies** | Saved standing-order presets, one-tap switching | One set of orders still in force at a time — presets are not slots |
-| **Keyboard Requisition** | Command history, autocomplete, aliases | Deliberately makes the *free* path better |
-| **Second Monitor** | Landscape split view: Terminal beside Orders | Screen real estate, not privileged information |
-| **Pinned Readouts** | Persistent gold/supplies/permit strip | Same numbers, fewer taps |
-| **Departmental Stationery** | Boot sequences, bezel finishes, palettes | Pure cosmetic |
-| **Extended Journal Retention** | Keep more than the last 60 lines | Pairs with journal pagination |
-
 Every one is a tap-saver, a reading aid, or a cosmetic. None changes what the
 recruit does underground, which is the test: if a requisition would show up in
 the simulation harness as a different number, it is not a requisition.
 
-## Open questions
+### Built
 
-- **Where does it live?** The Ledger already has a PENSION column that is
-  permanent and pension-priced. A REQUISITIONS column beside it — permanent and
-  gold-priced — is the obvious answer, and makes the two currencies legible by
-  sitting them next to each other. Risks crowding a screen that already has
-  four columns on a phone.
-- **Tiers or singles?** Prestige uses three-tier ladders. Some of these tier
-  naturally (cabinet index → index with saved views) and some do not (a second
-  monitor is a second monitor).
-- **Does it break the retirement finding?** It should *narrow* the gap by giving
-  income a purpose, but it could overshoot and make never-retiring correct
-  instead. Re-run the harness with a requisition-buying profile before
-  committing to costs.
-- **Does gold need to survive death at all now?** Currently 40% of the estate
-  converts to pension. If requisitions are the intended sink, that rate may be
-  too generous — it competes with the sink it is supposed to feed.
+| Requisition | Cost | Effect |
+| --- | --- | --- |
+| **Bulk Filing Authorisation I** | 900 | Sell an entire loot category on one form |
+| **Bulk Filing Authorisation II** | 9000 | Also clear every stack under a unit value you set |
+| **Cabinet Index I** | 700 | Sort the cabinet by value, category or demand |
+| **Cabinet Index II** | 7000 | Filter to a single category, remembered between visits |
+| **Extended Journal Retention I** | 600 | The journal keeps 150 lines instead of 60 |
+| **Extended Journal Retention II** | 6000 | The journal keeps 400 lines |
+| **Pinned Readouts** | 2500 | Depth and the permit clock follow you off the Terminal |
+
+Costs were set by simulation, not by feel — see
+[`balance.md`](balance.md#requisitions-what-happens-when-gold-finally-buys-something).
+The first draft was a third of this and got cleared inside a week by two
+different profiles.
+
+Two decisions the implementation forced:
+
+- **"Sell everything" is not expressible.** A bulk filing must name a category
+  or a value threshold. A one-tap unbounded liquidation of the whole cabinet is
+  a button players press by accident exactly once, and the fiction agrees:
+  forms name what they are for.
+- **A bulk filing confirms, and the confirmation renders under the control that
+  raised it.** Built at the foot of the screen first, where it landed three
+  columns below the tap that opened it.
+
+### Designed, unbuilt
+
+| Requisition | Effect | Notes |
+| --- | --- | --- |
+| **Form SO-1 Carbon Copies** | Saved standing-order presets, one-tap switching | One set of orders still in force at a time — presets are not slots |
+| **Keyboard Requisition** | Command history, autocomplete, aliases | Deliberately makes the *free* path better; needs the M2 command-line work first |
+| **Second Monitor** | Landscape split view: Terminal beside Orders | Screen real estate, not privileged information |
+| **Departmental Stationery** | Boot sequences, bezel finishes, palettes | Pure cosmetic; overlaps the phosphor prestige track, so needs a story about which currency owns cosmetics |
+
+These four are what make the catalogue longer, which is what the balance run
+says it needs — the alternative is pricing seven conveniences absurdly.
+
+## Questions the build answered
+
+- **Where does it live?** A REQUISITIONS column beside PENSION, so the two
+  permanent currencies sit next to each other and the distinction needs no
+  explaining. On a phone the columns stack, so the feared crowding did not
+  happen — what did was the tab strip, where Pinned Readouts squeezed the
+  scrolling tabs. Fixed by rendering the permit chip only while a permit is
+  actually processing.
+- **Tiers or singles?** Tiers, on the same machinery as prestige. `offers()`
+  generalised to `ladderOffers()` over any catalogue, so both currencies show
+  one rung per track. Tracks are allowed to be one rung long, which is what
+  Pinned Readouts is.
+- **Does it break the retirement finding?** It narrows it without inverting it:
+  87 → 76 pension/h for a daily retirer, and the two strategies now buy
+  visibly different things. See `balance.md`.
+
+## Still open
+
+- **Does gold need to survive death at all now?** 40% of the estate still
+  converts to pension, a rate set when gold had nowhere else to go. It now
+  competes directly with the sink it was meant to feed.
+- **Is a complete office worth what it costs in pension?** The harness cannot
+  answer this — it turns on how much the conveniences are worth to a person
+  using them. It is the first requisitions question that needs a playtester
+  rather than a run.

@@ -13,7 +13,33 @@ import type {
   UpdateOrdersResponse,
 } from '@deepholdings/shared';
 
-const BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8787').replace(/\/$/, '');
+const API_OVERRIDE_KEY = 'deepholdings.apiUrl';
+
+/**
+ * Where the API lives.
+ *
+ * Baked in at build time, because a device cannot reach the build machine's
+ * localhost. In dev builds only, `?api=http://192.168.1.42:8787` overrides it
+ * and is remembered — that lets one dev server be pointed at any host from a
+ * phone without rebuilding. Never honoured in a release build, where the API
+ * address is not something a URL should be able to change.
+ */
+function resolveBaseUrl(): string {
+  const configured = import.meta.env.VITE_API_URL ?? 'http://localhost:8787';
+  if (!import.meta.env.DEV) return configured.replace(/\/$/, '');
+
+  try {
+    const fromQuery = new URLSearchParams(window.location.search).get('api');
+    if (fromQuery) window.localStorage.setItem(API_OVERRIDE_KEY, fromQuery);
+    const override = fromQuery ?? window.localStorage.getItem(API_OVERRIDE_KEY);
+    if (override) return override.replace(/\/$/, '');
+  } catch {
+    // No storage, no override.
+  }
+  return configured.replace(/\/$/, '');
+}
+
+const BASE_URL = resolveBaseUrl();
 const DEVICE_KEY = 'deepholdings.deviceId';
 const TOKEN_KEY = 'deepholdings.token';
 

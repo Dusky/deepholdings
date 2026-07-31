@@ -27,15 +27,19 @@ export interface Config {
 export type CorsOrigin = string[] | ((origin: string) => boolean);
 
 /**
- * Private-network origins: RFC1918 plus link-local, on any port.
+ * Private-network origins: RFC1918, loopback, link-local and CGNAT, any port.
  *
  * The phone-browser test path loads the client from the desktop's LAN address,
  * which is not a value anyone can put in a default. Matching the address range
  * instead means the fast path works on any home network without configuration,
  * and the pattern is narrow enough that it cannot match a public host.
+ *
+ * 100.64/10 is in the list because that is where Tailscale and other overlay
+ * networks live, and an overlay is the right way to reach a dev server from
+ * off-network — far better than forwarding a port on the router at one.
  */
 const PRIVATE_ORIGIN =
-  /^https?:\/\/(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|\[::1\])(?::\d+)?$/;
+  /^https?:\/\/(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|\[::1\])(?::\d+)?$/;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const tokenSecret = env.TOKEN_SECRET ?? 'dev-secret-change-me';

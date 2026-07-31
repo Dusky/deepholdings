@@ -63,6 +63,18 @@ for (const adapter of adapters) {
       });
       assert.equal(lan.headers['access-control-allow-origin'], 'http://192.168.1.42:5173');
 
+      // Overlay networks (Tailscale et al) live in CGNAT space and are the
+      // sane way to reach a dev server from off-network.
+      const overlay = await app.inject({
+        method: 'OPTIONS',
+        url: '/v1/state',
+        headers: {
+          origin: 'http://100.105.79.34:5173',
+          'access-control-request-method': 'GET',
+        },
+      });
+      assert.equal(overlay.headers['access-control-allow-origin'], 'http://100.105.79.34:5173');
+
       const public_ = await app.inject({
         method: 'OPTIONS',
         url: '/v1/state',

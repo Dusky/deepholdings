@@ -1,13 +1,21 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Character, Pension } from '@deepholdings/shared';
-import { newRecruit } from '../src/domain/character.js';
+import { succeed } from '../src/domain/character.js';
 import { clearanceFor } from '../src/domain/clearance.js';
 
 const NO_PENSION: Pension = { total: 0, spent: 0, unlocks: [] };
 
 function recruit(overrides: Partial<Character> = {}): Character {
-  return { ...newRecruit('c1', 'a1', 1, [], 1_000_000), ...overrides };
+  const fresh = succeed({
+    id: 'c1',
+    accountId: 'a1',
+    previous: null,
+    depthReached: 0,
+    unlocks: [],
+    atTick: 1_000_000,
+  }).character;
+  return { ...fresh, ...overrides };
 }
 
 test('a brand-new officer gets the terminal and the orders form, nothing else', () => {

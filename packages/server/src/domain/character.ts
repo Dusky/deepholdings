@@ -47,19 +47,67 @@ export const STARTING_INVENTORY: InventoryItem[] = [
   { name: 'Rope, 50ft', note: 'x1', quantity: 1, unitValue: 12, category: 'gear' },
 ];
 
-/** Permanent unlocks are the only thing that crosses a death. */
-export function newRecruit(
+/**
+ * Everything needed to issue the next recruit.
+ *
+ * `previous` and `depthReached` are **required**, including when there is no
+ * previous recruit — you have to say `null` on purpose. That is the entire
+ * reason this interface exists. The old constructor took the case file as four
+ * optional positional parameters, and the server simply never passed them, so
+ * every successor arrived at Grade I with Permit D-1 while the balance harness
+ * (which did pass them) measured a game where death was survivable. Nobody
+ * noticed for months because both were individually correct.
+ */
+export interface Succession {
+  id: string;
+  accountId: string;
+  /** The recruit leaving service. Null only for an account's first. */
+  previous: Character | null;
+  /** The floor they left on. Ignored when there is no previous recruit. */
+  depthReached: number;
+  /** Permanent unlocks are the only other thing that crosses a death. */
+  unlocks: readonly UnlockId[];
+  atTick: number;
+}
+
+/**
+ * Issue the next recruit. The only way one is ever constructed.
+ *
+ * Returns the whole starting record rather than just the character, so a caller
+ * cannot forget the fresh kit or leave a stale permit application attached.
+ */
+export function succeed(input: Succession): {
+  character: Character;
+  inventory: InventoryItem[];
+  permitAppliedTick: null;
+} {
+  const { previous } = input;
+  return {
+    character: newRecruit(
+      input.id,
+      input.accountId,
+      previous ? previous.recruitNum + 1 : 1,
+      input.unlocks,
+      input.atTick,
+      previous?.permitTier ?? STARTING_PERMIT_TIER,
+      previous?.level ?? 1,
+      previous ? input.depthReached : 0,
+    ),
+    inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
+    permitAppliedTick: null,
+  };
+}
+
+/** Not exported: `succeed` is the door, so the case file cannot be dropped. */
+function newRecruit(
   id: string,
   accountId: string,
   recruitNum: number,
   unlocks: readonly UnlockId[],
   atTick: number,
-  /** The tier the previous recruit held, if there was one. */
-  previousPermitTier = STARTING_PERMIT_TIER,
-  /** The grade the previous recruit reached, if there was one. */
-  previousLevel = 1,
-  /** The floor they reached. A deep loss returns a better successor. */
-  previousDepth = 0,
+  previousPermitTier: number,
+  previousLevel: number,
+  previousDepth: number,
 ): Character {
   const intake = RECRUIT_GRADE_BY_TIER[unlockTier(unlocks, 'recruit')];
   const settlement = ESTATE_GOLD_BY_TIER[unlockTier(unlocks, 'estate')];

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { MAX_CATCHUP_TICKS, type StandingOrders } from '@deepholdings/shared';
-import { newRecruit } from '../src/domain/character.js';
+import { succeed } from '../src/domain/character.js';
 import { resolve, tickOf } from '../src/domain/resolve.js';
 
 const ORDERS: StandingOrders = {
@@ -13,7 +13,14 @@ const ORDERS: StandingOrders = {
 };
 
 function character(id = 'fixed-character-id', atTick = 1_000_000) {
-  return newRecruit(id, 'account-1', 1, [], atTick);
+  return succeed({
+    id,
+    accountId: 'account-1',
+    previous: null,
+    depthReached: 0,
+    unlocks: [],
+    atTick,
+  }).character;
 }
 
 test('resolving the same span twice produces identical results', () => {

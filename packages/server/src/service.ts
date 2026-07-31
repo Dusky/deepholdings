@@ -44,7 +44,7 @@ import {
   type UnlockId,
   type UnlockOffer,
 } from '@deepholdings/shared';
-import { newRecruit, recruitName, STARTING_INVENTORY } from './domain/character.js';
+import { succeed } from './domain/character.js';
 import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
 import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
 import type { CharacterRecord, Repository } from './ports.js';
@@ -148,11 +148,14 @@ function replacementEntry(character: Character) {
 }
 
 function firstRecruit(accountId: string): CharacterRecord {
-  return {
-    character: newRecruit(randomUUID(), accountId, 1, [], tickOf(new Date())),
-    permitAppliedTick: null,
-    inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
-  };
+  return succeed({
+    id: randomUUID(),
+    accountId,
+    previous: null,
+    depthReached: 0,
+    unlocks: [],
+    atTick: tickOf(new Date()),
+  });
 }
 
 /**
@@ -851,34 +854,24 @@ async function claimInside(
   // file the server was quietly throwing away.
   const previous = await tx.getLatestCharacter(accountId);
 
-  const character = newRecruit(
-    randomUUID(),
+  const record = succeed({
+    id: randomUUID(),
     accountId,
-    nextRecruitNumber(award.characterName),
-    banked.unlocks,
-    tickOf(new Date()),
-    previous?.character.permitTier,
-    previous?.character.level,
-    // How deep the last one got. A deep loss returns a better successor.
-    award.depth,
-  );
-  await tx.insertCharacter({
-    character,
-    permitAppliedTick: null,
-    inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
+    previous: previous?.character ?? null,
+    depthReached: award.depth,
+    unlocks: banked.unlocks,
+    atTick: tickOf(new Date()),
   });
-  await tx.appendJournal([replacementEntry(character)]);
+  await tx.insertCharacter(record);
+  await tx.appendJournal([replacementEntry(record.character)]);
 
-  return { character, pension: banked, orders: await tx.getOrders(accountId) };
+  return {
+    character: record.character,
+    pension: banked,
+    orders: await tx.getOrders(accountId),
+  };
 }
 
-/** Recruit ordinals are part of the joke, so they have to keep counting. */
-function nextRecruitNumber(previousName: string): number {
-  for (let n = 1; n < 200; n += 1) {
-    if (recruitName(n) === previousName) return n + 1;
-  }
-  return 1;
-}
 
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {
   const world = await repo.getWorld();

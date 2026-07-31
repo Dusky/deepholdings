@@ -19,7 +19,7 @@ import {
   type RequisitionId,
   type StandingOrders,
 } from '@deepholdings/shared';
-import { newRecruit } from '../src/domain/character.js';
+import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
 
 interface Profile {
@@ -120,9 +120,17 @@ interface RunResult {
 
 function simulateOne(profile: Profile, seed: number, totalTicks: number): RunResult {
   const accountId = `sim-${seed}`;
-  let character = newRecruit(`${accountId}-1`, accountId, 1, [], 0);
-  let inventory: InventoryItem[] = [];
-  let permitAppliedTick: number | null = null;
+  const first = succeed({
+    id: `${accountId}-1`,
+    accountId,
+    previous: null,
+    depthReached: 0,
+    unlocks: [],
+    atTick: 0,
+  });
+  let character = first.character;
+  let inventory: InventoryItem[] = first.inventory;
+  let permitAppliedTick: number | null = first.permitAppliedTick;
 
   const result: RunResult = {
     deaths: 0,
@@ -196,12 +204,16 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
       result.pensionBanked += out.death.pensionAwarded;
       recruitNum += 1;
       bornAt = tick;
-      character = newRecruit(
-        `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
-        out.character.permitTier, out.character.level, out.death.depth,
-      );
-      permitAppliedTick = null;
-      inventory = [];
+      // The same door the server uses. When these were two constructions they
+      // disagreed for months without either being individually wrong.
+      ({ character, inventory, permitAppliedTick } = succeed({
+        id: `${accountId}-${recruitNum}`,
+        accountId,
+        previous: out.character,
+        depthReached: out.death.depth,
+        unlocks: [],
+        atTick: tick,
+      }));
     } else if (tick >= retireAt) {
       // Form R-1: banked at the same rate death pays, at a moment of choosing.
       const service = tick - bornAt;
@@ -211,12 +223,14 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
       result.lifespansTicks.push(service);
       recruitNum += 1;
       bornAt = tick;
-      character = newRecruit(
-        `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
-        character.permitTier, character.level, character.depth,
-      );
-      permitAppliedTick = null;
-      inventory = [];
+      ({ character, inventory, permitAppliedTick } = succeed({
+        id: `${accountId}-${recruitNum}`,
+        accountId,
+        previous: character,
+        depthReached: character.depth,
+        unlocks: [],
+        atTick: tick,
+      }));
     } else if (out.ticksResolved === 0) {
       break;
     }

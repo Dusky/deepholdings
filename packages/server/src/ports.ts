@@ -47,6 +47,15 @@ export interface Repository {
    * request waits rather than double-resolving.
    */
   getActiveCharacterForUpdate(accountId: string): Promise<CharacterRecord | null>;
+  /**
+   * The account's most recent recruit, alive or not.
+   *
+   * The successor path needs the deceased one's grade and permit, and by then
+   * they are no longer the *active* character — which is how a successor came
+   * to be issued at Grade I with Permit D-1 for as long as the game has
+   * existed, wiping the case file the design promises is kept.
+   */
+  getLatestCharacter(accountId: string): Promise<CharacterRecord | null>;
   insertCharacter(record: CharacterRecord): Promise<void>;
   saveCharacter(record: CharacterRecord): Promise<void>;
 

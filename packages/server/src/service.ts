@@ -841,12 +841,22 @@ async function claimInside(
   };
   await tx.savePension(accountId, banked);
 
+  // The deceased is no longer the *active* character, so it has to be fetched
+  // deliberately. Without this the successor is issued off the street at Grade
+  // I with Permit D-1 — every measurement of what death costs assumed a case
+  // file the server was quietly throwing away.
+  const previous = await tx.getLatestCharacter(accountId);
+
   const character = newRecruit(
     randomUUID(),
     accountId,
     nextRecruitNumber(award.characterName),
     banked.unlocks,
     tickOf(new Date()),
+    previous?.character.permitTier,
+    previous?.character.level,
+    // How deep the last one got. A deep loss returns a better successor.
+    award.depth,
   );
   await tx.insertCharacter({
     character,

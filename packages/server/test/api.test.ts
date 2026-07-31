@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { after, before, describe, test } from 'node:test';
-import { HOARD_SALE_BONUS, type StateResponse } from '@deepholdings/shared';
+import { HOARD_SALE_BONUS, inheritedLevel, type StateResponse } from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
 import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
@@ -532,6 +533,55 @@ for (const adapter of adapters) {
       const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin' });
       assert.ok(bulletin.json().deaths.length > 0);
     });
+
+    test('a successor inherits the case file, not nothing', async () => {
+      // The design's whole claim about death is that it is a setback rather
+      // than a wipe. It was a wipe: `claimInside` never passed the deceased
+      // recruit's grade or permit to `newRecruit`, so a Grade 11 officer
+      // holding Permit D-6 was replaced by Grade 1 with D-1. Every balance
+      // number about the cost of death assumed otherwise.
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      Object.assign(record.character, {
+        level: 11,
+        permitTier: 6,
+        depth: 8,
+        hp: 0,
+        alive: false,
+      });
+      await repo.saveCharacter(record);
+      await repo.recordDeath(account, {
+        id: randomUUID(),
+        characterName: record.character.name,
+        depth: 8,
+        cause: 'a clerical error, downstream',
+        goldHandled: 0,
+        pensionAwarded: 25,
+        at: new Date().toISOString(),
+      });
+
+      const claim = await app.inject({
+        method: 'POST',
+        url: '/v1/pension/claim',
+        headers: auth(),
+      });
+      assert.equal(claim.statusCode, 200);
+      const successor = claim.json().character;
+
+      // Permits are issued against the case file: all but one tier survives.
+      assert.equal(successor.permitTier, 5);
+      // Grade kept scales with the floor reached, so a deep loss returns a
+      // better replacement than one in the entrance corridor.
+      assert.equal(successor.level, inheritedLevel(11, 8));
+      assert.ok(successor.level > 1, 'a deep loss must not reset to Grade I');
+      assert.ok(
+        inheritedLevel(11, 8) > inheritedLevel(11, 0),
+        'dying deep must return a better successor than dying shallow',
+      );
+      assert.equal(successor.hp, successor.maxHp);
+    });
+
   });
 }
 

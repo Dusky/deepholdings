@@ -226,6 +226,71 @@ a short catalogue, and inflating seven items until a week cannot clear them
 would price conveniences absurdly. The four designed-but-unbuilt entries in
 [`requisitions.md`](requisitions.md) are what extend it, not bigger numbers.
 
+## Death was a wipe after all
+
+Everything above about the cost of death was measured against a simulation of a
+game the server was not running.
+
+`newRecruit` takes the previous recruit's grade and permit tier and hands the
+successor most of both — that is the "death is a setback, not a wipe" fix from
+the very first balance pass, and the harness has always called it correctly. The
+server never passed the arguments. `claimInside` builds the successor from a
+`DeathRecord`, which carries a name, a depth and an award and no case file at
+all, so both defaults applied. A Grade 11 officer holding Permit D-6, dying on
+Floor 8, was replaced by **Grade 1 with Permit D-1**.
+
+So the death spiral the first pass diagnosed and claimed to have fixed was
+still there in the shipped game, for every player, the entire time — and the
+harness could never see it, because the harness constructs its own successors.
+
+Fixed by fetching the deceased recruit (`getLatestCharacter`, since by then
+they are not the *active* one) and passing the case file through. There is now
+a test on both adapters asserting a successor comes back at grade rather than
+off the street.
+
+**The lesson worth keeping:** the harness and the server built successors
+independently, so they could disagree silently and did. Anywhere the simulation
+re-implements a rule instead of calling it, it is measuring a different game.
+
+### Grade retained now scales with the floor reached
+
+Since the successor path was being fixed anyway, the flat two-thirds became
+`0.55 + 0.04 × depth`, capped at whole. Losing somebody on Floor 10 says
+something about the case file that losing somebody in the entrance corridor
+does not, and the Authority sends a better replacement. Dying deep is still
+worse than not dying — the successor starts at Depth 0 either way and has to
+walk back down.
+
+This is what makes the retirement loop noticeably better: a daily retirer
+separating on Floor 6 keeps 79% of their grade instead of 67%, which shows up
+as 214 value/h against 208 and a median Grade 6 instead of 5.
+
+## Working below your grade: measured and rejected
+
+`GRADE_STRETCH` — floors the Authority will let a recruit work beyond their
+grade — has always been 0, which means `authorisedDepth` clamps depth to grade,
+which means `gradeMismatchMultiplier` **can never return anything but 1**. The
+knob documented as "the knob that makes Target Depth a decision rather than a
+slider you push to the right" has never once fired. Verified by exhaustive
+sweep over every reachable (level, permit, target) triple.
+
+Turning it on is the obvious way to let aggressive orders actually go deep, and
+it is a disaster at every value:
+
+| stretch | balanced deaths/wk | balanced value/h | greedy value/h |
+| --- | --- | --- | --- |
+| **0** | **1.7** | **270** | **144** |
+| 1 | 17.1 | 153 | 122 |
+| 2 | 40.7 | 120 | 119 |
+| 3 | 41.7 | 121 | 119 |
+
+A flat stretch applies to a Grade I recruit on their first morning exactly as
+it applies to a veteran, so the whole population dies in the entrance corridor
+and every profile collapses into the same death farm. Working below your grade
+is the right *idea* for aggressive orders; it cannot be granted to everyone at
+once. Left at 0, with the reason recorded in `tuning.ts` so the next person does
+not have to re-run the sweep.
+
 ## Flavour must not spend the simulation's entropy
 
 The content pass — generated encounter names, more journal copy — moved the

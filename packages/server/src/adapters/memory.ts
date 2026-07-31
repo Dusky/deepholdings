@@ -86,6 +86,15 @@ export class MemoryRepository implements Repository {
     return null;
   }
 
+  async getLatestCharacter(accountId: string): Promise<CharacterRecord | null> {
+    let latest: (CharacterRecord & { diedAt: Date | null }) | null = null;
+    for (const record of this.characters.values()) {
+      if (record.character.accountId !== accountId) continue;
+      if (!latest || record.character.recruitNum > latest.character.recruitNum) latest = record;
+    }
+    return latest ? clone(latest) : null;
+  }
+
   async insertCharacter(record: CharacterRecord): Promise<void> {
     this.characters.set(record.character.id, { ...clone(record), diedAt: null });
   }

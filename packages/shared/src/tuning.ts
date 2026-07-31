@@ -61,7 +61,21 @@ export function permitDepthLimit(permitTier: number): number {
   return PERMIT_DEPTH_LIMIT[permitTier] ?? MAX_DEPTH;
 }
 
-/** Floors beyond their grade the Authority will authorise a recruit to work. */
+/**
+ * Floors beyond their grade the Authority will authorise a recruit to work.
+ *
+ * Zero, and measured rather than assumed. Every positive value is a disaster:
+ * at a stretch of one, balanced play goes from 1.7 deaths a week to 17 and
+ * income falls by nearly half, because a flat stretch applies to a Grade I
+ * recruit on their first morning as readily as to a veteran. Working below
+ * your grade is the right *idea* for aggressive orders — it is just not
+ * something that can be granted to everyone at once.
+ *
+ * Consequence worth stating plainly: with this at zero, `authorisedDepth`
+ * clamps depth to grade, so `gradeMismatchMultiplier` can never return
+ * anything but 1. The penalty is unreachable. It is kept because it is the
+ * mechanism any future version of stretch would use, not because it fires.
+ */
 export const GRADE_STRETCH = 0;
 
 /**
@@ -107,11 +121,28 @@ export function xpForLevel(level: number): number {
  * A successor is assigned at comparable grade rather than off the street.
  *
  * Resetting to Grade I made death a spiral: an aggressive officer died, came
- * back weaker, and died faster. Halving the grade keeps death a setback with
- * real teeth while leaving a way back up.
+ * back weaker, and died faster. Keeping most of the grade makes death a
+ * setback with real teeth while leaving a way back up.
+ *
+ * **How much is kept scales with the floor the last recruit reached**, and
+ * that is what makes deep play viable rather than merely expensive. A flat
+ * two-thirds meant an officer who ordered Floor 9 died at Floor 5, came back
+ * three grades down, and never got deep enough to earn what depth pays — they
+ * were charged the price of ambition and never delivered the goods. Losing
+ * somebody on Floor 10 now says something about the case file that losing
+ * somebody in the entrance corridor does not, so the Authority sends a better
+ * replacement.
+ *
+ * It also keeps the incentive pointing the right way: dying deep is still
+ * worse than not dying, because the successor starts at Depth 0 either way
+ * and has to walk back down.
  */
-export function inheritedLevel(previousLevel: number): number {
-  return Math.max(1, Math.floor((previousLevel * 2) / 3));
+export const INHERIT_BASE = 0.55;
+export const INHERIT_PER_DEPTH = 0.04;
+
+export function inheritedLevel(previousLevel: number, depthReached = 0): number {
+  const share = Math.min(1, INHERIT_BASE + Math.max(0, depthReached) * INHERIT_PER_DEPTH);
+  return Math.max(1, Math.floor(previousLevel * share));
 }
 
 /**

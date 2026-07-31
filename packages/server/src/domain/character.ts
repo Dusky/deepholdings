@@ -58,10 +58,12 @@ export function newRecruit(
   previousPermitTier = STARTING_PERMIT_TIER,
   /** The grade the previous recruit reached, if there was one. */
   previousLevel = 1,
+  /** The floor they reached. A deep loss returns a better successor. */
+  previousDepth = 0,
 ): Character {
   const intake = RECRUIT_GRADE_BY_TIER[unlockTier(unlocks, 'recruit')];
   const settlement = ESTATE_GOLD_BY_TIER[unlockTier(unlocks, 'estate')];
-  const level = Math.max(inheritedLevel(previousLevel), intake);
+  const level = Math.max(inheritedLevel(previousLevel, previousDepth), intake);
 
   return {
     id,

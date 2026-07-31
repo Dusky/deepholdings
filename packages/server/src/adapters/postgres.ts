@@ -127,6 +127,14 @@ export class PostgresRepository implements Repository {
     return rows[0] ? toCharacterRecord(rows[0]) : null;
   }
 
+  async getLatestCharacter(accountId: string): Promise<CharacterRecord | null> {
+    const { rows } = await this.db.query(
+      'SELECT * FROM characters WHERE account_id = $1 ORDER BY recruit_num DESC LIMIT 1',
+      [accountId],
+    );
+    return rows[0] ? toCharacterRecord(rows[0]) : null;
+  }
+
   async insertCharacter(record: CharacterRecord): Promise<void> {
     const c = record.character;
     await this.db.query(

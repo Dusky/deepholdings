@@ -198,7 +198,7 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
       bornAt = tick;
       character = newRecruit(
         `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
-        out.character.permitTier, out.character.level,
+        out.character.permitTier, out.character.level, out.death.depth,
       );
       permitAppliedTick = null;
       inventory = [];
@@ -213,7 +213,7 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
       bornAt = tick;
       character = newRecruit(
         `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
-        character.permitTier, character.level,
+        character.permitTier, character.level, character.depth,
       );
       permitAppliedTick = null;
       inventory = [];

@@ -1,6 +1,8 @@
 import {
+  ESTATE_GOLD_BY_TIER,
   MAX_DEPTH,
   PERMIT_DEPTH_LIMIT,
+  RECRUIT_GRADE_BY_TIER,
   STARTING_GOLD,
   STARTING_HP,
   STARTING_PERMIT_TIER,
@@ -8,6 +10,7 @@ import {
   inheritedLevel,
   inheritedPermitTier,
   maxHpForLevel,
+  unlockTier,
   xpForLevel,
   type Character,
   type InventoryItem,
@@ -56,9 +59,9 @@ export function newRecruit(
   /** The grade the previous recruit reached, if there was one. */
   previousLevel = 1,
 ): Character {
-  const betterRecruit = unlocks.includes('recruit');
-  const inheritsGear = unlocks.includes('inherit');
-  const level = Math.max(inheritedLevel(previousLevel), betterRecruit ? 2 : 1);
+  const intake = RECRUIT_GRADE_BY_TIER[unlockTier(unlocks, 'recruit')];
+  const settlement = ESTATE_GOLD_BY_TIER[unlockTier(unlocks, 'estate')];
+  const level = Math.max(inheritedLevel(previousLevel), intake);
 
   return {
     id,
@@ -71,7 +74,7 @@ export function newRecruit(
     maxHp: maxHpForLevel(level),
     depth: 0,
     permitTier: inheritedPermitTier(previousPermitTier),
-    gold: STARTING_GOLD + (inheritsGear ? 120 : 0),
+    gold: STARTING_GOLD + settlement,
     supplies: STARTING_SUPPLIES,
     alive: true,
     lastResolvedTick: atTick,

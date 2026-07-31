@@ -2,6 +2,7 @@
  * Every balance number in one place. The server is the only thing that acts on
  * these; the client may read them to render honest ETAs.
  */
+import type { UnlockId, UnlockTrack } from './domain.js';
 
 /** One resolution tick per minute of real time. */
 export const TICK_SECONDS = 60;
@@ -78,10 +79,12 @@ export function pensionAward(
   serviceTicks: number,
   depthReached: number,
   goldHandled: number,
+  unlocks: readonly UnlockId[] = [],
 ): number {
   const service = Math.max(0, serviceTicks);
   const depthFactor = 1 + depthReached * 0.3;
-  return Math.round(service * 0.06 * depthFactor + goldHandled * 0.4);
+  const credit = SERVICE_CREDIT_BY_TIER[unlockTier(unlocks, 'service')];
+  return Math.round((service * 0.06 * depthFactor + goldHandled * 0.4) * credit);
 }
 
 export function xpForLevel(level: number): number {
@@ -138,13 +141,66 @@ export function maxHpForLevel(level: number): number {
  */
 export const MAX_HIT_FRACTION = 0.35;
 
+/**
+ * Prestige ladders.
+ *
+ * Every track is bought in order, so the Ledger only ever offers one rung per
+ * track and there is always a visible next step. Costs roughly triple per tier:
+ * the first is one or two recruits' work, the third is a project.
+ *
+ * Tier III of every functional track lands well beyond a fortnight of play,
+ * which is the M4 exit criterion — a tester should still have something they
+ * are working toward when the two weeks are up.
+ */
 export const UNLOCK_CATALOGUE = [
-  { id: 'permits', label: 'Faster Permit Processing (Tier I)', cost: 1200 },
-  { id: 'recruit', label: 'Better Starting Recruit (Tier I)', cost: 1800 },
-  { id: 'inherit', label: 'Inherited Gear Slot', cost: 2200 },
-  { id: 'green', label: 'Monitor Swap: Green Phosphor', cost: 900 },
-  { id: 'stipend', label: 'Passive Gold Stipend (+2/tick)', cost: 1600 },
+  { id: 'permits1', track: 'permits', tier: 1, label: 'Expedited Permit Processing I', detail: 'Permits clear in 90 minutes instead of 180.', cost: 1200 },
+  { id: 'permits2', track: 'permits', tier: 2, label: 'Expedited Permit Processing II', detail: 'Permits clear in 60 minutes.', cost: 3600 },
+  { id: 'permits3', track: 'permits', tier: 3, label: 'Expedited Permit Processing III', detail: 'Permits clear in 35 minutes.', cost: 11000 },
+
+  { id: 'recruit1', track: 'recruit', tier: 1, label: 'Improved Intake I', detail: 'New recruits start at Grade 2.', cost: 1800 },
+  { id: 'recruit2', track: 'recruit', tier: 2, label: 'Improved Intake II', detail: 'New recruits start at Grade 4.', cost: 5200 },
+  { id: 'recruit3', track: 'recruit', tier: 3, label: 'Improved Intake III', detail: 'New recruits start at Grade 7.', cost: 15000 },
+
+  { id: 'estate1', track: 'estate', tier: 1, label: 'Estate Settlement I', detail: 'Successors inherit 120 gold of effects.', cost: 2200 },
+  { id: 'estate2', track: 'estate', tier: 2, label: 'Estate Settlement II', detail: 'Successors inherit 400 gold of effects.', cost: 6000 },
+  { id: 'estate3', track: 'estate', tier: 3, label: 'Estate Settlement III', detail: 'Successors inherit 1100 gold of effects.', cost: 17000 },
+
+  { id: 'stipend1', track: 'stipend', tier: 1, label: 'Hardship Stipend I', detail: '+2 gold per minute, unconditionally.', cost: 1600 },
+  { id: 'stipend2', track: 'stipend', tier: 2, label: 'Hardship Stipend II', detail: '+5 gold per minute.', cost: 4800 },
+  { id: 'stipend3', track: 'stipend', tier: 3, label: 'Hardship Stipend III', detail: '+11 gold per minute.', cost: 14000 },
+
+  { id: 'cabinet1', track: 'cabinet', tier: 1, label: 'Filing Cabinet Extension I', detail: 'Four more stacks (16 total).', cost: 1400 },
+  { id: 'cabinet2', track: 'cabinet', tier: 2, label: 'Filing Cabinet Extension II', detail: 'Four more stacks (20 total).', cost: 4200 },
+  { id: 'cabinet3', track: 'cabinet', tier: 3, label: 'Filing Cabinet Extension III', detail: 'Six more stacks (26 total).', cost: 12000 },
+
+  { id: 'service1', track: 'service', tier: 1, label: 'Service Credit I', detail: 'Pensions accrue 20% faster.', cost: 2600 },
+  { id: 'service2', track: 'service', tier: 2, label: 'Service Credit II', detail: 'Pensions accrue 45% faster.', cost: 7500 },
+  { id: 'service3', track: 'service', tier: 3, label: 'Service Credit III', detail: 'Pensions accrue 80% faster.', cost: 21000 },
+
+  { id: 'phosphor1', track: 'phosphor', tier: 1, label: 'Monitor Swap: Green Phosphor', detail: 'Cosmetic. The Authority does not know why you want this.', cost: 900 },
 ] as const;
+
+/** How many tiers of a track are owned. Every effect reads this, not an id. */
+export function unlockTier(unlocks: readonly UnlockId[], track: UnlockTrack): number {
+  let tier = 0;
+  for (const entry of UNLOCK_CATALOGUE) {
+    if (entry.track === track && unlocks.includes(entry.id)) tier = Math.max(tier, entry.tier);
+  }
+  return tier;
+}
+
+/**
+ * Per-tier effects, indexed by owned tier — index 0 is "not bought".
+ *
+ * Kept beside the catalogue so a balance change is one edit rather than a hunt
+ * through the resolver.
+ */
+export const PERMIT_TICKS_BY_TIER = [180, 90, 60, 35] as const;
+export const RECRUIT_GRADE_BY_TIER = [1, 2, 4, 7] as const;
+export const ESTATE_GOLD_BY_TIER = [0, 120, 400, 1100] as const;
+export const STIPEND_BY_TIER = [0, 2, 5, 11] as const;
+export const CABINET_SLOTS_BY_TIER = [12, 16, 20, 26] as const;
+export const SERVICE_CREDIT_BY_TIER = [1, 1.2, 1.45, 1.8] as const;
 
 /**
  * What Loot Priority actually does.
@@ -170,7 +226,9 @@ export const LOOT_EFFECT = {
  * convenience we are willing to sell (see docs/design/monetization.md), and it
  * sells nothing but the choice of what to keep.
  */
-export const INVENTORY_CAP = 12;
+export function cabinetSlots(unlocks: readonly UnlockId[]): number {
+  return CABINET_SLOTS_BY_TIER[unlockTier(unlocks, 'cabinet')];
+}
 
 /**
  * Spend Policy: three genuinely different bargains.
@@ -193,9 +251,17 @@ export const HOARD_SALE_BONUS = 1.15;
 export const MARKET_DEMAND_FLOOR = 0.8;
 export const MARKET_DEMAND_SPREAD = 0.4;
 
-/** Gold per tick granted by the stipend unlock. */
-export const STIPEND_PER_TICK = 2;
-
 /** Ticks a permit application spends "processing" before it clears. */
-export const PERMIT_PROCESSING_TICKS = 180;
-export const PERMIT_PROCESSING_TICKS_FAST = 90;
+export function permitProcessingTicks(unlocks: readonly UnlockId[]): number {
+  return PERMIT_TICKS_BY_TIER[unlockTier(unlocks, 'permits')];
+}
+
+/**
+ * Minimum service before Form R-1 (Voluntary Retirement) may be filed.
+ *
+ * Retirement is meant to replace suicide-by-standing-order as the way to
+ * prestige, not to become a churn button: pensions accrue with service, so a
+ * recruit retired at two hours has earned about two hours of pension. The floor
+ * exists so the Ledger never shows a retirement offer that pays nothing.
+ */
+export const RETIREMENT_MIN_SERVICE_TICKS = 120;

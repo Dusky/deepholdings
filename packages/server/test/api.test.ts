@@ -286,7 +286,7 @@ for (const adapter of adapters) {
         method: 'POST',
         url: '/v1/pension/unlocks',
         headers: auth(),
-        payload: { id: 'green' },
+        payload: { id: 'phosphor1' },
       });
       assert.equal(response.statusCode, 409);
       assert.equal(response.json().error.code, 'insufficient_pension');
@@ -299,7 +299,7 @@ for (const adapter of adapters) {
         method: 'POST',
         url: '/v1/pension/unlocks',
         headers: auth(),
-        payload: { id: 'green' },
+        payload: { id: 'phosphor1' },
       });
       assert.equal(bought.statusCode, 200);
       assert.equal(bought.json().pension.total, 100);
@@ -309,10 +309,44 @@ for (const adapter of adapters) {
         method: 'POST',
         url: '/v1/pension/unlocks',
         headers: auth(),
-        payload: { id: 'green' },
+        payload: { id: 'phosphor1' },
       });
       assert.equal(again.statusCode, 409);
       assert.equal(again.json().error.code, 'already_owned');
+    });
+
+    test('prestige ladders are climbed in order', async () => {
+      const account = await accountId(app, token);
+      await repo.savePension(account, { total: 40_000, spent: 0, unlocks: [] });
+
+      // Posting the top rung directly would buy tier III at tier III's price
+      // while skipping I and II entirely.
+      const skipped = await app.inject({
+        method: 'POST',
+        url: '/v1/pension/unlocks',
+        headers: auth(),
+        payload: { id: 'permits3' },
+      });
+      assert.equal(skipped.statusCode, 400);
+
+      for (const id of ['permits1', 'permits2', 'permits3'] as const) {
+        const bought = await app.inject({
+          method: 'POST',
+          url: '/v1/pension/unlocks',
+          headers: auth(),
+          payload: { id },
+        });
+        assert.equal(bought.statusCode, 200, `expected ${id} to be purchasable`);
+      }
+
+      // One offer per track, and a maxed track reads as complete.
+      const ledger = await app.inject({ method: 'GET', url: '/v1/ledger', headers: auth() });
+      const permits = ledger
+        .json()
+        .unlocks.filter((offer: { track: string }) => offer.track === 'permits');
+      assert.equal(permits.length, 1);
+      assert.equal(permits[0].owned, true);
+      assert.equal(permits[0].tier, permits[0].maxTier);
     });
 
     test('carries tavern messages', async () => {
@@ -336,6 +370,67 @@ for (const adapter of adapters) {
     test('claiming a pension requires a death on file', async () => {
       const response = await app.inject({ method: 'POST', url: '/v1/pension/claim', headers: auth() });
       assert.equal(response.statusCode, 400);
+    });
+
+    test('Form R-1 retires a recruit and banks the quoted award', async () => {
+      const account = await accountId(app, token);
+      await repo.savePension(account, { total: 0, spent: 0, unlocks: [] });
+      await repo.saveOrders(account, {
+        targetDepth: 3, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply',
+      });
+
+      const fresh = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(fresh);
+      fresh.character.bornTick = fresh.character.lastResolvedTick;
+      await repo.saveCharacter(fresh);
+
+      // A recruit who has barely started has nothing to retire on.
+      const early = await app.inject({
+        method: 'POST',
+        url: '/v1/recruit/retire',
+        headers: auth(),
+      });
+      assert.equal(early.statusCode, 400);
+
+      const served = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(served);
+      served.character.lastResolvedTick -= 400;
+      served.character.bornTick = served.character.lastResolvedTick - 400;
+      await repo.saveCharacter(served);
+
+      const before = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
+      const offer = (before.json() as StateResponse).retirement;
+      assert.ok(offer);
+      assert.equal(offer.eligible, true);
+      assert.ok(offer.award > 0, 'a long career should be worth something');
+      const previousName = (before.json() as StateResponse).character.name;
+
+      const retired = await app.inject({
+        method: 'POST',
+        url: '/v1/recruit/retire',
+        headers: auth(),
+      });
+      assert.equal(retired.statusCode, 200);
+      // The quote is the payment, and the successor is already on the payroll.
+      assert.equal(retired.json().pension.total, offer.award);
+      assert.notEqual(retired.json().character.name, previousName);
+      assert.equal(retired.json().character.alive, true);
+
+      // The separation is on the feed, and it does not claim they died.
+      const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin' });
+      const separation = bulletin
+        .json()
+        .deaths.find((d: { characterName: string }) => d.characterName === previousName);
+      assert.ok(separation);
+      assert.match(separation.cause, /separation/);
+
+      // The award is banked, not owed again.
+      const claimed = await app.inject({
+        method: 'POST',
+        url: '/v1/pension/claim',
+        headers: auth(),
+      });
+      assert.equal(claimed.statusCode, 400);
     });
 
     test('the heartbeat advances the world only when due', async () => {
@@ -380,12 +475,16 @@ for (const adapter of adapters) {
 
       const pensionBefore = state!.pension.total;
       const award = state!.pendingDeath!.pensionAwarded;
+      const deceased = state!.character.recruitNum;
 
       const claimed = await app.inject({ method: 'POST', url: '/v1/pension/claim', headers: auth() });
       assert.equal(claimed.statusCode, 200);
       const body = claimed.json();
       assert.equal(body.pension.total, pensionBefore + award);
-      assert.match(body.character.name, /^GRIMWALD II,/);
+      // The ordinal advances; which ordinal depends on how many careers this
+      // account has already been through, so do not pin it to a number.
+      assert.equal(body.character.recruitNum, deceased + 1);
+      assert.match(body.character.name, /^GRIMWALD [IVX]+,/);
       assert.equal(body.character.alive, true);
 
       const successorJournal = await repo.listJournal(body.character.id, -1, 10);

@@ -175,6 +175,10 @@ export class ApiClient {
     return this.request('POST', '/v1/pension/claim', {});
   }
 
+  retireRecruit(): Promise<ClaimPensionResponse> {
+    return this.request('POST', '/v1/recruit/retire', {});
+  }
+
   getBulletin(): Promise<BulletinResponse> {
     return this.send('GET', '/v1/bulletin', undefined, null);
   }

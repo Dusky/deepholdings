@@ -145,6 +145,36 @@ cabinet, and never a tax on someone who doesn't want to play that game.
 This is also the first real argument for `hoard`. Holding inventory to sell into
 a spike is a reason to hold inventory.
 
+## Form R-1: retiring on purpose
+
+Until now the only way to bank a pension was to write standing orders you knew
+would kill somebody. That is a miserable thing to make the intended progression
+path, and it is the genre complaint that "it is never obvious when or why to
+prestige" in its purest form.
+
+Form R-1 retires the current recruit and pays exactly what death would — same
+service accrual, same depth factor, same estate. It is not a bonus. The
+difference is *who chose the moment*.
+
+The obvious worry was that retiring at the legal minimum would become the only
+correct play. It does not:
+
+| profile | value/h | pens/h | floor | lvl | stalled% |
+| --- | --- | --- | --- | --- | --- |
+| balanced (never retires) | 255 | 19 | 6 | 13 | 4 |
+| churner (retires at the 2h minimum) | 86 | 49 | 2 | 1 | 49 |
+| retirer (retires every 24h) | 206 | 87 | 6 | 5 | 7 |
+
+Churning is a trap, and legibly so: a recruit reset every two hours never gets
+deep, never grades up, and spends half their working life re-applying for
+permits they keep surrendering. Both income *and* pension rate are worse than
+retiring on a daily cycle.
+
+The daily retirer is the interesting one — it trades about 20% of income for
+four and a half times the pension rate. That is a genuine strategic axis rather
+than a dominant line, and it is the first thing in the game that rewards an
+officer for paying attention to *when* rather than *how deep*.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the
@@ -156,5 +186,10 @@ a spike is a reason to hold inventory.
 - **Spend Policy's `hoard` is better but still unproven.** The sale bonus and
   market timing give it a case; no simulation yet measures an officer who
   actually *times* sales, because the harness sells on a fixed schedule.
+- **Retiring may be too strong.** 87 pension/h against balanced play's 19 is a
+  4.5x gap, and prestige unlocks are permanent while gold currently buys
+  nothing but resupply. Until gold has real sinks — crafting is the intended
+  one — "retire on a daily cycle" is close to the answer rather than an option.
+  Worth re-measuring once there is something to spend on.
 - **These are simulations, not play.** They measure the resolver, not whether
   any of it is fun. That still needs a human.

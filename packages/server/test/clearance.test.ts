@@ -47,6 +47,6 @@ test('clearance survives death, even though level and permit do not', () => {
 });
 
 test('a spent pension still counts as having had one', () => {
-  const spent: Pension = { total: 0, spent: 1200, unlocks: ['permits'] };
+  const spent: Pension = { total: 0, spent: 1200, unlocks: ['permits1'] };
   assert.ok(clearanceFor(recruit(), spent).includes('ledger'));
 });

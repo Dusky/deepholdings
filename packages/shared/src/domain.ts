@@ -4,7 +4,22 @@ export type LootPriority = 'gold' | 'gear' | 'relics' | 'knowledge';
 
 export type SpendPolicy = 'resupply' | 'hoard' | 'insure';
 
-export type UnlockId = 'permits' | 'recruit' | 'inherit' | 'green' | 'stipend';
+/**
+ * Prestige tracks. Each is a ladder of tiers bought in order, so there is
+ * always a next thing to work toward — a flat list of five is a demo, not a
+ * progression.
+ */
+export type UnlockTrack =
+  | 'permits'
+  | 'recruit'
+  | 'estate'
+  | 'stipend'
+  | 'cabinet'
+  | 'service'
+  | 'phosphor';
+
+/** `track` + tier, e.g. `permits2`. Stored on the pension, never recomputed. */
+export type UnlockId = `${UnlockTrack}${1 | 2 | 3}`;
 
 /** The screens of the terminal. Which ones a player has is server-decided. */
 export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin';

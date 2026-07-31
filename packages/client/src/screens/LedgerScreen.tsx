@@ -8,13 +8,31 @@ import styles from './LedgerScreen.module.css';
 
 /** Inventory, market, and the prestige spend. */
 export function LedgerScreen() {
-  const { refresh } = useServer();
+  const { refresh, state } = useServer();
   const load = useCallback(() => api.getLedger(), []);
   const { data, error, loading, reload } = useResource(load, 60_000);
   const [pending, setPending] = useState<UnlockId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selling, setSelling] = useState<string | null>(null);
   const [saleNotice, setSaleNotice] = useState<string | null>(null);
+  const [retiring, setRetiring] = useState(false);
+  const [retireNotice, setRetireNotice] = useState<string | null>(null);
+  const retirement = state?.retirement ?? null;
+
+  const retire = async () => {
+    setRetiring(true);
+    setRetireNotice(null);
+    try {
+      await api.retireRecruit();
+      // A successor, an emptied cabinet and a larger pension: reload both.
+      await Promise.all([reload(), refresh()]);
+      setRetireNotice('Separation processed. A successor has been assigned.');
+    } catch {
+      setRetireNotice('Form R-1 rejected. The recruit remains on the payroll.');
+    } finally {
+      setRetiring(false);
+    }
+  };
 
   const sell = async (name: string) => {
     setSelling(name);
@@ -111,21 +129,44 @@ export function LedgerScreen() {
           const unlockState = unlock.owned ? 'owned' : unlock.affordable ? 'affordable' : 'locked';
           return (
             <button
-              key={unlock.id}
+              key={unlock.track}
               type="button"
               className={styles.unlock}
               data-state={unlockState}
               disabled={!unlock.affordable || pending !== null}
               onClick={() => void buy(unlock.id)}
             >
-              <span className={unlock.owned ? 'text-bright' : 'text-body'}>{unlock.label}</span>
-              <span className={unlock.owned ? 'text-bright' : 'text-dim'}>
-                {unlock.owned ? 'OWNED' : pending === unlock.id ? '...' : unlock.cost}
+              <span className={styles.unlockHead}>
+                <span className={unlock.owned ? 'text-bright' : 'text-body'}>{unlock.label}</span>
+                <span className={unlock.owned ? 'text-bright' : 'text-dim'}>
+                  {unlock.owned ? 'COMPLETE' : pending === unlock.id ? '...' : unlock.cost}
+                </span>
+              </span>
+              <span className={`text-dim ${styles.unlockDetail}`}>
+                {unlock.maxTier > 1 && `Tier ${unlock.tier}/${unlock.maxTier} — `}
+                {unlock.detail}
               </span>
             </button>
           );
         })}
         {notice && <div className="text-dim">{notice}</div>}
+
+        {retirement && (
+          <button
+            type="button"
+            className={styles.retire}
+            disabled={!retirement.eligible || retiring}
+            onClick={() => void retire()}
+          >
+            {retiring ? 'FILING FORM R-1...' : `FILE FORM R-1 — RETIRE FOR ${retirement.award}`}
+            <span className={`text-dim ${styles.retireNote}`}>
+              {retirement.eligible
+                ? 'Banks the pension now and assigns a successor. Ends this career.'
+                : `Separation requires ${retirement.minServiceTicks} minutes of service. ${retirement.serviceTicks} filed.`}
+            </span>
+          </button>
+        )}
+        {retireNotice && <div className="text-dim">{retireNotice}</div>}
       </div>
     </div>
   );

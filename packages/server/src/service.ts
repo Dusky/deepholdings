@@ -3,7 +3,9 @@ import {
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
   HOARD_SALE_BONUS,
+  RETIREMENT_MIN_SERVICE_TICKS,
   UNLOCK_CATALOGUE,
+  pensionAward,
   TICK_SECONDS,
   type Account,
   type BulletinResponse,
@@ -16,11 +18,12 @@ import {
   type LootPriority,
   type StandingOrders,
   type WorldState,
-  PERMIT_PROCESSING_TICKS,
-  PERMIT_PROCESSING_TICKS_FAST,
+  permitProcessingTicks,
+  unlockTier,
   TICK_SECONDS as TICK_SECS,
   permitDepthLimit,
   type PendingPermit,
+  type RetirementOffer,
   type ScreenId,
   type SellItemResponse,
   type ShiftDigest,
@@ -237,7 +240,8 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       clearance: clearanceFor(current.character, pension),
       digest,
       ordersFiled: await tx.hasFiledOrders(accountId),
-      pendingPermit: pendingPermitOf(current, pension.unlocks.includes('permits'), now),
+      pendingPermit: pendingPermitOf(current, pension.unlocks, now),
+      retirement: retirementOffer(current, pension.unlocks),
       character: current.character,
       orders,
       pension,
@@ -277,15 +281,34 @@ function digestOf(
 /**
  * When the permit office will get round to it. Null when nothing is filed.
  */
+/** What Form R-1 would pay for this recruit right now. */
+function retirementOffer(
+  record: CharacterRecord,
+  unlocks: readonly UnlockId[],
+): RetirementOffer | null {
+  if (!record.character.alive) return null;
+
+  const serviceTicks = Math.max(0, record.character.lastResolvedTick - record.character.bornTick);
+  const estate =
+    record.character.gold +
+    record.inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
+
+  return {
+    eligible: serviceTicks >= RETIREMENT_MIN_SERVICE_TICKS,
+    serviceTicks,
+    minServiceTicks: RETIREMENT_MIN_SERVICE_TICKS,
+    award: pensionAward(serviceTicks, record.character.depth, estate, unlocks),
+  };
+}
+
 function pendingPermitOf(
   record: CharacterRecord,
-  fastPermits: boolean,
+  unlocks: readonly UnlockId[],
   now: Date,
 ): PendingPermit | null {
   if (record.permitAppliedTick === null || !record.character.alive) return null;
 
-  const processing = fastPermits ? PERMIT_PROCESSING_TICKS_FAST : PERMIT_PROCESSING_TICKS;
-  const readyTick = record.permitAppliedTick + processing;
+  const readyTick = record.permitAppliedTick + permitProcessingTicks(unlocks);
   const readyAt = new Date(readyTick * TICK_SECS * 1000);
   const tier = record.character.permitTier + 1;
 
@@ -424,14 +447,32 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
   });
 }
 
+/**
+ * One offer per track: the next unbought rung, or the top rung marked owned.
+ *
+ * Showing all nineteen tiers at once would be a wall the officer has to read
+ * every visit, and most of it is unreachable. The ladder is legible precisely
+ * because only the next step is on it.
+ */
 function offers(owned: readonly UnlockId[], available: number): UnlockOffer[] {
-  return UNLOCK_CATALOGUE.map((entry) => ({
-    id: entry.id,
-    label: entry.label,
-    cost: entry.cost,
-    owned: owned.includes(entry.id),
-    affordable: !owned.includes(entry.id) && available >= entry.cost,
-  }));
+  const tracks = [...new Set(UNLOCK_CATALOGUE.map((entry) => entry.track))];
+  return tracks.map((track) => {
+    const rungs = UNLOCK_CATALOGUE.filter((entry) => entry.track === track);
+    const next = rungs.find((entry) => !owned.includes(entry.id));
+    const shown = next ?? rungs[rungs.length - 1];
+    const complete = next === undefined;
+    return {
+      id: shown.id,
+      track,
+      tier: shown.tier,
+      maxTier: rungs[rungs.length - 1].tier,
+      label: shown.label,
+      detail: shown.detail,
+      cost: shown.cost,
+      owned: complete,
+      affordable: !complete && available >= shown.cost,
+    };
+  });
 }
 
 /**
@@ -502,6 +543,11 @@ export async function purchaseUnlock(
   return repo.transaction(async (tx) => {
     const pension = await tx.getPension(accountId);
     if (pension.unlocks.includes(id)) throw new ServiceError('already_owned', 'unlock already owned');
+    // Ladders are climbed in order. Without this a client could post `permits3`
+    // directly and buy the top rung at the top rung's price.
+    if (unlockTier(pension.unlocks, entry.track) !== entry.tier - 1) {
+      throw new ServiceError('invalid_request', 'previous tier not held');
+    }
     if (pension.total < entry.cost) {
       throw new ServiceError('insufficient_pension', 'not enough pension');
     }
@@ -513,6 +559,69 @@ export async function purchaseUnlock(
     };
     await tx.savePension(accountId, updated);
     return { pension: updated, unlocks: offers(updated.unlocks, updated.total) };
+  });
+}
+
+/**
+ * Form R-1: retire the current recruit on purpose.
+ *
+ * Without this the only way to bank a pension and start again is to write
+ * standing orders you know will kill somebody, which is a miserable thing to
+ * make the intended progression path. Retirement pays exactly what death would
+ * — service, depth reached, and the estate — so it is not a bonus, it is a
+ * *choice*: dying is the same award taken at a moment you did not pick, with
+ * whatever the recruit was carrying at the time.
+ *
+ * The recruit is recorded in the death feed as a separation rather than a
+ * casualty, so the Bulletin does not claim they died.
+ */
+export async function retireRecruit(
+  repo: Repository,
+  accountId: string,
+): Promise<ClaimPensionResponse> {
+  return repo.transaction(async (tx) => {
+    // Resolve first: retiring must not discard ticks the officer already earned.
+    const record = (await loadStateInside(tx, accountId)) ?? null;
+    if (!record || !record.character.alive) {
+      throw new ServiceError('character_dead', 'no living recruit');
+    }
+
+    const service = record.character.lastResolvedTick - record.character.bornTick;
+    if (service < RETIREMENT_MIN_SERVICE_TICKS) {
+      throw new ServiceError(
+        'invalid_request',
+        `separation requires ${RETIREMENT_MIN_SERVICE_TICKS} minutes of service`,
+      );
+    }
+
+    const pension = await tx.getPension(accountId);
+    const estate =
+      record.character.gold +
+      record.inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
+    const award = pensionAward(service, record.character.depth, estate, pension.unlocks);
+
+    const separation: DeathRecord = {
+      id: randomUUID(),
+      characterName: record.character.name,
+      depth: record.character.depth,
+      cause: 'honourable separation (Form R-1)',
+      goldHandled: record.character.gold,
+      pensionAwarded: award,
+      at: new Date().toISOString(),
+    };
+    await tx.saveCharacter({
+      ...record,
+      character: { ...record.character, alive: false, hp: record.character.hp },
+    });
+    await tx.appendJournal([
+      entry_(
+        record.character,
+        `Form R-1 filed. ${record.character.name} retires on Floor ${record.character.depth} after ${service} minutes of service. Pension assessed at ${award}. Nobody claps.`,
+      ),
+    ]);
+    await tx.recordDeath(accountId, separation);
+
+    return claimInside(tx, accountId, separation);
   });
 }
 
@@ -528,31 +637,44 @@ export async function claimPension(
     const death = await tx.getLatestDeath(accountId);
     if (!death) throw new ServiceError('not_found', 'no death on file');
 
-    const pension = await tx.getPension(accountId);
-    const banked = {
-      total: pension.total + death.pensionAwarded,
-      spent: pension.spent,
-      unlocks: pension.unlocks,
-    };
-    await tx.savePension(accountId, banked);
-
-    const recruitNum = nextRecruitNumber(death.characterName);
-    const character = newRecruit(
-      randomUUID(),
-      accountId,
-      recruitNum,
-      banked.unlocks,
-      tickOf(new Date()),
-    );
-    await tx.insertCharacter({
-      character,
-      permitAppliedTick: null,
-      inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
-    });
-    await tx.appendJournal([replacementEntry(character)]);
-
-    return { character, pension: banked, orders: await tx.getOrders(accountId) };
+    return claimInside(tx, accountId, death);
   });
+}
+
+/**
+ * Bank an award and take delivery of the successor.
+ *
+ * Shared by death and by Form R-1 so the two paths cannot drift: the only
+ * difference between them is who decided the career was over.
+ */
+async function claimInside(
+  tx: Repository,
+  accountId: string,
+  award: DeathRecord,
+): Promise<ClaimPensionResponse> {
+  const pension = await tx.getPension(accountId);
+  const banked = {
+    total: pension.total + award.pensionAwarded,
+    spent: pension.spent,
+    unlocks: pension.unlocks,
+  };
+  await tx.savePension(accountId, banked);
+
+  const character = newRecruit(
+    randomUUID(),
+    accountId,
+    nextRecruitNumber(award.characterName),
+    banked.unlocks,
+    tickOf(new Date()),
+  );
+  await tx.insertCharacter({
+    character,
+    permitAppliedTick: null,
+    inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
+  });
+  await tx.appendJournal([replacementEntry(character)]);
+
+  return { character, pension: banked, orders: await tx.getOrders(accountId) };
 }
 
 /** Recruit ordinals are part of the joke, so they have to keep counting. */

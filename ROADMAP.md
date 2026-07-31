@@ -203,8 +203,15 @@ always knows what they are working toward.
       contradict each other on the same screen. Demand is redrawn each world
       heartbeat and is priced into every sale, which finally gives `hoard`
       something to hoard *for*.
-- [ ] **Prestige depth.** Five unlocks is a demo. Needs tiers, and a reason to
-      let a recruit die on purpose.
+- [x] **Prestige depth.** Seven tracks of three tiers each, climbed in order, so
+      only the next rung is ever on screen and there is always something ahead:
+      permits, intake grade, estate settlement, stipend, cabinet capacity,
+      pension accrual, and the cosmetic phosphor swap. Tier III of a track is a
+      multi-week project on purpose.
+      **Form R-1 (Voluntary Retirement)** replaces suicide-by-standing-order as
+      the way to prestige — it pays exactly what death pays, so the only thing
+      it buys is choosing the moment. Retiring at the legal minimum is a
+      measured trap; see [`docs/design/balance.md`](docs/design/balance.md).
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
 - [x] **A legible ladder.** The Terminal shows the permit in processing, the

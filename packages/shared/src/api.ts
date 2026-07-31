@@ -18,6 +18,7 @@ import type {
   StandingOrders,
   TavernMessage,
   UnlockId,
+  UnlockTrack,
   WorldState,
 } from './domain.js';
 
@@ -79,6 +80,24 @@ export interface StateResponse {
    * no push infrastructure required for an event whose time is already known.
    */
   pendingPermit: PendingPermit | null;
+  /** What Form R-1 would pay right now. Null once the recruit is dead. */
+  retirement: RetirementOffer | null;
+}
+
+/**
+ * The standing offer to retire the current recruit.
+ *
+ * Quoted continuously rather than only when eligible, because the decision the
+ * officer is actually making is "is this career worth more alive than banked",
+ * and they cannot make it without the number.
+ */
+export interface RetirementOffer {
+  eligible: boolean;
+  /** Minutes the recruit has served. */
+  serviceTicks: number;
+  minServiceTicks: number;
+  /** Pension this separation would award, at the current estate and depth. */
+  award: number;
 }
 
 export interface PendingPermit {
@@ -134,10 +153,23 @@ export interface LedgerResponse {
   unlocks: UnlockOffer[];
 }
 
+/**
+ * The next rung of one prestige track.
+ *
+ * The server publishes one offer per track rather than the whole catalogue —
+ * see `offers()` — so `owned` means "this track is maxed", not "this exact
+ * tier is bought".
+ */
 export interface UnlockOffer {
   id: UnlockId;
+  track: UnlockTrack;
+  /** The tier this offer buys, or the top tier when the track is complete. */
+  tier: number;
+  maxTier: number;
   label: string;
+  detail: string;
   cost: number;
+  /** True only when every tier of the track is bought. */
   owned: boolean;
   affordable: boolean;
 }

@@ -7,6 +7,7 @@ import type { Repository } from './ports.js';
 import {
   authenticateDevice,
   claimPension,
+  retireRecruit,
   getBulletin,
   getLedger,
   getTavern,
@@ -108,6 +109,13 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   app.post('/v1/pension/claim', async (request, reply) => {
     const accountId = await requireAccount(request, reply);
     return claimPension(repo, accountId);
+  });
+
+  // Form R-1. Same shape as a claim, because the outcome is the same: an award
+  // banked and a successor assigned.
+  app.post('/v1/recruit/retire', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    return retireRecruit(repo, accountId);
   });
 
   app.get('/v1/bulletin', async () => getBulletin(repo));

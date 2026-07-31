@@ -10,7 +10,9 @@
  */
 import {
   MAX_CATCHUP_TICKS,
+  RETIREMENT_MIN_SERVICE_TICKS,
   TICK_SECONDS,
+  pensionAward,
   type InventoryItem,
   type StandingOrders,
 } from '@deepholdings/shared';
@@ -20,6 +22,15 @@ import { resolve } from '../src/domain/resolve.js';
 interface Profile {
   name: string;
   orders: StandingOrders;
+  /**
+   * Ticks of service after which the officer files Form R-1.
+   *
+   * Retirement pays what death pays, so the question the harness has to answer
+   * is whether churning careers at the legal minimum beats letting one run —
+   * if it does, the minimum becomes the only correct play and death stops
+   * meaning anything.
+   */
+  retireAfter?: number;
 }
 
 const PROFILES: Profile[] = [
@@ -29,10 +40,21 @@ const PROFILES: Profile[] = [
   { name: 'greedy', orders: { targetDepth: 9, retreatPct: 20, lootPriority: 'relics', spendPolicy: 'hoard' } },
   { name: 'reckless', orders: { targetDepth: 12, retreatPct: 5, lootPriority: 'gold', spendPolicy: 'hoard' } },
   { name: 'insured', orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'insure' } },
+  {
+    name: 'churner',
+    orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
+    retireAfter: RETIREMENT_MIN_SERVICE_TICKS,
+  },
+  {
+    name: 'retirer',
+    orders: { targetDepth: 6, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
+    retireAfter: 1440,
+  },
 ];
 
 interface RunResult {
   deaths: number;
+  retirements: number;
   lifespansTicks: number[];
   goldEarned: number;
   pensionBanked: number;
@@ -51,6 +73,7 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
 
   const result: RunResult = {
     deaths: 0,
+    retirements: 0,
     lifespansTicks: [],
     goldEarned: 0,
     pensionBanked: 0,
@@ -68,7 +91,8 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
   // Resolve in catch-up-sized chunks, the way a real player's visits do.
   const CHUNK = Math.min(MAX_CATCHUP_TICKS, 240);
   while (tick < totalTicks) {
-    const to = Math.min(tick + CHUNK, totalTicks);
+    const retireAt = profile.retireAfter === undefined ? Infinity : bornAt + profile.retireAfter;
+    const to = Math.min(tick + CHUNK, totalTicks, retireAt);
     const out = resolve({
       character, inventory, orders: profile.orders, unlocks: [], toTick: to, permitAppliedTick,
     });
@@ -99,6 +123,21 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
       character = newRecruit(
         `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
         out.character.permitTier, out.character.level,
+      );
+      permitAppliedTick = null;
+      inventory = [];
+    } else if (tick >= retireAt) {
+      // Form R-1: banked at the same rate death pays, at a moment of choosing.
+      const service = tick - bornAt;
+      const estate = character.gold + inventoryValue(inventory);
+      result.retirements += 1;
+      result.pensionBanked += pensionAward(service, character.depth, estate, []);
+      result.lifespansTicks.push(service);
+      recruitNum += 1;
+      bornAt = tick;
+      character = newRecruit(
+        `${accountId}-${recruitNum}`, accountId, recruitNum, [], tick,
+        character.permitTier, character.level,
       );
       permitAppliedTick = null;
       inventory = [];

@@ -20,7 +20,7 @@ export function Desk() {
   // swap is the point, and glow/aberration would undo it.
   const effectsActive = effectsOn && !highContrast;
   // Cosmetic unlock, owned server-side.
-  const greenPhosphor = Boolean(state?.pension.unlocks.includes('green')) && !highContrast;
+  const greenPhosphor = Boolean(state?.pension.unlocks.includes('phosphor1')) && !highContrast;
 
   return (
     <div

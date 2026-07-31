@@ -14,13 +14,13 @@ import {
   GRIEVOUS_MAX_FRACTION,
   GRIEVOUS_MULTIPLIER,
   HOARD_SALE_BONUS,
-  INVENTORY_CAP,
   MAX_HIT_FRACTION,
   authorisedDepth,
   gradeMismatchMultiplier,
-  PERMIT_PROCESSING_TICKS,
-  PERMIT_PROCESSING_TICKS_FAST,
-  STIPEND_PER_TICK,
+  STIPEND_BY_TIER,
+  cabinetSlots,
+  permitProcessingTicks,
+  unlockTier,
   TICK_SECONDS,
   makeRng,
   pensionAward,
@@ -162,6 +162,7 @@ function stow(
   category: LootPriority,
   value: number,
   hoarding: boolean,
+  slots: number,
 ): { gold: number; liquidated: boolean } {
   const existing = inventory.find((entry) => entry.name === item);
   if (existing) {
@@ -175,7 +176,7 @@ function stow(
     return { gold: 0, liquidated: false };
   }
 
-  if (inventory.length >= INVENTORY_CAP) {
+  if (inventory.length >= slots) {
     return { gold: Math.round(value * (hoarding ? HOARD_SALE_BONUS : 1)), liquidated: true };
   }
 
@@ -220,9 +221,9 @@ export function resolve(options: ResolveOptions): ResolveResult {
     journal.push({ tick: fromTick - 1, at: tickToDate(fromTick - 1), text: RECESS_NOTE });
   }
 
-  const hasStipend = unlocks.includes('stipend');
-  const fastPermits = unlocks.includes('permits');
-  const processingTicks = fastPermits ? PERMIT_PROCESSING_TICKS_FAST : PERMIT_PROCESSING_TICKS;
+  const stipendPerTick = STIPEND_BY_TIER[unlockTier(unlocks, 'stipend')];
+  const processingTicks = permitProcessingTicks(unlocks);
+  const slots = cabinetSlots(unlocks);
   const targetDepth = Math.min(Math.max(1, orders.targetDepth), MAX_DEPTH);
   const retreatHp = () => Math.ceil((character.maxHp * orders.retreatPct) / 100);
 
@@ -234,7 +235,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     ticksResolved += 1;
     const rng = makeRng(tickSeed(character.id, tick));
 
-    if (hasStipend) character.gold += STIPEND_PER_TICK;
+    if (stipendPerTick > 0) character.gold += stipendPerTick;
 
     // Permit processing clears on its own schedule, wherever the recruit is.
     if (permitAppliedTick !== null && tick - permitAppliedTick >= processingTicks) {
@@ -352,7 +353,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
           character.gold +
           inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
         const award = Math.round(
-          pensionAward(tick - character.bornTick, counters.deepestFloor, estate) *
+          pensionAward(tick - character.bornTick, counters.deepestFloor, estate, unlocks) *
             (insured ? INSURANCE_PENSION_BONUS : 1),
         );
         character.hp = 0;
@@ -383,7 +384,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
         counters.acquisitions += 1;
 
         const stowed = stow(
-          inventory, item, orders.lootPriority, value, orders.spendPolicy === 'hoard',
+          inventory, item, orders.lootPriority, value, orders.spendPolicy === 'hoard', slots,
         );
         character.gold += stowed.gold;
         log(

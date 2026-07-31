@@ -149,7 +149,7 @@ test('the stipend unlock pays out every tick', () => {
     character: start,
     inventory: [],
     orders: ORDERS,
-    unlocks: ['stipend'],
+    unlocks: ['stipend1'],
     toTick: start.lastResolvedTick + 50,
     permitAppliedTick: null,
   });

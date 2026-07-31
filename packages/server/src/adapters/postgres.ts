@@ -146,13 +146,13 @@ export class PostgresRepository implements Repository {
       `UPDATE characters SET
          name = $2, recruit_num = $3, level = $4, xp = $5, hp = $6, max_hp = $7, depth = $8,
          permit_tier = $9, gold = $10, supplies = $11, alive = $12, last_resolved_tick = $13,
-         permit_applied_tick = $14, inventory = $15::jsonb,
+         permit_applied_tick = $14, inventory = $15::jsonb, born_tick = $16,
          died_at = CASE WHEN $12 THEN died_at ELSE COALESCE(died_at, now()) END
        WHERE id = $1`,
       [
         c.id, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth, c.permitTier,
         c.gold, c.supplies, c.alive, c.lastResolvedTick, record.permitAppliedTick,
-        JSON.stringify(record.inventory),
+        JSON.stringify(record.inventory), c.bornTick,
       ],
     );
   }

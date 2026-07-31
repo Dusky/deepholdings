@@ -1,6 +1,7 @@
 import { useCallback, useMemo, type ReactNode } from 'react';
 import { usePersistentState } from '../hooks/usePersistentState';
 import {
+  DEFAULT_NOTIFICATION_PREFS,
   FONT_SCALE_MAX,
   FONT_SCALE_MIN,
   FONT_SCALE_STEP,
@@ -24,6 +25,7 @@ function defaultSettings(): Settings {
     reducedMotion: prefersReducedMotion(),
     highContrast: false,
     fontScale: 1,
+    notifications: { ...DEFAULT_NOTIFICATION_PREFS },
   };
 }
 
@@ -55,6 +57,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [setSettings],
   );
 
+  const toggleNotifications = useCallback(
+    () =>
+      setSettings((s) => ({
+        ...s,
+        notifications: { ...s.notifications, enabled: !s.notifications.enabled },
+      })),
+    [setSettings],
+  );
+  const toggleNotificationKind = useCallback(
+    (kind: 'permitReady' | 'shiftReady') =>
+      setSettings((s) => ({
+        ...s,
+        notifications: { ...s.notifications, [kind]: !s.notifications[kind] },
+      })),
+    [setSettings],
+  );
+
   const value = useMemo(
     () => ({
       ...settings,
@@ -63,8 +82,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       toggleHighContrast,
       increaseFont,
       decreaseFont,
+      toggleNotifications,
+      toggleNotificationKind,
     }),
-    [settings, toggleEffects, toggleReducedMotion, toggleHighContrast, increaseFont, decreaseFont],
+    [
+      settings,
+      toggleEffects,
+      toggleReducedMotion,
+      toggleHighContrast,
+      increaseFont,
+      decreaseFont,
+      toggleNotifications,
+      toggleNotificationKind,
+    ],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

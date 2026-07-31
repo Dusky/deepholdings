@@ -2,17 +2,26 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import type { StandingOrders, StateResponse, UnlockId } from '@deepholdings/shared';
 import { api, ApiRequestError } from '../api/client';
 import { useInterval } from '../hooks/useInterval';
+import { syncNotifications } from '../native/notifications';
+import { useSettings } from './settingsContext';
 import { ServerContext, type LinkStatus, type ServerState } from './serverContext';
 
 /** Background refresh cadence. The server resolves one tick per minute. */
 const POLL_MS = 20_000;
 
 export function ServerProvider({ children }: { children: ReactNode }) {
+  const { notifications } = useSettings();
   const [state, setState] = useState<StateResponse | null>(null);
   const [receivedAt, setReceivedAt] = useState(0);
   const [link, setLink] = useState<LinkStatus>('connecting');
   const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
+  // Read through a ref so changing preferences does not rebuild `refresh`
+  // and restart the poll.
+  const notificationsRef = useRef(notifications);
+  useEffect(() => {
+    notificationsRef.current = notifications;
+  }, [notifications]);
 
   const refresh = useCallback(async () => {
     // One refresh at a time: a slow request must not queue up behind a poll.
@@ -21,6 +30,9 @@ export function ServerProvider({ children }: { children: ReactNode }) {
     try {
       const next = await api.getState();
       setState(next);
+      // Re-derived from every snapshot: cheap, and it keeps the schedule
+      // honest when orders change or a permit clears early. No-ops off-device.
+      void syncNotifications(next, notificationsRef.current);
       setReceivedAt(Date.now());
       setLink('online');
       setError(null);

@@ -11,6 +11,11 @@ import {
   type DeathRecord,
   type LedgerResponse,
   type StandingOrders,
+  PERMIT_PROCESSING_TICKS,
+  PERMIT_PROCESSING_TICKS_FAST,
+  TICK_SECONDS as TICK_SECS,
+  permitDepthLimit,
+  type PendingPermit,
   type ScreenId,
   type ShiftDigest,
   type StateResponse,
@@ -221,6 +226,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       clearance: clearanceFor(current.character, pension),
       digest,
       ordersFiled: await tx.hasFiledOrders(accountId),
+      pendingPermit: pendingPermitOf(current, pension.unlocks.includes('permits'), now),
       character: current.character,
       orders,
       pension,
@@ -254,6 +260,29 @@ function digestOf(
     acquisitions: counters.acquisitions,
     permitsApproved: counters.permitsApproved,
     died,
+  };
+}
+
+/**
+ * When the permit office will get round to it. Null when nothing is filed.
+ */
+function pendingPermitOf(
+  record: CharacterRecord,
+  fastPermits: boolean,
+  now: Date,
+): PendingPermit | null {
+  if (record.permitAppliedTick === null || !record.character.alive) return null;
+
+  const processing = fastPermits ? PERMIT_PROCESSING_TICKS_FAST : PERMIT_PROCESSING_TICKS;
+  const readyTick = record.permitAppliedTick + processing;
+  const readyAt = new Date(readyTick * TICK_SECS * 1000);
+  const tier = record.character.permitTier + 1;
+
+  return {
+    tier,
+    authorisesDepth: permitDepthLimit(tier),
+    readyAt: readyAt.toISOString(),
+    secondsRemaining: Math.max(0, Math.round((readyAt.getTime() - now.getTime()) / 1000)),
   };
 }
 

@@ -92,6 +92,24 @@ What that says:
 - **Reckless is properly bad.** A standing order that says "never retreat"
   should be a bad standing order.
 
+## Permit processing: why it is measured in hours
+
+Permits originally cleared in 30 ticks. That reads fine on paper and is
+invisible in practice: a player who checks in twice a day never *sees* a permit
+being processed, because any catch-up longer than half an hour resolves past
+the whole wait. The stall happened, silently, somewhere in the middle of a log
+they skim.
+
+Processing now takes 180 ticks (three hours), and the simulation says it costs
+almost nothing: balanced play went from 265 to 264 gold/hour, because a stalled
+recruit keeps working the floor they are already cleared for. What it buys is a
+real *come back later* beat — something the Terminal can show you the ETA of,
+and the only kind of event a local notification can announce without a push
+server.
+
+The general rule this suggests: **a wait shorter than a check-in gap is not a
+wait, it is a rounding error.**
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the

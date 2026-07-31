@@ -155,10 +155,15 @@ you.
 **Goal:** the async loop actually pulls people back. Not optional: an async
 game nobody is reminded about is an app nobody opens.
 
-- [ ] **FCM push.** Recruit died; permit approved; descent stalled; guild
-      objective closing.
-- [ ] **Notification preferences.** Per-type toggles and quiet hours. Play
-      requires a way to turn them off, and so does basic decency.
+- [x] **Scheduled local notifications** — permit approved, shift report ready.
+      No push server, no credentials, no delivery cost, works offline. Most of
+      what this game has to say is predictable, so most of it needs no FCM.
+- [ ] **FCM push** for the unpredictable events only: death, guild objectives.
+      Needs a Firebase project; the same project gives Crashlytics, which M8
+      wants anyway.
+- [x] **Notification preferences.** Master switch, per-type toggles and quiet
+      hours (23:00–08:00), persisted with the other quality-floor settings. A
+      delivery landing in quiet hours waits rather than being dropped.
 - [ ] **Deep links.** A death notification opens the death card, not the
       Terminal.
 - [ ] **Resume behaviour.** Refresh on foreground (done), plus handling for a
@@ -196,10 +201,10 @@ always knows what they are working toward.
       let a recruit die on purpose.
 - [ ] **Journal pagination.** Capped at the last 60 lines; needs paging for
       players who want the whole shift.
-- [ ] **A legible ladder.** The player should always see the next permit tier,
-      what it unlocks, and how far away it is. Competitors churn hundred-hour
-      players with "nothing is ahead of me"; our permit ladder is the structure
-      they lack, but only if it is visible.
+- [x] **A legible ladder.** The Terminal shows the permit in processing, the
+      depth it authorises and an estimate — and permit processing was
+      lengthened to three hours so the wait is actually visible to someone who
+      checks in twice a day. See `docs/design/balance.md`.
 - [ ] **Milestone cadence.** Something visible moves every session. No
       multi-week walls — they are churn events with a countdown attached.
 

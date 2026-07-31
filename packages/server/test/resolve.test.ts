@@ -108,13 +108,17 @@ test('long absences are clamped and summarised', () => {
 
 test('the permit ceiling stalls the descent and then clears it', () => {
   const start = character();
-  const deepOrders: StandingOrders = { ...ORDERS, targetDepth: 12, retreatPct: 5 };
+  // Deep ambitions, but cautious enough to survive long enough to grade up to
+  // the ceiling and wait out the office. Never-retreat orders die first.
+  const deepOrders: StandingOrders = { ...ORDERS, targetDepth: 12, retreatPct: 70 };
 
+  // Long enough to cover grading up to the ceiling and the office's own
+  // processing time, which is now measured in hours rather than minutes.
   const result = resolve({
     character: start,
     orders: deepOrders,
     unlocks: [],
-    toTick: start.lastResolvedTick + 400,
+    toTick: start.lastResolvedTick + 1200,
     permitAppliedTick: null,
   });
 

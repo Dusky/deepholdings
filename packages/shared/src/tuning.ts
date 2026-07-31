@@ -166,5 +166,5 @@ export const LOOT_EFFECT = {
 export const STIPEND_PER_TICK = 2;
 
 /** Ticks a permit application spends "processing" before it clears. */
-export const PERMIT_PROCESSING_TICKS = 30;
-export const PERMIT_PROCESSING_TICKS_FAST = 14;
+export const PERMIT_PROCESSING_TICKS = 180;
+export const PERMIT_PROCESSING_TICKS_FAST = 90;

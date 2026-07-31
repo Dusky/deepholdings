@@ -70,6 +70,23 @@ export interface StateResponse {
   digest: ShiftDigest | null;
   /** False until Form SO-1 has been filed at least once. */
   ordersFiled: boolean;
+  /**
+   * The next rung of the permit ladder, when one is being processed.
+   *
+   * Serves two jobs: the Terminal can show how far away the next floor is
+   * (competitors lose hundred-hour players to "nothing is ahead of me"), and
+   * the client can schedule a local notification for the moment it clears —
+   * no push infrastructure required for an event whose time is already known.
+   */
+  pendingPermit: PendingPermit | null;
+}
+
+export interface PendingPermit {
+  tier: number;
+  /** Depth this permit will authorise. */
+  authorisesDepth: number;
+  readyAt: string;
+  secondsRemaining: number;
 }
 
 /** POST /v1/pension/claim — banks the award and assigns the next recruit. */

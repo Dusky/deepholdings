@@ -66,6 +66,49 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
       </div>
 
       <div className={styles.row}>
+        <span className={styles.label}>Notifications</span>
+        <button
+          type="button"
+          className={styles.toggle}
+          aria-pressed={settings.notifications.enabled}
+          onClick={settings.toggleNotifications}
+        >
+          {settings.notifications.enabled ? 'ON' : 'OFF'}
+        </button>
+      </div>
+
+      {settings.notifications.enabled && (
+        <>
+          <div className={styles.row}>
+            <span className={`${styles.label} ${styles.sub}`}>Permit approved</span>
+            <button
+              type="button"
+              className={styles.toggle}
+              aria-pressed={settings.notifications.permitReady}
+              onClick={() => settings.toggleNotificationKind('permitReady')}
+            >
+              {settings.notifications.permitReady ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          <div className={styles.row}>
+            <span className={`${styles.label} ${styles.sub}`}>Shift report</span>
+            <button
+              type="button"
+              className={styles.toggle}
+              aria-pressed={settings.notifications.shiftReady}
+              onClick={() => settings.toggleNotificationKind('shiftReady')}
+            >
+              {settings.notifications.shiftReady ? 'ON' : 'OFF'}
+            </button>
+          </div>
+          <div className={`${styles.label} ${styles.quiet}`}>
+            Quiet {settings.notifications.quietFrom}:00–{settings.notifications.quietTo}:00.
+            Deliveries wait.
+          </div>
+        </>
+      )}
+
+      <div className={styles.row}>
         <span className={styles.label}>Font size</span>
         <div className={styles.stepRow}>
           <button

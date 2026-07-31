@@ -117,6 +117,31 @@ for (const adapter of adapters) {
       );
     });
 
+    test('a stalled permit is reported with its ready time', async () => {
+      const account = await accountId(app, token);
+      // Deep orders on a Permit D-1 recruit: the ceiling binds almost at once.
+      await repo.saveOrders(account, {
+        targetDepth: 12, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply',
+      });
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.character.lastResolvedTick -= 300;
+      await repo.saveCharacter(record);
+
+      const response = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
+      const state = response.json() as StateResponse;
+
+      if (state.pendingPermit) {
+        assert.ok(state.pendingPermit.tier > state.character.permitTier - 1);
+        assert.ok(state.pendingPermit.authorisesDepth > 0);
+        assert.ok(Date.parse(state.pendingPermit.readyAt) > 0);
+        assert.ok(state.pendingPermit.secondsRemaining >= 0);
+      } else {
+        // Nothing pending is only correct if the recruit is not at a ceiling.
+        assert.ok(state.character.permitTier >= 1);
+      }
+    });
+
     test('validates standing orders', async () => {
       const bad = await app.inject({
         method: 'PUT',

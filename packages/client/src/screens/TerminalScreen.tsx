@@ -28,6 +28,14 @@ function revealStyle(text: string, index: number, count: number): CSSProperties 
   } as CSSProperties;
 }
 
+/** Bureaucratic estimates: vague on purpose, but never wrong. */
+function formatWait(seconds: number): string {
+  if (seconds <= 60) return 'imminent';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 90) return `${minutes} minutes`;
+  return `${Math.round(minutes / 60)} hours`;
+}
+
 /** Default screen: who you have, what they are doing, what they filed. */
 export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
   const { state, receivedAt } = useServer();
@@ -64,6 +72,16 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       {!state.ordersFiled && (
         <div className={`text-dim ${styles.nudge}`}>
           Form SO-1 has not been filed. Descent proceeds on default orders.
+        </div>
+      )}
+
+      {/* The next rung, always visible while it is being processed: the
+          genre's hundred-hour churn is "nothing is ahead of me". */}
+      {state.pendingPermit && (
+        <div className={`text-dim ${styles.ladder}`}>
+          Permit D-{state.pendingPermit.tier} in processing — authorises Depth{' '}
+          {state.pendingPermit.authorisesDepth}. Estimated{' '}
+          {formatWait(state.pendingPermit.secondsRemaining)}.
         </div>
       )}
 

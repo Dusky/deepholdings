@@ -5,7 +5,9 @@ import type {
   DeathRecord,
   InventoryItem,
   JournalEntry,
+  Office,
   Pension,
+  RequisitionId,
   StandingOrders,
   TavernMessage,
   UnlockId,
@@ -257,6 +259,28 @@ export class PostgresRepository implements Repository {
        ON CONFLICT (account_id) DO UPDATE SET
          total = EXCLUDED.total, spent = EXCLUDED.spent, unlocks = EXCLUDED.unlocks`,
       [accountId, pension.total, pension.spent, JSON.stringify(pension.unlocks)],
+    );
+  }
+
+  async getOffice(accountId: string): Promise<Office> {
+    const { rows } = await this.db.query(
+      'SELECT spent, requisitions FROM offices WHERE account_id = $1',
+      [accountId],
+    );
+    if (!rows[0]) return { spent: 0, requisitions: [] };
+    return {
+      spent: rows[0].spent,
+      requisitions: (rows[0].requisitions ?? []) as RequisitionId[],
+    };
+  }
+
+  async saveOffice(accountId: string, office: Office): Promise<void> {
+    await this.db.query(
+      `INSERT INTO offices (account_id, spent, requisitions)
+       VALUES ($1, $2, $3::jsonb)
+       ON CONFLICT (account_id) DO UPDATE SET
+         spent = EXCLUDED.spent, requisitions = EXCLUDED.requisitions`,
+      [accountId, office.spent, JSON.stringify(office.requisitions)],
     );
   }
 

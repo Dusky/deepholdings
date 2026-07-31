@@ -8,6 +8,10 @@
 import type {
   Account,
   Character,
+  LootPriority,
+  Office,
+  RequisitionId,
+  RequisitionTrack,
   ScreenId,
   ShiftDigest,
   DeathRecord,
@@ -31,6 +35,8 @@ export interface ApiError {
       | 'not_found'
       | 'invalid_request'
       | 'insufficient_pension'
+      | 'insufficient_gold'
+      | 'not_authorised'
       | 'already_owned'
       | 'character_dead'
       | 'rate_limited'
@@ -56,6 +62,11 @@ export interface StateResponse {
   character: Character;
   orders: StandingOrders;
   pension: Pension;
+  /**
+   * Equipment the office owns. On the state response rather than only the
+   * Ledger because several requisitions change screens the Ledger is not.
+   */
+  office: Office;
   world: WorldState;
   /** Newest journal entries, oldest first. */
   journal: JournalEntry[];
@@ -151,18 +162,22 @@ export interface LedgerResponse {
   market: MarketQuote[];
   pension: Pension;
   unlocks: UnlockOffer[];
+  /** The purse the requisition offers are priced against. */
+  gold: number;
+  office: Office;
+  requisitions: RequisitionOffer[];
 }
 
 /**
- * The next rung of one prestige track.
+ * The next rung of one ladder.
  *
  * The server publishes one offer per track rather than the whole catalogue —
- * see `offers()` — so `owned` means "this track is maxed", not "this exact
- * tier is bought".
+ * see `ladderOffers()` — so `owned` means "this track is maxed", not "this
+ * exact tier is bought".
  */
-export interface UnlockOffer {
-  id: UnlockId;
-  track: UnlockTrack;
+export interface LadderOffer<Id extends string, Track extends string> {
+  id: Id;
+  track: Track;
   /** The tier this offer buys, or the top tier when the track is complete. */
   tier: number;
   maxTier: number;
@@ -173,6 +188,12 @@ export interface UnlockOffer {
   owned: boolean;
   affordable: boolean;
 }
+
+/** Priced in pension. */
+export type UnlockOffer = LadderOffer<UnlockId, UnlockTrack>;
+
+/** Priced in gold. */
+export type RequisitionOffer = LadderOffer<RequisitionId, RequisitionTrack>;
 
 /** POST /v1/ledger/sell */
 export interface SellItemRequest {
@@ -188,6 +209,30 @@ export interface SellItemResponse {
   inventory: LedgerStack[];
 }
 
+/**
+ * POST /v1/ledger/sell-bulk — one form, many stacks.
+ *
+ * Requires Bulk Filing Authorisation: tier I sells a whole category, tier II
+ * also clears everything under a unit value. Exactly one selector must be
+ * given, so "sell it all" is never something the client can ask for by
+ * omission.
+ */
+export interface BulkSellRequest {
+  category?: LootPriority;
+  /** Sell stacks whose *unit* book value is at or below this. */
+  maxUnitValue?: number;
+}
+
+export interface BulkSellResponse {
+  /** Stacks cleared. */
+  stacks: number;
+  /** Units across those stacks. */
+  sold: number;
+  goldReceived: number;
+  gold: number;
+  inventory: LedgerStack[];
+}
+
 /** POST /v1/pension/unlocks */
 export interface PurchaseUnlockRequest {
   id: UnlockId;
@@ -196,6 +241,18 @@ export interface PurchaseUnlockRequest {
 export interface PurchaseUnlockResponse {
   pension: Pension;
   unlocks: UnlockOffer[];
+}
+
+/** POST /v1/office/requisitions — priced in gold, taken from the recruit's purse. */
+export interface PurchaseRequisitionRequest {
+  id: RequisitionId;
+}
+
+export interface PurchaseRequisitionResponse {
+  office: Office;
+  requisitions: RequisitionOffer[];
+  /** What the recruit has left. */
+  gold: number;
 }
 
 /** GET /v1/bulletin */

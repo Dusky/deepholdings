@@ -1,21 +1,32 @@
 import { randomUUID } from 'node:crypto';
 import {
+  BULK_FILING_MAX_STACKS,
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
   HOARD_SALE_BONUS,
+  REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
   UNLOCK_CATALOGUE,
+  journalLines,
   pensionAward,
+  requisitionTier,
   TICK_SECONDS,
   type Account,
+  type BulkSellRequest,
+  type BulkSellResponse,
   type BulletinResponse,
   type Character,
   type ClaimPensionResponse,
   type DeathRecord,
   type InventoryItem,
+  type LadderEntry,
+  type LadderOffer,
   type LedgerResponse,
   type LedgerStack,
   type LootPriority,
+  type Office,
+  type PurchaseRequisitionResponse,
+  type RequisitionId,
   type StandingOrders,
   type WorldState,
   permitProcessingTicks,
@@ -39,14 +50,20 @@ import type { CharacterRecord, Repository } from './ports.js';
 
 export class ServiceError extends Error {
   constructor(
-    readonly code: 'not_found' | 'invalid_request' | 'insufficient_pension' | 'already_owned' | 'character_dead',
+    readonly code:
+      | 'not_found'
+      | 'invalid_request'
+      | 'insufficient_pension'
+      | 'insufficient_gold'
+      | 'not_authorised'
+      | 'already_owned'
+      | 'character_dead',
     message: string,
   ) {
     super(message);
   }
 }
 
-const JOURNAL_PAGE = 60;
 const TAVERN_PAGE = 50;
 const PRESENCE_WINDOW_SECONDS = 900;
 
@@ -151,6 +168,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
 
     const record = await tx.getActiveCharacterForUpdate(accountId);
     const pension = await tx.getPension(accountId);
+    const office = await tx.getOffice(accountId);
     const orders = await tx.getOrders(accountId);
     const world = await tx.getWorld();
 
@@ -233,7 +251,12 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       pendingDeath = await tx.getLatestDeath(accountId);
     }
 
-    const journal = await tx.listJournal(current.character.id, -1, JOURNAL_PAGE);
+    // Extended Journal Retention buys more of this, and nothing else does.
+    const journal = await tx.listJournal(
+      current.character.id,
+      -1,
+      journalLines(office.requisitions),
+    );
 
     return {
       account,
@@ -245,6 +268,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       character: current.character,
       orders,
       pension,
+      office,
       world,
       journal,
       now: now.toISOString(),
@@ -436,13 +460,18 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
   return repo.transaction(async (tx) => {
     const record = await tx.getActiveCharacterForUpdate(accountId);
     const pension = await tx.getPension(accountId);
+    const office = await tx.getOffice(accountId);
     const world = await tx.getWorld();
     const orders = await tx.getOrders(accountId);
+    const gold = record?.character.gold ?? 0;
     return {
       inventory: quote(record?.inventory ?? [], world, orders),
       market: world.market,
       pension,
-      unlocks: offers(pension.unlocks, pension.total),
+      unlocks: ladderOffers(UNLOCK_CATALOGUE, pension.unlocks, pension.total),
+      gold,
+      office,
+      requisitions: ladderOffers(REQUISITION_CATALOGUE, office.requisitions, gold),
     };
   });
 }
@@ -450,14 +479,21 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
 /**
  * One offer per track: the next unbought rung, or the top rung marked owned.
  *
- * Showing all nineteen tiers at once would be a wall the officer has to read
- * every visit, and most of it is unreachable. The ladder is legible precisely
- * because only the next step is on it.
+ * Showing every tier at once would be a wall the officer has to read on every
+ * visit, and most of it is unreachable. The ladder is legible precisely because
+ * only the next step is on it.
+ *
+ * Shared by both currencies — the pension ladder and the gold one differ in
+ * what pays for them, not in how they are climbed.
  */
-function offers(owned: readonly UnlockId[], available: number): UnlockOffer[] {
-  const tracks = [...new Set(UNLOCK_CATALOGUE.map((entry) => entry.track))];
+function ladderOffers<Id extends string, Track extends string>(
+  catalogue: readonly LadderEntry<Id, Track>[],
+  owned: readonly Id[],
+  available: number,
+): LadderOffer<Id, Track>[] {
+  const tracks = [...new Set(catalogue.map((entry) => entry.track))];
   return tracks.map((track) => {
-    const rungs = UNLOCK_CATALOGUE.filter((entry) => entry.track === track);
+    const rungs = catalogue.filter((entry) => entry.track === track);
     const next = rungs.find((entry) => !owned.includes(entry.id));
     const shown = next ?? rungs[rungs.length - 1];
     const complete = next === undefined;
@@ -531,6 +567,151 @@ export async function sellItem(
   });
 }
 
+const LOOT_CATEGORIES: readonly LootPriority[] = ['gold', 'gear', 'relics', 'knowledge'];
+
+/**
+ * Bulk Filing Authorisation: clear many stacks on one form.
+ *
+ * This saves taps and nothing else — every stack it sells could be sold one at
+ * a time, at exactly the same price, by an officer who never requisitioned
+ * anything. That is the whole test a requisition has to pass.
+ *
+ * A selector is mandatory. "Sell everything" is deliberately not expressible:
+ * a one-tap irreversible liquidation of the entire cabinet is the kind of
+ * button players press by accident once and never forgive.
+ */
+export async function bulkSell(
+  repo: Repository,
+  accountId: string,
+  request: BulkSellRequest,
+): Promise<BulkSellResponse> {
+  const { category, maxUnitValue } = request;
+  const byCategory = category !== undefined;
+  const byValue = maxUnitValue !== undefined;
+
+  if (byCategory === byValue) {
+    throw new ServiceError('invalid_request', 'exactly one selector required');
+  }
+  if (byCategory && !LOOT_CATEGORIES.includes(category)) {
+    throw new ServiceError('invalid_request', 'unknown category');
+  }
+  if (byValue && (!Number.isFinite(maxUnitValue) || maxUnitValue < 0)) {
+    throw new ServiceError('invalid_request', 'invalid threshold');
+  }
+
+  return repo.transaction(async (tx) => {
+    const office = await tx.getOffice(accountId);
+    const tier = requisitionTier(office.requisitions, 'bulk');
+    // Tier I files by category; the value threshold is what tier II adds.
+    const required = byValue ? 2 : 1;
+    if (tier < required) {
+      throw new ServiceError('not_authorised', `Bulk Filing Authorisation ${'I'.repeat(required)} not held`);
+    }
+
+    // Resolve first, exactly as a single sale does: a disposal must not race a
+    // tick that adds to the cabinet.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+
+    const orders = await tx.getOrders(accountId);
+    const world = await tx.getWorld();
+
+    const matches = record.inventory
+      .filter((item) =>
+        byCategory ? item.category === category : item.unitValue <= (maxUnitValue as number),
+      )
+      .slice(0, BULK_FILING_MAX_STACKS);
+
+    let goldReceived = 0;
+    let sold = 0;
+    for (const item of matches) {
+      goldReceived += Math.round(
+        item.unitValue * item.quantity * saleRate(world, item.category, orders),
+      );
+      sold += item.quantity;
+    }
+
+    const cleared = new Set(matches.map((item) => item.name));
+    const inventory = record.inventory.filter((item) => !cleared.has(item.name));
+    const character = { ...record.character, gold: record.character.gold + goldReceived };
+    await tx.saveCharacter({ ...record, character, inventory });
+
+    if (matches.length > 0) {
+      const what = byCategory ? `all ${category}` : `everything under ${maxUnitValue}g a unit`;
+      await tx.appendJournal([
+        entry_(
+          character,
+          `Bulk disposal filed: ${what}. ${matches.length} stacks, ${sold} items, ${goldReceived} gold. The clerk did not look up.`,
+        ),
+      ]);
+    }
+
+    return {
+      stacks: matches.length,
+      sold,
+      goldReceived,
+      gold: character.gold,
+      inventory: quote(inventory, world, orders),
+    };
+  });
+}
+
+/**
+ * Requisition office equipment with gold.
+ *
+ * The gold comes out of the living recruit's purse, which is the point: it is
+ * the only way to move value out of a career that would otherwise convert to
+ * pension the moment it ends. Buying a desk is choosing not to bank.
+ */
+export async function purchaseRequisition(
+  repo: Repository,
+  accountId: string,
+  id: RequisitionId,
+): Promise<PurchaseRequisitionResponse> {
+  const entry = REQUISITION_CATALOGUE.find((candidate) => candidate.id === id);
+  if (!entry) throw new ServiceError('invalid_request', 'unknown requisition');
+
+  return repo.transaction(async (tx) => {
+    const office = await tx.getOffice(accountId);
+    if (office.requisitions.includes(id)) {
+      throw new ServiceError('already_owned', 'requisition already filed');
+    }
+    if (requisitionTier(office.requisitions, entry.track) !== entry.tier - 1) {
+      throw new ServiceError('invalid_request', 'previous tier not held');
+    }
+
+    // Resolve before reading the purse, or a returning officer is told they
+    // cannot afford something the last hour already paid for.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+    if (record.character.gold < entry.cost) {
+      throw new ServiceError('insufficient_gold', 'not enough gold');
+    }
+
+    const character = { ...record.character, gold: record.character.gold - entry.cost };
+    const updated: Office = {
+      spent: office.spent + entry.cost,
+      requisitions: [...office.requisitions, id],
+    };
+    await tx.saveCharacter({ ...record, character });
+    await tx.saveOffice(accountId, updated);
+    await tx.appendJournal([
+      entry_(
+        character,
+        `Requisition approved: ${entry.label}. ${entry.cost} gold drawn. Delivery to your desk, eventually.`,
+      ),
+    ]);
+
+    return {
+      office: updated,
+      requisitions: ladderOffers(REQUISITION_CATALOGUE, updated.requisitions, character.gold),
+      gold: character.gold,
+    };
+  });
+}
+
 /** Prestige spend. Validated here because the client is never trusted with it. */
 export async function purchaseUnlock(
   repo: Repository,
@@ -558,7 +739,7 @@ export async function purchaseUnlock(
       unlocks: [...pension.unlocks, id],
     };
     await tx.savePension(accountId, updated);
-    return { pension: updated, unlocks: offers(updated.unlocks, updated.total) };
+    return { pension: updated, unlocks: ladderOffers(UNLOCK_CATALOGUE, updated.unlocks, updated.total) };
   });
 }
 

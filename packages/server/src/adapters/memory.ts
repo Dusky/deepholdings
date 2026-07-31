@@ -3,6 +3,7 @@ import type {
   Account,
   DeathRecord,
   JournalEntry,
+  Office,
   Pension,
   StandingOrders,
   TavernMessage,
@@ -30,6 +31,7 @@ export class MemoryRepository implements Repository {
   private filedOrders = new Set<string>();
   private journal: JournalEntry[] = [];
   private pensions = new Map<string, Pension>();
+  private offices = new Map<string, Office>();
   private deaths: (DeathRecord & { accountId: string })[] = [];
   private tavern: TavernMessage[] = [];
   private world: WorldState = initialWorld(new Date());
@@ -138,6 +140,14 @@ export class MemoryRepository implements Repository {
 
   async savePension(accountId: string, pension: Pension): Promise<void> {
     this.pensions.set(accountId, { ...pension, unlocks: [...pension.unlocks] });
+  }
+
+  async getOffice(accountId: string): Promise<Office> {
+    return this.offices.get(accountId) ?? { spent: 0, requisitions: [] };
+  }
+
+  async saveOffice(accountId: string, office: Office): Promise<void> {
+    this.offices.set(accountId, { ...office, requisitions: [...office.requisitions] });
   }
 
   async recordDeath(accountId: string, record: DeathRecord): Promise<void> {

@@ -2,7 +2,12 @@
  * Every balance number in one place. The server is the only thing that acts on
  * these; the client may read them to render honest ETAs.
  */
-import type { UnlockId, UnlockTrack } from './domain.js';
+import type {
+  RequisitionId,
+  RequisitionTrack,
+  UnlockId,
+  UnlockTrack,
+} from './domain.js';
 
 /** One resolution tick per minute of real time. */
 export const TICK_SECONDS = 60;
@@ -180,13 +185,34 @@ export const UNLOCK_CATALOGUE = [
   { id: 'phosphor1', track: 'phosphor', tier: 1, label: 'Monitor Swap: Green Phosphor', detail: 'Cosmetic. The Authority does not know why you want this.', cost: 900 },
 ] as const;
 
-/** How many tiers of a track are owned. Every effect reads this, not an id. */
-export function unlockTier(unlocks: readonly UnlockId[], track: UnlockTrack): number {
+/** One rung of a ladder, whatever currency buys it. */
+export interface LadderEntry<Id extends string, Track extends string> {
+  readonly id: Id;
+  readonly track: Track;
+  readonly tier: number;
+  readonly label: string;
+  readonly detail: string;
+  readonly cost: number;
+}
+
+/**
+ * How many tiers of a track are owned. Every effect reads this, not an id —
+ * so adding a tier is a catalogue edit rather than a hunt for `includes`.
+ */
+export function ownedTier<Id extends string, Track extends string>(
+  catalogue: readonly LadderEntry<Id, Track>[],
+  owned: readonly Id[],
+  track: Track,
+): number {
   let tier = 0;
-  for (const entry of UNLOCK_CATALOGUE) {
-    if (entry.track === track && unlocks.includes(entry.id)) tier = Math.max(tier, entry.tier);
+  for (const entry of catalogue) {
+    if (entry.track === track && owned.includes(entry.id)) tier = Math.max(tier, entry.tier);
   }
   return tier;
+}
+
+export function unlockTier(unlocks: readonly UnlockId[], track: UnlockTrack): number {
+  return ownedTier(UNLOCK_CATALOGUE, unlocks, track);
 }
 
 /**
@@ -265,3 +291,58 @@ export function permitProcessingTicks(unlocks: readonly UnlockId[]): number {
  * exists so the Ledger never shows a retirement offer that pays nothing.
  */
 export const RETIREMENT_MIN_SERVICE_TICKS = 120;
+
+/**
+ * Requisitions: what gold buys, once supplies are paid for.
+ *
+ * Every entry is a tap-saver, a reading aid or a cosmetic. None of them changes
+ * what the recruit does underground, and that is the test — if a requisition
+ * would show up in the simulation harness as a different number, it is not a
+ * requisition, it is power with a receipt.
+ *
+ * Costs are set against roughly 255 gold/hour of balanced play: a first rung is
+ * three or four hours, and clearing the whole catalogue is around forty. The
+ * point is not that it is expensive, it is that gold now competes with the
+ * pension it would otherwise have converted into on Form R-1.
+ */
+export const REQUISITION_CATALOGUE = [
+  { id: 'bulk1', track: 'bulk', tier: 1, label: 'Bulk Filing Authorisation I', detail: 'Sell an entire loot category on one form.', cost: 900 },
+  { id: 'bulk2', track: 'bulk', tier: 2, label: 'Bulk Filing Authorisation II', detail: 'Also clear every stack under a value you set.', cost: 3200 },
+
+  { id: 'index1', track: 'index', tier: 1, label: 'Cabinet Index I', detail: 'Sort the filing cabinet by value, category or demand.', cost: 700 },
+  { id: 'index2', track: 'index', tier: 2, label: 'Cabinet Index II', detail: 'Filter to a single category, remembered between visits.', cost: 2400 },
+
+  { id: 'journal1', track: 'journal', tier: 1, label: 'Extended Journal Retention I', detail: 'The journal keeps 150 lines instead of 60.', cost: 600 },
+  { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The journal keeps 400 lines.', cost: 2100 },
+
+  { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Depth and permit ETA stay on the strip, on every screen.', cost: 1100 },
+] as const satisfies readonly LadderEntry<RequisitionId, RequisitionTrack>[];
+
+export function requisitionTier(
+  owned: readonly RequisitionId[],
+  track: RequisitionTrack,
+): number {
+  return ownedTier(REQUISITION_CATALOGUE, owned, track);
+}
+
+export function hasRequisition(
+  owned: readonly RequisitionId[],
+  id: RequisitionId,
+): boolean {
+  return owned.includes(id);
+}
+
+/**
+ * Journal lines retained, indexed by owned tier.
+ *
+ * Sixty lines is about a day of play, which is exactly long enough for a
+ * returning player to find the run they wanted to read about already gone.
+ */
+export const JOURNAL_LINES_BY_TIER = [60, 150, 400] as const;
+
+export function journalLines(owned: readonly RequisitionId[]): number {
+  return JOURNAL_LINES_BY_TIER[requisitionTier(owned, 'journal')];
+}
+
+/** Hard ceiling on a bulk filing, so one form can never be an unbounded query. */
+export const BULK_FILING_MAX_STACKS = 64;

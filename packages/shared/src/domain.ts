@@ -21,6 +21,32 @@ export type UnlockTrack =
 /** `track` + tier, e.g. `permits2`. Stored on the pension, never recomputed. */
 export type UnlockId = `${UnlockTrack}${1 | 2 | 3}`;
 
+/**
+ * Office equipment, bought with gold rather than pension.
+ *
+ * The distinction that makes this worth having as a separate currency sink:
+ * gold dies with the recruit, equipment does not. A desk is not buried with
+ * the officer who requisitioned it. That is the only way to move value across
+ * that line by choice, and it is what gives Form R-1 something to weigh
+ * against — bank the pension now, or keep this career running because you are
+ * four hundred short of the filing trolley.
+ *
+ * The rule every entry is held to: **a requisition may add a faster path to a
+ * function. It may never be the only path to one.** See
+ * `docs/design/requisitions.md`.
+ */
+export type RequisitionTrack = 'bulk' | 'index' | 'journal' | 'readouts';
+
+/** `track` + tier, e.g. `bulk2`. Stored on the office, never recomputed. */
+export type RequisitionId = `${RequisitionTrack}${1 | 2 | 3}`;
+
+/** The account's permanent equipment. Outlives every recruit. */
+export interface Office {
+  requisitions: RequisitionId[];
+  /** Gold spent on equipment, ever. Shown as a total, never re-credited. */
+  spent: number;
+}
+
 /** The screens of the terminal. Which ones a player has is server-decided. */
 export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin';
 

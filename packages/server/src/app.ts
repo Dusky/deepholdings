@@ -1,17 +1,25 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
-import { API_VERSION, type ApiError, type UnlockId } from '@deepholdings/shared';
+import {
+  API_VERSION,
+  type ApiError,
+  type BulkSellRequest,
+  type RequisitionId,
+  type UnlockId,
+} from '@deepholdings/shared';
 import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
 import {
   authenticateDevice,
+  bulkSell,
   claimPension,
   retireRecruit,
   getBulletin,
   getLedger,
   getTavern,
   loadState,
+  purchaseRequisition,
   purchaseUnlock,
   sellItem,
   sendTavernMessage,
@@ -29,6 +37,8 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   not_found: 404,
   invalid_request: 400,
   insufficient_pension: 409,
+  insufficient_gold: 409,
+  not_authorised: 403,
   already_owned: 409,
   character_dead: 409,
   rate_limited: 429,
@@ -109,6 +119,22 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
     const accountId = await requireAccount(request, reply);
     const { name, quantity } = (request.body ?? {}) as { name?: string; quantity?: number };
     return sellItem(repo, accountId, name ?? '', quantity);
+  });
+
+  app.post('/v1/ledger/sell-bulk', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const body = (request.body ?? {}) as BulkSellRequest;
+    return bulkSell(repo, accountId, {
+      category: body.category,
+      maxUnitValue: body.maxUnitValue,
+    });
+  });
+
+  app.post('/v1/office/requisitions', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { id } = (request.body ?? {}) as { id?: RequisitionId };
+    if (!id) throw new ServiceError('invalid_request', 'id required');
+    return purchaseRequisition(repo, accountId, id);
   });
 
   app.post('/v1/pension/unlocks', async (request, reply) => {

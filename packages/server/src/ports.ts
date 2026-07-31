@@ -4,6 +4,7 @@ import type {
   DeathRecord,
   InventoryItem,
   JournalEntry,
+  Office,
   Pension,
   StandingOrders,
   TavernMessage,
@@ -64,6 +65,9 @@ export interface Repository {
 
   getPension(accountId: string): Promise<Pension>;
   savePension(accountId: string, pension: Pension): Promise<void>;
+
+  getOffice(accountId: string): Promise<Office>;
+  saveOffice(accountId: string, office: Office): Promise<void>;
 
   recordDeath(accountId: string, record: DeathRecord): Promise<void>;
   /** Public feed, all accounts. */

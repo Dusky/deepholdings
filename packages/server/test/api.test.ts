@@ -50,6 +50,30 @@ for (const adapter of adapters) {
 
     const auth = () => ({ authorization: `Bearer ${token}` });
 
+    test('CORS admits a LAN origin in dev and refuses a public one', async () => {
+      // The phone-browser test path loads the client from the desktop's LAN
+      // address, which no default list can contain.
+      const lan = await app.inject({
+        method: 'OPTIONS',
+        url: '/v1/state',
+        headers: {
+          origin: 'http://192.168.1.42:5173',
+          'access-control-request-method': 'GET',
+        },
+      });
+      assert.equal(lan.headers['access-control-allow-origin'], 'http://192.168.1.42:5173');
+
+      const public_ = await app.inject({
+        method: 'OPTIONS',
+        url: '/v1/state',
+        headers: {
+          origin: 'https://evil.example.com',
+          'access-control-request-method': 'GET',
+        },
+      });
+      assert.equal(public_.headers['access-control-allow-origin'], undefined);
+    });
+
     test('rejects requests without a token', async () => {
       const response = await app.inject({ method: 'GET', url: '/v1/state' });
       assert.equal(response.statusCode, 401);

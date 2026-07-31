@@ -10,8 +10,12 @@ export interface Config {
   /**
    * Allowed browser origins. The Android build talks to the API cross-origin
    * (capacitor://localhost), so CORS is not a dev-only concern.
+   *
+   * Outside production this also accepts any private-network origin, so a phone
+   * can load the dev client from the desktop's LAN address. Production gets the
+   * explicit list and nothing else.
    */
-  corsOrigins: string[];
+  corsOrigins: CorsOrigin;
   /**
    * Apply pending migrations on boot. Convenient in dev and tests; in
    * production the deploy runs `npm run migrate` so a schema change is a
@@ -19,6 +23,19 @@ export interface Config {
    */
   autoMigrate: boolean;
 }
+
+export type CorsOrigin = string[] | ((origin: string) => boolean);
+
+/**
+ * Private-network origins: RFC1918 plus link-local, on any port.
+ *
+ * The phone-browser test path loads the client from the desktop's LAN address,
+ * which is not a value anyone can put in a default. Matching the address range
+ * instead means the fast path works on any home network without configuration,
+ * and the pattern is narrow enough that it cannot match a public host.
+ */
+const PRIVATE_ORIGIN =
+  /^https?:\/\/(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|\[::1\])(?::\d+)?$/;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const tokenSecret = env.TOKEN_SECRET ?? 'dev-secret-change-me';
@@ -35,11 +52,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     autoMigrate: env.AUTO_MIGRATE
       ? env.AUTO_MIGRATE === 'true'
       : env.NODE_ENV !== 'production',
-    // Capacitor Android serves the app from https://localhost by default.
-    corsOrigins: (env.CORS_ORIGINS ??
-      'http://localhost:5173,capacitor://localhost,https://localhost')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
+    corsOrigins: resolveCorsOrigins(env),
   };
+}
+
+function resolveCorsOrigins(env: NodeJS.ProcessEnv): CorsOrigin {
+  // Capacitor Android serves the app from https://localhost by default.
+  const configured = (env.CORS_ORIGINS ??
+    'http://localhost:5173,capacitor://localhost,https://localhost')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  // An explicit list is always taken literally — including in dev, so the
+  // production behaviour can be reproduced locally.
+  if (env.CORS_ORIGINS || env.NODE_ENV === 'production') return configured;
+
+  return (origin: string) => configured.includes(origin) || PRIVATE_ORIGIN.test(origin);
 }

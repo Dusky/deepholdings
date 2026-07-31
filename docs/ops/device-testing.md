@@ -40,6 +40,11 @@ app.
 `hostname -I` prints nothing useful if you run it after a blocking command —
 `npm run dev:server` does not return, so give it its own terminal.
 
+Outside production the API accepts any private-network origin, so the LAN
+address the phone loads the page from passes CORS without configuration.
+Setting `CORS_ORIGINS` explicitly turns that off and uses your list verbatim,
+which is how you reproduce production behaviour locally.
+
 ## 0. Prerequisites (for the APK)
 
 **On SteamOS**, the root filesystem is immutable, so do not fight `pacman`.

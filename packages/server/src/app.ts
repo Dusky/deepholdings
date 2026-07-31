@@ -37,8 +37,20 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
 
 export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' });
+  const allow =
+    typeof config.corsOrigins === 'function'
+      ? config.corsOrigins
+      : (origin: string) => (config.corsOrigins as string[]).includes(origin);
 
-  app.register(cors, { origin: config.corsOrigins, credentials: false });
+  app.register(cors, {
+    // A predicate arrives as fastify-cors' delegate signature; a list passes
+    // straight through.
+    origin:
+      typeof config.corsOrigins === 'function'
+        ? (origin, callback) => callback(null, origin === undefined || allow(origin))
+        : config.corsOrigins,
+    credentials: false,
+  });
 
   /** Resolves the bearer token to an account id, or ends the request. */
   const requireAccount = async (request: FastifyRequest, reply: FastifyReply): Promise<string> => {

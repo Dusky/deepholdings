@@ -1,6 +1,6 @@
 import cors from '@fastify/cors';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
-import type { ApiError, UnlockId } from '@deepholdings/shared';
+import { API_VERSION, type ApiError, type UnlockId } from '@deepholdings/shared';
 import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
@@ -59,6 +59,14 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   });
 
   app.get('/health', async () => ({ ok: true }));
+
+  // Hitting the API in a browser is a normal thing to do while setting up a
+  // device; a bare 404 gives no clue that the server is fine.
+  app.get('/', async () => ({
+    service: 'Subterranean Resource Authority — Case Management System',
+    notice: 'This endpoint serves case officers, not the public. See /health.',
+    api: `/${API_VERSION}`,
+  }));
 
   app.post('/v1/auth/device', async (request) => {
     const { deviceId } = (request.body ?? {}) as { deviceId?: string };

@@ -6,7 +6,54 @@ from the development container, so treat the first pass as a shakedown.
 The quickest useful test does **not** need a deployed server or a database —
 run the API on your desktop and point the phone at it over the LAN.
 
-## 0. Prerequisites
+## The fast path: your phone's browser, no SDK
+
+Before wrestling an SDK onto SteamOS, most of what needs checking can be
+checked in the phone's browser against the dev server. This covers the portrait
+layout, the collapsing command bar against a real software keyboard, the first
+session, clearance, and the shift digest — everything except native
+notifications and the APK itself.
+
+Three terminals on the desktop:
+
+```bash
+# 1. the API
+TOKEN_SECRET=dev npm run dev:server
+
+# 2. the client, listening on all interfaces
+npm run dev
+
+# 3. your address
+hostname -I | awk '{print $1}'
+```
+
+Then on the phone, over the same wifi, open:
+
+```
+http://<desktop-ip>:5173/?api=http://<desktop-ip>:8787
+```
+
+…or simply `http://<desktop-ip>:5173` if you build with `VITE_API_URL` set.
+Add it to the home screen for a fullscreen, chrome-free approximation of the
+app.
+
+`hostname -I` prints nothing useful if you run it after a blocking command —
+`npm run dev:server` does not return, so give it its own terminal.
+
+## 0. Prerequisites (for the APK)
+
+**On SteamOS**, the root filesystem is immutable, so do not fight `pacman`.
+The clean route is Flatpak, which is already installed:
+
+```bash
+flatpak install flathub com.google.AndroidStudio
+```
+
+Android Studio brings its own JDK and installs the SDK under your home
+directory, both of which survive SteamOS updates. A `distrobox` Arch container
+is the other reasonable option if you would rather have the command-line tools
+on their own.
+
 
 ```bash
 java -version          # 17 or 21

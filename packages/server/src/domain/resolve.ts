@@ -9,6 +9,13 @@
 import {
   MAX_CATCHUP_TICKS,
   MAX_DEPTH,
+  GRIEVOUS_CHANCE,
+  LOOT_EFFECT,
+  GRIEVOUS_MAX_FRACTION,
+  GRIEVOUS_MULTIPLIER,
+  MAX_HIT_FRACTION,
+  authorisedDepth,
+  gradeMismatchMultiplier,
   PERMIT_PROCESSING_TICKS,
   PERMIT_PROCESSING_TICKS_FAST,
   STIPEND_PER_TICK,
@@ -60,6 +67,8 @@ export interface ResolveCounters {
   encounters: number;
   acquisitions: number;
   permitsApproved: number;
+  /** Ticks spent working under a permit ceiling, waiting on the office. */
+  stalledTicks: number;
 }
 
 export interface ResolveResult {
@@ -91,18 +100,46 @@ export function tickToDate(tick: number): Date {
   return new Date(tick * TICK_SECONDS * 1000);
 }
 
+const ENCOUNTER_CHANCE_BASE = 0.24;
+const ENCOUNTER_CHANCE_PER_DEPTH = 0.012;
 const SUPPLY_DRAIN_TICKS = 12;
 const RESUPPLY_COST_PER_UNIT = 6;
 const INSURANCE_PREMIUM_PER_TICK = 1;
 const INSURANCE_PENSION_BONUS = 1.25;
 
-/** Deeper floors hit harder; this is the only difficulty curve there is. */
-function encounterDamage(depth: number, roll: number): number {
-  return Math.max(1, Math.round((3 + depth * 1.6) * (0.6 + roll * 0.8)));
+/**
+ * Deeper floors hit harder, but never harder than MAX_HIT_FRACTION of the
+ * recruit's maximum in one blow. Depth is meant to be a risk the officer
+ * accepts, not a coin flip that ignores their retreat order.
+ */
+function encounterDamage(
+  depth: number,
+  level: number,
+  roll: number,
+  maxHp: number,
+  grievous: boolean,
+): number {
+  const raw =
+    (2 + Math.pow(depth, 1.4) * 1.2) *
+    gradeMismatchMultiplier(depth, level) *
+    (0.6 + roll * 0.8) *
+    (grievous ? GRIEVOUS_MULTIPLIER : 1);
+  const cap = maxHp * (grievous ? GRIEVOUS_MAX_FRACTION : MAX_HIT_FRACTION);
+  return Math.max(1, Math.round(Math.min(raw, cap)));
 }
 
+/**
+ * Reward scales faster than danger. Damage is linear in depth; loot is
+ * superlinear, so the deep floors are where the money is and the four knobs
+ * become a real trade rather than a preference.
+ */
 function encounterReward(depth: number, roll: number): number {
-  return Math.round((8 + depth * 6) * (0.5 + roll));
+  return Math.round((6 + Math.pow(depth, 1.5) * 4) * (0.5 + roll));
+}
+
+/** Experience follows the same shape, so depth is the fastest way to grade up. */
+function encounterXp(depth: number): number {
+  return Math.round(5 + Math.pow(depth, 1.4) * 2);
 }
 
 export function resolve(options: ResolveOptions): ResolveResult {
@@ -120,6 +157,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     encounters: 0,
     acquisitions: 0,
     permitsApproved: 0,
+    stalledTicks: 0,
   };
   const finish = (): ResolveResult => {
     counters.goldAfter = character.gold;
@@ -193,22 +231,30 @@ export function resolve(options: ResolveOptions): ResolveResult {
       continue;
     }
 
-    // 3. Permit ceiling: the descent stalls, the paperwork begins.
+    // 3. Permit ceiling: the descent stalls, the paperwork begins. The recruit
+    //    keeps working the floor they are cleared for — waiting on the permit
+    //    office should not mean an hour of nothing happening.
     const limit = permitLimit(character.permitTier);
-    if (character.depth >= limit && targetDepth > limit) {
+    // Where the recruit may actually work: the shallower of their permit, their
+    // grade, and what the officer asked for.
+    const authorised = authorisedDepth(targetDepth, character.permitTier, character.level);
+    const gradeLimited = authorised < Math.min(targetDepth, limit);
+    const stalled = character.depth >= limit && targetDepth > limit;
+    if (stalled) {
+      counters.stalledTicks += 1;
       if (permitAppliedTick === null) {
         permitAppliedTick = tick;
         log(tick, `Depth ${limit + 1} reached. Permit D-${character.permitTier} does not cover Depth ${limit + 1}. Descent halted pending Permit D-${character.permitTier + 1}.`);
-        log(tick, `Permit D-${character.permitTier + 1} application filed. Estimated processing: 2-4 business days.`);
+        log(tick, `Permit D-${character.permitTier + 1} application filed. Estimated processing: 2-4 business days. Delving continues at Floor ${limit}.`);
       }
-      if (orders.spendPolicy === 'insure' && character.gold >= INSURANCE_PREMIUM_PER_TICK) {
-        character.gold -= INSURANCE_PREMIUM_PER_TICK;
-      }
-      continue;
+    }
+
+    if (gradeLimited && character.depth >= authorised && tick % 180 === 0) {
+      log(tick, `Floor ${authorised + 1} is not appropriate to a Grade ${character.level} officer. Descent limited pending grade review.`);
     }
 
     // 4. Descend toward the ordered depth.
-    if (character.depth < Math.min(targetDepth, limit)) {
+    if (!stalled && character.depth < authorised) {
       character.depth += 1;
       counters.deepestFloor = Math.max(counters.deepestFloor, character.depth);
       log(tick, `Descending. Floor ${character.depth} reached. Permit D-${character.permitTier} verified.`);
@@ -230,19 +276,25 @@ export function resolve(options: ResolveOptions): ResolveResult {
       log(tick, HOARD_NOTE);
     }
 
-    if (rngChance(rng, 0.28)) {
+    // Deep floors are busier as well as harder, which is most of why they pay.
+    if (rngChance(rng, ENCOUNTER_CHANCE_BASE + character.depth * ENCOUNTER_CHANCE_PER_DEPTH)) {
       counters.encounters += 1;
+      const loot = LOOT_EFFECT[orders.lootPriority];
       const creature = rngPick(rng, FAUNA);
-      const damage = encounterDamage(character.depth, rng());
+      const grievous = rngChance(rng, GRIEVOUS_CHANCE);
+      const damage = encounterDamage(
+        character.depth, character.level, rng(), character.maxHp, grievous,
+      );
       character.hp -= damage;
-      character.xp += 6 + character.depth * 3;
+      character.xp += Math.round(encounterXp(character.depth) * loot.xp);
 
       if (character.hp <= 0) {
         const cause: string =
           character.supplies === 0 ? DEATH_CAUSES[4] : rngPick(rng, COMBAT_DEATH_CAUSES);
         const insured = orders.spendPolicy === 'insure';
         const award = Math.round(
-          pensionAward(character.gold, character.depth) * (insured ? INSURANCE_PENSION_BONUS : 1),
+          pensionAward(tick - character.bornTick, counters.deepestFloor, character.gold) *
+            (insured ? INSURANCE_PENSION_BONUS : 1),
         );
         character.hp = 0;
         character.alive = false;
@@ -259,11 +311,16 @@ export function resolve(options: ResolveOptions): ResolveResult {
         return finish();
       }
 
-      log(tick, `Encountered: ${creature}. ${rngPick(rng, COMBAT_NOTES)}`);
+      log(
+        tick,
+        grievous
+          ? `Encountered: ${creature}. Grievous injury sustained. Form 9 (Industrial Injury) filed on the recruit's behalf.`
+          : `Encountered: ${creature}. ${rngPick(rng, COMBAT_NOTES)}`,
+      );
 
-      if (rngChance(rng, 0.45)) {
+      if (rngChance(rng, 0.45 * loot.findChance)) {
         const item = rngPick(rng, LOOT_BY_PRIORITY[orders.lootPriority]);
-        const value = encounterReward(character.depth, rng());
+        const value = Math.round(encounterReward(character.depth, rng()) * loot.value);
         character.gold += value;
         counters.acquisitions += 1;
         log(tick, `Acquired: ${item}. ${rngPick(rng, LOOT_NOTES)}`);

@@ -53,6 +53,8 @@ export interface Character {
   alive: boolean;
   /** Resolution watermark — everything before this is already journalled. */
   lastResolvedTick: number;
+  /** Tick the recruit entered service. Pensions accrue from here. */
+  bornTick: number;
 }
 
 export interface JournalEntry {

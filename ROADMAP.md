@@ -176,13 +176,19 @@ about.
 **Goal:** two weeks of progression that doesn't repeat itself, and a player who
 always knows what they are working toward.
 
-- [ ] **Balance pass.** The numbers in `packages/shared/src/tuning.ts` and the
-      curves in `resolve.ts` are first-pass guesses. Needs a target death rate,
-      a permit-processing wait that isn't infuriating, and a difficulty curve
-      through Depth 12.
-- [ ] **Make the four knobs matter.** Target depth, retreat threshold, loot
-      priority and spend policy should trade off against each other. Right now
-      "deeper, braver" is close to strictly better.
+- [x] **Balance pass.** Measured with a simulation harness against the real
+      resolver (`npm run simulate`), findings written up in
+      [`docs/design/balance.md`](docs/design/balance.md). Depth now pays,
+      balanced play loses a recruit about every three days, and pensions accrue
+      with service instead of rewarding death-farming.
+- [x] **Target Depth and Retreat Threshold matter.** Depth is the income dial
+      (106 → 265 gold/h across profiles); retreat is the death dial (60% never
+      dies, 5% dies constantly).
+- [ ] **Loot Priority and Spend Policy are still thin.** `LOOT_EFFECT` makes
+      loot a real choice, but the interesting version needs crafting (M5).
+      `hoard` is close to strictly worse and needs a reason to exist.
+- [ ] **Greedy play should pay better.** It trades gold for pension but the
+      deaths cost enough grade that it never reaches its target depth.
 - [ ] **Content volume.** More fauna, loot, journal copy, and permit tiers.
       The tone reference is `packages/server/src/domain/flavor.ts`.
 - [ ] **Market that trades.** Selling inventory, not just reading prices.
@@ -377,7 +383,9 @@ Not a milestone; pick these up as they start to hurt.
 
 | Decision | Options | Recommendation |
 | --- | --- | --- |
-| Hosting | Fly.io / Railway / Render / VPS | Whichever you'll actually operate. Lazy resolution means idle players cost nothing, so start on the cheapest tier. |
+| Push delivery | FCM / OneSignal / local-only | Supabase is the database, but Android push still goes through FCM whatever the backend. Many of our events are *predictable* (permit approval, next world tick), so Capacitor local notifications could cover most of M3 with no push infrastructure at all — worth trying before wiring FCM. |
+| --- | --- | --- |
+| Compute host | Fly.io / Railway / Render / VPS | **Supabase is the database** (decided). It does not host a Node API, so the Fastify server still needs somewhere to run. Note for the adapter: Supabase's pooler in transaction mode needs prepared statements disabled. Free projects also pause after inactivity. |
 | Tavern scope | Full realtime / keep polling / cut for v1 | Keep polling through M3. It works, and WebSockets can wait for real concurrency. |
 | Launch shape | Soft launch / open test / full release | Open test. It gets you real retention numbers without a launch you only get once. |
 

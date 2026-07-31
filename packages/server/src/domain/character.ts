@@ -5,6 +5,8 @@ import {
   STARTING_HP,
   STARTING_PERMIT_TIER,
   STARTING_SUPPLIES,
+  inheritedLevel,
+  inheritedPermitTier,
   maxHpForLevel,
   xpForLevel,
   type Character,
@@ -49,10 +51,14 @@ export function newRecruit(
   recruitNum: number,
   unlocks: readonly UnlockId[],
   atTick: number,
+  /** The tier the previous recruit held, if there was one. */
+  previousPermitTier = STARTING_PERMIT_TIER,
+  /** The grade the previous recruit reached, if there was one. */
+  previousLevel = 1,
 ): Character {
   const betterRecruit = unlocks.includes('recruit');
   const inheritsGear = unlocks.includes('inherit');
-  const level = betterRecruit ? 2 : 1;
+  const level = Math.max(inheritedLevel(previousLevel), betterRecruit ? 2 : 1);
 
   return {
     id,
@@ -64,11 +70,12 @@ export function newRecruit(
     hp: maxHpForLevel(level),
     maxHp: maxHpForLevel(level),
     depth: 0,
-    permitTier: STARTING_PERMIT_TIER,
+    permitTier: inheritedPermitTier(previousPermitTier),
     gold: STARTING_GOLD + (inheritsGear ? 120 : 0),
     supplies: STARTING_SUPPLIES,
     alive: true,
     lastResolvedTick: atTick,
+    bornTick: atTick,
   };
 }
 

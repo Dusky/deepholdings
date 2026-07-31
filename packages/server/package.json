@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "migrate": "tsx src/migrate.ts",
-    "test": "node --import tsx --test test/*.test.ts"
+    "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
+    "simulate": "tsx tools/simulate.ts"
   },
   "dependencies": {
     "@deepholdings/shared": "*",

@@ -130,12 +130,12 @@ export class PostgresRepository implements Repository {
     await this.db.query(
       `INSERT INTO characters
          (id, account_id, name, recruit_num, level, xp, hp, max_hp, depth, permit_tier,
-          gold, supplies, alive, last_resolved_tick, permit_applied_tick, inventory)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb)`,
+          gold, supplies, alive, last_resolved_tick, permit_applied_tick, inventory, born_tick)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17)`,
       [
         c.id, c.accountId, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth,
         c.permitTier, c.gold, c.supplies, c.alive, c.lastResolvedTick,
-        record.permitAppliedTick, JSON.stringify(record.inventory),
+        record.permitAppliedTick, JSON.stringify(record.inventory), c.bornTick,
       ],
     );
   }
@@ -396,6 +396,7 @@ function toCharacterRecord(row: Record<string, unknown>): CharacterRecord {
       supplies: row.supplies as number,
       alive: row.alive as boolean,
       lastResolvedTick: Number(row.last_resolved_tick),
+      bornTick: Number(row.born_tick ?? row.last_resolved_tick),
     },
     permitAppliedTick:
       row.permit_applied_tick === null ? null : Number(row.permit_applied_tick),

@@ -53,6 +53,7 @@ export class PostgresRepository implements Repository {
    * serving an old shape is worse than one that will not boot.
    */
   async init(options: { autoMigrate?: boolean } = {}): Promise<void> {
+    await this.awaitDatabase();
     const autoMigrate = options.autoMigrate ?? true;
     if (autoMigrate) {
       await runMigrations(this.pool);
@@ -71,6 +72,32 @@ export class PostgresRepository implements Repository {
        ON CONFLICT (id) DO NOTHING`,
       worldParams(initialWorld(new Date())),
     );
+  }
+
+  /**
+   * Wait for Postgres to start accepting connections.
+   *
+   * A server and its database come up together — under compose, under a
+   * platform that restarts both, and on a laptop where the test suite runs
+   * seconds after `service postgresql start`. Postgres binds its socket before
+   * it will answer, so the first connection loses a race that nothing is
+   * actually wrong with, and the failure reads as a broken schema or a flaky
+   * test rather than "ask again in a second".
+   *
+   * Bounded: a database that is genuinely unreachable still fails the boot,
+   * about ten seconds later and with the real error attached.
+   */
+  private async awaitDatabase(): Promise<void> {
+    const delays = [100, 200, 400, 800, 1600, 3200, 3200];
+    for (const [attempt, delay] of delays.entries()) {
+      try {
+        await this.db.query('SELECT 1');
+        return;
+      } catch (cause) {
+        if (attempt === delays.length - 1) throw cause;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
   }
 
   async close(): Promise<void> {

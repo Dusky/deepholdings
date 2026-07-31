@@ -1,10 +1,14 @@
 import type {
   ApiError,
+  BulkSellRequest,
+  BulkSellResponse,
   BulletinResponse,
   ClaimPensionResponse,
   DeviceAuthResponse,
   LedgerResponse,
+  PurchaseRequisitionResponse,
   PurchaseUnlockResponse,
+  RequisitionId,
   SellItemResponse,
   SendTavernMessageResponse,
   StandingOrders,
@@ -155,6 +159,14 @@ export class ApiClient {
 
   sellItem(name: string, quantity?: number): Promise<SellItemResponse> {
     return this.request('POST', '/v1/ledger/sell', { name, quantity });
+  }
+
+  bulkSell(selector: BulkSellRequest): Promise<BulkSellResponse> {
+    return this.request('POST', '/v1/ledger/sell-bulk', selector);
+  }
+
+  purchaseRequisition(id: RequisitionId): Promise<PurchaseRequisitionResponse> {
+    return this.request('POST', '/v1/office/requisitions', { id });
   }
 
   purchaseUnlock(id: UnlockId): Promise<PurchaseUnlockResponse> {

@@ -108,3 +108,87 @@
     padding: 0 16px;
   }
 }
+
+/* Cabinet Index controls. Chips rather than a select, because a native picker
+   on Android covers the list it is filtering. */
+.indexBar {
+  margin-bottom: 8px;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.viewChip {
+  padding: 3px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: calc(9.5px * var(--font-scale));
+  letter-spacing: 0.06em;
+}
+
+.viewChip[aria-pressed='true'] {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor-bright);
+}
+
+.viewChip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bulk {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+
+.thresholdRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.threshold {
+  width: 4.5em;
+  padding: 3px 6px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--phosphor-bright);
+  font-family: var(--font-mono);
+  font-size: calc(10.5px * var(--font-scale));
+}
+
+/* A bulk filing sells stacks that are not individually on screen, so it
+   confirms. The panel sits over the columns rather than inside one — it is
+   about the cabinet, not about a row of it. */
+.confirm {
+  flex-basis: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+}
+
+.confirmActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@media (pointer: coarse) {
+  .viewChip {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+
+  .threshold {
+    min-height: 44px;
+  }
+}

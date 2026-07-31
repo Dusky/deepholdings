@@ -1,17 +1,18 @@
 import { useCallback, useState } from 'react';
-import type { UnlockId } from '@deepholdings/shared';
+import type { RequisitionId, UnlockId } from '@deepholdings/shared';
 import { api } from '../api/client';
 import { useResource } from '../hooks/useResource';
 import { useServer } from '../state/serverContext';
+import { CabinetColumn, type BulkSelector } from './CabinetColumn';
 import columns from './columns.module.css';
 import styles from './LedgerScreen.module.css';
 
-/** Inventory, market, and the prestige spend. */
+/** Inventory, market, and the two things value can be turned into. */
 export function LedgerScreen() {
   const { refresh, state } = useServer();
   const load = useCallback(() => api.getLedger(), []);
   const { data, error, loading, reload } = useResource(load, 60_000);
-  const [pending, setPending] = useState<UnlockId | null>(null);
+  const [pending, setPending] = useState<UnlockId | RequisitionId | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [selling, setSelling] = useState<string | null>(null);
   const [saleNotice, setSaleNotice] = useState<string | null>(null);
@@ -49,6 +50,24 @@ export function LedgerScreen() {
     }
   };
 
+  const bulkSell = async (selector: BulkSelector) => {
+    setSelling('bulk');
+    setSaleNotice(null);
+    try {
+      const result = await api.bulkSell(selector);
+      setSaleNotice(
+        result.stacks === 0
+          ? 'Nothing on file under that heading. No form was raised.'
+          : `Bulk disposal filed: ${result.stacks} stacks, ${result.sold} items, ${result.goldReceived} gold.`,
+      );
+      await Promise.all([reload(), refresh()]);
+    } catch {
+      setSaleNotice('Bulk filing refused. The depot requests you queue like everyone else.');
+    } finally {
+      setSelling(null);
+    }
+  };
+
   const buy = async (id: UnlockId) => {
     setPending(id);
     setNotice(null);
@@ -64,39 +83,35 @@ export function LedgerScreen() {
     }
   };
 
+  const requisition = async (id: RequisitionId) => {
+    setPending(id);
+    setNotice(null);
+    try {
+      await api.purchaseRequisition(id);
+      // The state snapshot carries the office, and several requisitions change
+      // screens this one is not.
+      await Promise.all([reload(), refresh()]);
+    } catch {
+      setNotice('Requisition returned unstamped. Supply will not say why.');
+    } finally {
+      setPending(null);
+    }
+  };
+
   if (loading && !data) return <div className="text-dim">Retrieving ledger...</div>;
   if (!data) return <div className="text-dim">{error ?? 'Ledger unavailable.'}</div>;
 
   return (
     <div className={columns.columns}>
-      <div className={columns.column}>
-        <div className={`text-head ${columns.head}`}>INVENTORY</div>
-        {data.inventory.length === 0 && (
-          <div className="text-dim">Filing cabinet empty. The Authority is unimpressed.</div>
-        )}
-        {data.inventory.map((item) => (
-          <div key={item.name} className={styles.stock}>
-            <div className={columns.row}>
-              <span className="text-body">{item.name}</span>
-              <span className="text-dim">{item.note}</span>
-            </div>
-            <div className={styles.stockActions}>
-              <span className="text-dim">
-                {item.unitOffer}g each · {item.stackOffer}g the lot
-              </span>
-              <button
-                type="button"
-                className={styles.sell}
-                disabled={selling !== null}
-                onClick={() => void sell(item.name)}
-              >
-                {selling === item.name ? 'FILING...' : 'SELL'}
-              </button>
-            </div>
-          </div>
-        ))}
-        {saleNotice && <div className="text-dim">{saleNotice}</div>}
-      </div>
+      <CabinetColumn
+        inventory={data.inventory}
+        market={data.market}
+        office={data.office}
+        onSell={sell}
+        onBulkSell={bulkSell}
+        busy={selling}
+        notice={saleNotice}
+      />
 
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>MARKET</div>
@@ -116,6 +131,36 @@ export function LedgerScreen() {
                 {swing}%
               </span>
             </div>
+          );
+        })}
+
+        <div className={`text-head ${columns.headLater}`}>REQUISITIONS — {data.gold}g</div>
+        <div className={`text-dim ${styles.hint}`}>
+          Office equipment, bought with gold. Permanent — a desk is not buried
+          with the recruit who paid for it.
+        </div>
+        {data.requisitions.map((offer) => {
+          const offerState = offer.owned ? 'owned' : offer.affordable ? 'affordable' : 'locked';
+          return (
+            <button
+              key={offer.track}
+              type="button"
+              className={styles.unlock}
+              data-state={offerState}
+              disabled={!offer.affordable || pending !== null}
+              onClick={() => void requisition(offer.id)}
+            >
+              <span className={styles.unlockHead}>
+                <span className={offer.owned ? 'text-bright' : 'text-body'}>{offer.label}</span>
+                <span className={offer.owned ? 'text-bright' : 'text-dim'}>
+                  {offer.owned ? 'ON FILE' : pending === offer.id ? '...' : `${offer.cost}g`}
+                </span>
+              </span>
+              <span className={`text-dim ${styles.unlockDetail}`}>
+                {offer.maxTier > 1 && `Tier ${offer.tier}/${offer.maxTier} — `}
+                {offer.detail}
+              </span>
+            </button>
           );
         })}
       </div>
@@ -168,6 +213,7 @@ export function LedgerScreen() {
         )}
         {retireNotice && <div className="text-dim">{retireNotice}</div>}
       </div>
+
     </div>
   );
 }

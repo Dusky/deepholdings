@@ -6,6 +6,7 @@ import {
   HOARD_SALE_BONUS,
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
+  clampRetreatPct,
   UNLOCK_CATALOGUE,
   journalLines,
   pensionAward,
@@ -366,7 +367,7 @@ function validateOrders(orders: StandingOrders): StandingOrders {
 
   if (
     !Number.isFinite(targetDepth) || targetDepth < 1 || targetDepth > MAX_DEPTH ||
-    !Number.isFinite(retreatPct) || retreatPct < 5 || retreatPct > 80 ||
+    !Number.isFinite(retreatPct) || retreatPct < 1 || retreatPct > 100 ||
     !lootOk || !spendOk
   ) {
     throw new ServiceError('invalid_request', 'invalid standing orders');
@@ -374,7 +375,10 @@ function validateOrders(orders: StandingOrders): StandingOrders {
 
   return {
     targetDepth,
-    retreatPct,
+    // Clamped rather than rejected: orders filed before the slider was narrowed
+    // are stored anywhere in 5-80, and an old client putting one back should
+    // not get a 400. Nothing is lost — 60 and 45 resolve identically.
+    retreatPct: clampRetreatPct(retreatPct),
     lootPriority: orders.lootPriority,
     spendPolicy: orders.spendPolicy,
   };

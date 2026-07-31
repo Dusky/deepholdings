@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react';
-import type { StandingOrders } from '@deepholdings/shared';
+import {
+  RETREAT_MAX_PCT,
+  RETREAT_MIN_PCT,
+  type StandingOrders,
+} from '@deepholdings/shared';
 import { FileButton } from '../components/ui/FileButton';
 import { OptionChip } from '../components/ui/OptionChip';
 import { Slider } from '../components/ui/Slider';
@@ -77,8 +81,8 @@ export function OrdersScreen() {
         </label>
         <Slider
           id="retreat-threshold"
-          min={5}
-          max={80}
+          min={RETREAT_MIN_PCT}
+          max={RETREAT_MAX_PCT}
           value={draft.retreatPct}
           valueText={`${draft.retreatPct} percent HP`}
           onChange={(retreatPct) => update({ retreatPct })}

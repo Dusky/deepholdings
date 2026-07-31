@@ -195,11 +195,21 @@ always knows what they are working toward.
 - [x] **Target Depth and Retreat Threshold matter.** Depth is the income dial
       (106 → 265 gold/h across profiles); retreat is the death dial (60% never
       dies, 5% dies constantly).
-- [ ] **Loot Priority and Spend Policy are still thin.** `LOOT_EFFECT` makes
-      loot a real choice, but the interesting version needs crafting (M5).
-      `hoard` is close to strictly worse and needs a reason to exist.
-- [ ] **Greedy play should pay better.** It trades gold for pension but the
-      deaths cost enough grade that it never reaches its target depth.
+- [ ] **Loot Priority and Spend Policy are still thin.** Measured: switching
+      balanced play to relics and hoard costs 4% of income and triples pension
+      rate, which is a real but small trade. The interesting version needs
+      crafting (M5).
+- [x] **Greedy play should pay better** — wrong diagnosis, real bug behind it.
+      Depth already pays: ordering Floor 9 with an ordinary retreat threshold
+      gives up 6% of income and returns 105 pension/h, better than the daily
+      retirer. The failure was entirely the **retreat threshold**, which ran
+      5-80 and meant something across about twenty of those points — everything
+      from 35 up resolved identically, because a recruit withdrawing above the
+      hit cap can only be killed by the rare grievous tail. Narrowed to 10-45,
+      so every position on the slider changes an outcome.
+      Found on the way: successors never inherited anything, so death was a
+      total wipe in the shipped game. Both in
+      [`docs/design/balance.md`](docs/design/balance.md).
 - [x] **Requisitions — a gold sink.** Gold buys **permanent office equipment**:
       four tracks, seven rungs — bulk filing, cabinet index, journal retention,
       pinned readouts. Permanent is the load-bearing word: gold dies with the

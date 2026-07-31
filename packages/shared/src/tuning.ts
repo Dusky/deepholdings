@@ -185,6 +185,35 @@ export function maxHpForLevel(level: number): number {
 export const MAX_HIT_FRACTION = 0.35;
 
 /**
+ * The usable ends of the Retreat Threshold slider.
+ *
+ * The control used to run 5–80, and a sweep at Target Depth 6 showed that most
+ * of it was scenery:
+ *
+ * | retreat | 60 | 50 | 40 | 35 | 30 | 25 | 20 | 15 | 10 | 5 |
+ * | deaths/wk | 0.0 | 0.0 | 0.0 | 0.2 | 1.7 | 9.2 | 17.4 | 27.6 | 49.4 | 148 |
+ * | value/h | 279 | 279 | 281 | 280 | 271 | 212 | 154 | 116 | 96 | 108 |
+ *
+ * Everything from 35 upward is the same setting, because a recruit who
+ * withdraws above `MAX_HIT_FRACTION` cannot be killed by a normal blow and only
+ * the rare grievous tail can reach them. Below 10 the recruit dies before they
+ * can descend, which makes the numbers non-monotonic nonsense rather than a
+ * harder difficulty.
+ *
+ * So the whole meaning of the slider lived in about twenty of its seventy-five
+ * points. Narrowing it to 10–45 spends the control on the range where moving it
+ * changes something: 45 never dies, 30 occasionally, 25 is where pension income
+ * peaks, and 10 is a formality.
+ */
+export const RETREAT_MIN_PCT = 10;
+export const RETREAT_MAX_PCT = 45;
+
+/** Old orders were stored anywhere in 5–80; 60 and 45 behave identically. */
+export function clampRetreatPct(pct: number): number {
+  return Math.min(RETREAT_MAX_PCT, Math.max(RETREAT_MIN_PCT, Math.round(pct)));
+}
+
+/**
  * Prestige ladders.
  *
  * Every track is bought in order, so the Ledger only ever offers one rung per

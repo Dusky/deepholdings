@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { after, before, describe, test } from 'node:test';
-import { HOARD_SALE_BONUS, inheritedLevel, type StateResponse } from '@deepholdings/shared';
+import {
+  HOARD_SALE_BONUS,
+  RETREAT_MAX_PCT,
+  RETREAT_MIN_PCT,
+  inheritedLevel,
+  type StateResponse,
+} from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
 import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
@@ -580,6 +586,47 @@ for (const adapter of adapters) {
         'dying deep must return a better successor than dying shallow',
       );
       assert.equal(successor.hp, successor.maxHp);
+    });
+
+
+    test('retreat thresholds outside the live band are clamped, not rejected', async () => {
+      // The slider was narrowed from 5-80 to 10-45 because everything above 35
+      // resolved identically. Orders filed under the old range must still PUT
+      // cleanly — 60 and 45 mean the same thing to the resolver.
+      const wide = await app.inject({
+        method: 'PUT',
+        url: '/v1/orders',
+        headers: auth(),
+        payload: {
+          orders: { targetDepth: 6, retreatPct: 60, lootPriority: 'gear', spendPolicy: 'resupply' },
+        },
+      });
+      assert.equal(wide.statusCode, 200);
+      assert.equal(wide.json().orders.retreatPct, RETREAT_MAX_PCT);
+
+      const low = await app.inject({
+        method: 'PUT',
+        url: '/v1/orders',
+        headers: auth(),
+        payload: {
+          orders: { targetDepth: 6, retreatPct: 5, lootPriority: 'gear', spendPolicy: 'resupply' },
+        },
+      });
+      assert.equal(low.statusCode, 200);
+      assert.equal(low.json().orders.retreatPct, RETREAT_MIN_PCT);
+
+      // Actual garbage is still refused.
+      for (const retreatPct of [0, 250, Number.NaN, 'thirty']) {
+        const bad = await app.inject({
+          method: 'PUT',
+          url: '/v1/orders',
+          headers: auth(),
+          payload: {
+            orders: { targetDepth: 6, retreatPct, lootPriority: 'gear', spendPolicy: 'resupply' },
+          },
+        });
+        assert.equal(bad.statusCode, 400, `retreatPct ${String(retreatPct)} should be refused`);
+      }
     });
 
   });

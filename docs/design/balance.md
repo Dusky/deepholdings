@@ -348,6 +348,56 @@ constantly from Floor 1.
 150-run and 600-run batches. Do not read a tenth of a death as a signal. The
 income columns are stable to within a point or two at 150 runs.
 
+## "Greedy should pay better" was the wrong diagnosis
+
+The standing complaint was that aggressive play trades gold for pension and
+never reaches its target depth. True, but the reason had nothing to do with
+depth. The greedy profile differs from balanced on *three* knobs at once —
+Floor 9 instead of 6, retreat 20% instead of 30%, relics and hoard instead of
+gear and resupply — so it was never clear which one was failing. Changing one
+at a time:
+
+| profile | changed | deaths/wk | value/h | pens/h | floor | lvl |
+| --- | --- | --- | --- | --- | --- | --- |
+| balanced | — | 1.7 | 271 | 11 | 6 | 13 |
+| **deep** | depth 9 | 7.8 | 256 | **105** | **9** | 7 |
+| **brave** | retreat 20% | **17.4** | 154 | 71 | 6 | 4 |
+| relicist | relics + hoard | 2.5 | 261 | 24 | 6 | 12 |
+| greedy | all three | 16.6 | 144 | 66 | 5 | 3 |
+
+**Depth already pays, handsomely.** Ordering Floor 9 with an ordinary retreat
+threshold gives up 6% of income and returns 105 pension an hour — better than
+the daily retirer's 89, and ten times balanced play. Loot priority is close to
+free. The entire failure is the retreat threshold, and greedy inherits it.
+
+### The retreat slider was mostly scenery
+
+Sweeping it at Target Depth 6:
+
+| retreat | 60 | 50 | 40 | 35 | 30 | 25 | 20 | 15 | 10 | 5 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| deaths/wk | 0.0 | 0.0 | 0.0 | 0.2 | 1.7 | 9.2 | 17.4 | 27.6 | 49.4 | 148.2 |
+| value/h | 279 | 279 | 281 | 280 | 271 | 212 | 154 | 116 | 96 | 108 |
+| pens/h | 0 | 0 | 0 | 0 | 11 | 86 | 71 | 57 | 50 | 67 |
+
+Everything from 35 to 80 is one setting. A recruit who withdraws above
+`MAX_HIT_FRACTION` cannot be killed by a normal blow, so only the 3% grievous
+tail can reach them, and it effectively never does. At the other end, below 10
+the recruit dies before descending, which is why the bottom of the table stops
+being monotonic — r5 out-earns r10 because it never gets anywhere to lose
+anything.
+
+So the control ran 5–80 and meant something across about twenty of those
+points. It is 10–45 now. Every position on it now changes an outcome: 45 never
+dies, 30 loses somebody every few days, 25 is where pension income peaks, 10 is
+a formality. The server clamps rather than rejects out-of-band values, so orders
+filed under the old range still submit — 60 and 45 resolve identically anyway.
+
+**25 is the interesting discovery.** It is the pension-maximising setting by a
+distance (86/h against 11 at r30), it costs a fifth of income, and nothing below
+it is worth choosing — 20 and 15 are worse on *both* currencies. The dominated
+region is now mostly off the slider.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the

@@ -278,7 +278,12 @@ export function resolve(options: ResolveOptions): ResolveResult {
       character.depth -= 1;
       character.hp = Math.min(character.maxHp, character.hp + Math.round(character.maxHp * 0.06));
       if (character.depth === 0) {
-        log(tick, `Ascended to surface at ${Math.round((character.hp / character.maxHp) * 100)}% HP. Logged against your quarterly bravery metric.`);
+        log(tick, `Back at the surface. ${Math.round((character.hp / character.maxHp) * 100)}% HP.`);
+      } else {
+        // Retreating a single floor used to be silent, so the log showed
+        // "Down to Floor 2" three times with nothing between — which reads as
+        // a repeated line rather than a recruit going up and down.
+        log(tick, `Pulled back to Floor ${character.depth}. ${Math.round((character.hp / character.maxHp) * 100)}% HP.`);
       }
       continue;
     }
@@ -287,7 +292,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     if (character.depth === 0 && character.hp < character.maxHp) {
       character.hp = Math.min(character.maxHp, character.hp + Math.round(character.maxHp * 0.04));
       if (character.hp >= character.maxHp) {
-        log(tick, 'Rest concluded at Depot 3. Standing orders unchanged.');
+        log(tick, 'Rested at Depot 3.');
       }
       if (orders.spendPolicy === 'resupply' && character.supplies < 6) {
         // Short of coin at the depot? The quartermaster buys the cheapest thing
@@ -299,7 +304,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
             item.unitValue < low.unitValue ? item : low,
           );
           character.gold += cheapest.unitValue * cheapest.quantity;
-          log(tick, `Sold ${cheapest.quantity} x ${cheapest.name} to Depot 3 to cover resupply.`);
+          log(tick, `Sold ${cheapest.quantity} x ${cheapest.name} at Depot 3 to cover supplies.`);
           inventory.splice(inventory.indexOf(cheapest), 1);
         }
 
@@ -341,7 +346,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     if (!stalled && character.depth < authorised) {
       character.depth += 1;
       counters.deepestFloor = Math.max(counters.deepestFloor, character.depth);
-      log(tick, `Descending. Floor ${character.depth} reached. Permit D-${character.permitTier} verified.`);
+      log(tick, `Down to Floor ${character.depth}.`);
     }
 
     // 5. Delving: supplies burn, things happen.
@@ -350,7 +355,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     }
     if (character.supplies === 0 && rngChance(rng, 0.3)) {
       character.hp -= Math.max(1, Math.round(character.maxHp * 0.04));
-      log(tick, 'Descending unsupplied. Class C filing violation noted. Condition deteriorating.');
+      log(tick, 'Out of supplies, still descending. The recruit is not eating.');
     }
     if (orders.spendPolicy === 'insure' && character.gold >= INSURANCE_PREMIUM_PER_TICK) {
       character.gold -= INSURANCE_PREMIUM_PER_TICK;
@@ -393,7 +398,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
           pensionAwarded: award,
           atTick: tick,
         };
-        log(tick, `Encountered: ${creature}. Combat not resolved.`);
+        log(tick, `Encountered: ${creature}.`);
         log(tick, `${character.name} died on Floor ${character.depth}. Cause of death: ${cause}. Next of kin notified by form letter.`);
         character.lastResolvedTick = tick;
         return finish();
@@ -402,7 +407,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
       log(
         tick,
         grievous
-          ? `Encountered: ${creature}. Grievous injury sustained. Form 9 (Industrial Injury) filed on the recruit's behalf.`
+          ? `Encountered: ${creature}. Badly hurt — Form 9 (Industrial Injury) filed on the recruit's behalf.`
           : `Encountered: ${creature}. ${combatNote(prose)}`,
       );
 
@@ -428,7 +433,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
       const levels = applyLevelUps(character);
       counters.levelsGained += levels;
       if (levels > 0) {
-        log(tick, `Grade review passed. Now Level ${character.level}. Union Standing +${levels}.`);
+        log(tick, `Grade review passed. Now Grade ${character.level}. Union Standing +${levels}.`);
       }
     } else if (rngChance(rng, 0.04)) {
       character.gold += rngInt(rng, 1, 4 + character.depth);

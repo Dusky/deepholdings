@@ -1,7 +1,31 @@
 /**
- * Journal copy. Deadpan clerical voice: the terrible thing happened, and the
- * form was filed correctly. Kept apart from the resolution rules so writers can
- * work here without touching the simulation.
+ * Journal copy. Kept apart from the resolution rules so writers can work here
+ * without touching the simulation.
+ *
+ * ## The register rule
+ *
+ * **Bureaucratic language is reserved for moments the Authority is actually
+ * acting** — a permit clearing, a grade review, a pension assessed, a form
+ * filed about something. Everything the recruit does underground is described
+ * plainly: what happened, what it cost, what it smelled like.
+ *
+ * This is a correction. The first version of this file put the clerical voice
+ * on *every* line, and the result was fifty notes built from one mould —
+ * `<clipped clause>. <clipped clause that undercuts it>.` Individually fine.
+ * Read in sequence, which is the only way anybody reads them, it was a
+ * metronome: "Corridor surveyed. Corridor unchanged." / "Nothing to report.
+ * Reported anyway." / "Logged as routine. Nothing about it was routine."
+ * Sixteen of eighteen combat notes were that shape.
+ *
+ * The deeper problem was that irony needs something to be ironic *about*. When
+ * the description is already arch, there is no plain fact for the paperwork to
+ * be absurd against — it is arch language about arch language, and it reads as
+ * a writer enjoying themselves. A recruit bleeding in a corridor, described
+ * flatly, and then a form number: that is the joke. The form is funny because
+ * the corridor is real.
+ *
+ * So: most lines here are now plain. Roughly one in five reaches for the
+ * Authority's vocabulary, and those are the ones that land.
  *
  * ## What is generated and what is written
  *
@@ -63,16 +87,29 @@ const SPECIES: readonly (readonly string[])[] = [
 ];
 
 /**
- * Qualifiers. Employment status, paperwork status, and standing — the three
- * things the Authority believes describe anything.
+ * Qualifiers.
+ *
+ * These were all employment status — Tenured, Seconded, Collectively
+ * Bargained, Retired Under Review — which made every encounter in the game a
+ * joke about HR. This is the line a player reads more than any other, several
+ * times an hour, forever, so it is the worst possible place to put the
+ * heaviest vocabulary.
+ *
+ * Most are physical now. The office ones survive because a Kobold Foreman,
+ * Undocumented is genuinely funny once; it stops being funny when the fourteen
+ * encounters either side of it are the same gag with a different noun.
  */
 const QUALIFIERS: readonly string[] = [
-  'Disgruntled', 'Undocumented', 'Unlicensed', 'Off-Duty', 'Municipal',
-  'Overworked', 'Between Postings', 'Requisitioned', 'Notarised', 'Tenured',
-  'Out of Warranty', 'Self-Employed', 'Incorporated', 'Pensioned', 'Decommissioned',
-  'Partially Certified', 'Retired Under Review', 'Collectively Bargained',
-  'Grandfathered', 'Unlabelled', 'Seconded', 'On Secondment', 'Provisional',
-  'Acting', 'Emeritus', 'Uninsured', 'Load-Bearing', 'Contested',
+  // Physical, and what the recruit would actually notice first.
+  'Enormous', 'Half-Starved', 'Blind', 'Patient', 'Cornered',
+  'Wet', 'Wrong-Coloured', 'Too Many Legs', 'Silent', 'Screaming',
+  'Old', 'Molten', 'Split Open', 'Waiting', 'Curious',
+  'Territorial', 'Sleeping', 'Injured Already', 'Enormous and Slow',
+  'Faintly Glowing', 'Missing Something', 'Wearing Someone',
+  'Newly Hatched', 'Very Nearly Dead',
+  // The Authority's vocabulary, at about one name in five.
+  'Undocumented', 'Off-Duty', 'Requisitioned', 'Out of Warranty',
+  'Unlicensed', 'Pensioned', 'Load-Bearing',
 ];
 
 /** Bands where a grade suffix reads as menace rather than noise. */
@@ -180,27 +217,38 @@ function caseRef(rng: Rng): string {
   return `#${rngInt(rng, 1000, 9899)}-${rngPick(rng, ['A', 'B', 'C', 'D', 'F', 'R'])}`;
 }
 
-/** After a fight the recruit walked away from. */
+/**
+ * After a fight the recruit walked away from.
+ *
+ * Mostly physical, mostly short, and varied in length on purpose — a pool
+ * where every entry is the same number of beats reads as one line however
+ * many entries it has.
+ */
 export function combatNote(rng: Rng): string {
   const notes: readonly (() => string)[] = [
-    () => 'Grievance filed pre-combat. Combat resolved. Grievance withdrawn posthumously.',
-    () => `Filed ${formRef(rng)} (${rngPick(rng, FORM_TITLES)}) after combat, as required.`,
-    () => "Grievance filed on the creature's behalf, post-combat, as courtesy.",
-    () => 'Combat resolved. Paperwork resolved. Both in triplicate.',
-    () => 'Encounter logged against your quarterly bravery metric.',
-    () => 'Combat concluded. Neither party conceded the point.',
-    () => `Referred to Arbitration, case ${caseRef(rng)}. The creature did not attend.`,
-    () => 'Resolved without recourse to the complaints procedure, on this occasion.',
-    () => 'The recruit reports the matter is closed. The matter disagrees.',
-    () => `Witness statement taken. Witness was the recruit. ${formRef(rng)} filed regardless.`,
-    () => 'Combat resolved. Expenses claimed. Expenses queried.',
+    () => 'Won on the second attempt.',
+    () => 'Shallow cut across the forearm.',
+    () => 'It broke off and went back down the corridor.',
+    () => 'Loud, then very quiet.',
+    () => 'The recruit is favouring one leg.',
+    () => 'It fought like something defending a room rather than itself.',
+    () => 'Over quickly. The recruit sat down afterwards for a while.',
+    () => 'Blood on the wall at shoulder height, none of it the recruit\'s.',
+    () => 'A long one. The lamp went out partway through and came back.',
+    () => 'It made a sound. The recruit has declined to describe the sound.',
+    () => 'Dealt with. The corridor smells of it now.',
+    () => 'Two teeth recovered from the shield.',
+    () => 'The recruit apologised to it afterwards. No explanation offered.',
+    () => 'It had been waiting a long time for someone to come down here.',
+    () => 'Nothing broken. Everything sore.',
+    () => 'Backed into a doorway and held it there.',
+    () => 'Three minutes. Felt longer to everyone involved.',
+    // The Authority's voice, at about one line in five — and only where a
+    // clerk would genuinely have written something down.
+    () => `Filed ${formRef(rng)} (${rngPick(rng, FORM_TITLES)}) afterwards, standing up, in the dark.`,
+    () => `Referred to Arbitration, case ${caseRef(rng)}. It did not attend.`,
     () => 'Logged as routine. Nothing about it was routine.',
-    () => 'A verbal warning was issued. It was not understood.',
-    () => `Damage to Authority property assessed under ${formRef(rng)}. The recruit is Authority property.`,
-    () => 'Encounter concluded amicably, in the sense that it concluded.',
-    () => 'Both parties were reminded of the Union agreement. One party complied.',
-    () => 'Combat resolved. The recruit has been thanked in writing.',
-    () => `Outcome recorded in the annual return, line ${rngInt(rng, 11, 89)}.`,
+    () => `Recorded in the annual return, line ${rngInt(rng, 11, 89)}, where it will stay.`,
   ];
   return rngPick(rng, notes)();
 }
@@ -208,18 +256,20 @@ export function combatNote(rng: Rng): string {
 /** After something goes into the filing cabinet. */
 export function lootNote(rng: Rng): string {
   const notes: readonly (() => string)[] = [
-    () => 'Provenance disputed. Arbitration pending.',
-    () => 'Deposited to Gold. Union Standing +1 for prompt filing.',
-    () => `Flagged for Arbitration, case ${caseRef(rng)}.`,
-    () => 'Receipt attached, in triplicate.',
+    () => 'Heavier than it looks.',
+    () => 'Went into the cabinet still warm.',
+    () => 'Wrapped in cloth and put at the bottom of the pack.',
+    () => 'The recruit checked it three times before stowing it.',
+    () => 'It was under something. The something is still there.',
+    () => 'Carried out under one arm.',
+    () => 'Someone had already tried to take this. They are still here.',
+    () => 'Took a while to work loose.',
+    () => 'Smaller than expected, and worth more.',
+    () => 'The recruit has stopped looking at it.',
+    () => 'Appraised on sight by someone unqualified to appraise it.',
     () => 'Catalogued. The catalogue is not searchable.',
-    () => `Appraised on sight by someone unqualified to appraise it. ${formRef(rng)} filed.`,
+    () => `Flagged for Arbitration, case ${caseRef(rng)}.`,
     () => 'Title unclear. Retained pending clarification that will not arrive.',
-    () => 'Entered into the cabinet. The cabinet objected.',
-    () => 'Ownership asserted by the Authority, retrospectively.',
-    () => `Logged against ${rngPick(rng, FORM_TITLES)}. Nobody reads those.`,
-    () => 'Condition noted as fair. Fair to whom is not specified.',
-    () => 'Removed from the floor. The floor has been notified.',
   ];
   return rngPick(rng, notes)();
 }
@@ -227,22 +277,26 @@ export function lootNote(rng: Rng): string {
 /** A tick where nothing happened, which is most of them. */
 export function quietNote(rng: Rng): string {
   const notes: readonly (() => string)[] = [
-    () => 'Uneventful shift. Per diem claimed.',
-    () => 'Nothing to report. Reported anyway.',
-    () => 'Corridor surveyed. Corridor unchanged.',
-    () => 'Break taken, as entitled. Duration disputed.',
-    () => 'Routine patrol. The routine is the point.',
+    () => 'Water, somewhere below.',
+    () => 'The corridor turns left for a long time.',
+    () => 'Nothing. Four hours of nothing.',
+    () => 'A door that was open is shut.',
+    () => 'Lamp trimmed. Boots dried.',
+    () => 'Dust undisturbed in both directions.',
+    () => 'Heard something, waited, nothing came.',
+    () => 'Counted the rations again. Same answer.',
+    () => 'Slept badly.',
+    () => 'The recruit walked. That is the whole report.',
+    () => 'Cold down here. Colder than the floor above.',
+    () => 'Marked the wall at the junction. The mark was already there.',
+    () => 'Ate standing up.',
+    () => 'Sat for ten minutes with the lamp off, then went on.',
+    () => 'Uneventful. Per diem claimed.',
     // Claimed must land under worked, or the joke inverts into expenses fraud.
     () => {
       const worked = rngInt(rng, 9, 14);
       return `Timesheet submitted for ${rngInt(rng, 6, worked - 1)} hours. ${worked} were worked.`;
     },
-    () => 'Lamp trimmed. Boots dried. Morale unmeasured.',
-    () => 'A noise was investigated. It was the building.',
-    () => 'Rations inspected. Rations found wanting.',
-    () => 'Progress described as steady by someone not present.',
-    () => 'Quiet stretch. The recruit used it to catch up on filing.',
-    () => 'No contact. No recovery. No complaints, formally.',
   ];
   return rngPick(rng, notes)();
 }
@@ -250,33 +304,42 @@ export function quietNote(rng: Rng): string {
 /** An encounter that yielded nothing, which stings more than it should. */
 export function emptyHandedNote(priority: string, rng: Rng): string {
   const notes: readonly (() => string)[] = [
-    () => `Loot priority: ${priority}. Nothing recovered. Complaint filed against the floor.`,
-    () => `Loot priority: ${priority}. The creature was carrying debt.`,
-    () => `Nothing of ${priority} recovered. The recruit checked twice.`,
+    () => 'Nothing on it. The recruit checked twice.',
+    () => 'Nothing worth the weight.',
+    () => 'Pockets. Empty ones.',
+    () => 'It was carrying a key. The lock was not found.',
+    () => `Nothing of ${priority} down here, or not today.`,
+    () => 'The recruit swore, briefly, on the record.',
     () => `Search conducted under ${formRef(rng)}. Yield: nil.`,
-    () => `Loot priority: ${priority}. Pockets found, pockets empty.`,
-    () => `Nothing recovered. The floor has been added to a list.`,
-    () => `Recovery attempted. Recovery unsuccessful. Attempt logged.`,
-    () => `Loot priority: ${priority}. Supply and demand were both absent.`,
+    () => `Loot priority: ${priority}. The creature was carrying debt.`,
   ];
   return rngPick(rng, notes)();
 }
 
+/**
+ * Read as "Cause of death: X", inside a form letter.
+ *
+ * Mixed on purpose. A plain cause lands harder against the form-letter framing
+ * than a witty one does, and a list where every entry is a joke stops being a
+ * list of deaths.
+ */
 export const DEATH_CAUSES = [
+  'blood loss',
+  'a fall',
+  'exhaustion',
+  'the dark',
+  'crush injury',
+  'cold',
+  'something that was not there on the way down',
   'enthusiasm',
-  'descending without adequate permit',
-  'patience, insufficiently applied',
-  'a clerical error, downstream',
-  'an unrecoverable difference of opinion',
-  'initiative, unauthorised',
-  'a gap between two procedures',
   'confidence at depth',
-  'the floor, generally',
+  'a gap between two procedures',
+  'initiative, unauthorised',
   'an appointment nobody scheduled',
 ] as const;
 
 /** Reserved for starvation, which is never a combat outcome. */
-export const STARVATION_CAUSE = 'unsupplied descent (Class C filing violation)';
+export const STARVATION_CAUSE = 'starvation (Class C filing violation)';
 
 /** Causes reachable through combat. Starvation has its own. */
 export const COMBAT_DEATH_CAUSES: readonly string[] = DEATH_CAUSES;
@@ -284,9 +347,8 @@ export const COMBAT_DEATH_CAUSES: readonly string[] = DEATH_CAUSES;
 export const RECESS_NOTE =
   'Extended recess observed per Union contract. Intervening days summarised for brevity.';
 
-export const RESUPPLY_NOTE = 'Resupplied at Depot 3. Receipt attached, in triplicate.';
+export const RESUPPLY_NOTE = 'Resupplied at Depot 3.';
 
-export const HOARD_NOTE =
-  'Resupply declined per spend policy: Hoard. Objection noted in the margin.';
+export const HOARD_NOTE = 'Depot passed without stopping. Spend policy: Hoard.';
 
-export const INSURE_NOTE = 'Premium remitted per spend policy: Insure. Coverage continues.';
+export const INSURE_NOTE = 'Premium remitted. Spend policy: Insure.';

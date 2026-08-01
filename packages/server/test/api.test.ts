@@ -466,11 +466,17 @@ for (const adapter of adapters) {
     });
 
     test('the heartbeat advances the world only when due', async () => {
+      // Both instants are relative to the world's own next beat, not to the
+      // wall clock. The world row persists in the Postgres test database and
+      // only moves forward one interval per suite run, so a gap between runs
+      // longer than HEARTBEAT_SECONDS left `nextBeatAt` in the past and the
+      // "not due" case beat anyway. That is a stored-state flake rather than a
+      // real one, and it hides for as long as you keep running the suite.
       const before = await repo.getWorld();
-      assert.equal(await beatOnce(repo, new Date(Date.now() - 60_000)), false);
+      const nextBeat = new Date(before.nextBeatAt).getTime();
 
-      const due = new Date(new Date(before.nextBeatAt).getTime() + 1000);
-      assert.equal(await beatOnce(repo, due), true);
+      assert.equal(await beatOnce(repo, new Date(nextBeat - 1000)), false);
+      assert.equal(await beatOnce(repo, new Date(nextBeat + 1000)), true);
 
       const after = await repo.getWorld();
       assert.equal(after.beat, before.beat + 1);

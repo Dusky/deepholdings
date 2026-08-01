@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
-import { journalLines } from '@deepholdings/shared';
+import { caseFileTitle, clauseLine, journalLines } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
@@ -119,6 +119,17 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
         </div>
         <ProgressBar value={tickProgress(serverNow)} label="Time to next resolution" />
       </div>
+
+      {state.caseFiles && state.caseFiles.length > 0 && (
+        <div className={`text-dim ${styles.ladder}`}>
+          {state.caseFiles.map((f) => (
+            <div key={f.id}>
+              {f.id} · {caseFileTitle(f)}
+              {clauseLine(f) ? ` — ${clauseLine(f)}` : ''}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className={styles.log} role="log">
         {hasMore && (

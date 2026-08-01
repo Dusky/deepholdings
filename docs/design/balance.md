@@ -660,3 +660,80 @@ journal lines is not the same as a player feeling their career moved.
   is the one that would give `hoard` and Loot Priority something to do.
 - **These are simulations, not play.** They measure the resolver, not whether
   any of it is fun. That still needs a human.
+
+## Case files: what gear did to the simulation, twice
+
+`crafting.md` asks for a staging plan — "ship items and clauses first and the
+full form catalogue second" — and this is that first slice. Its whole job was
+to close M4's last open item, *Loot Priority and Spend Policy are still thin*.
+
+**The first version broke the game, and the harness said so in one run.**
+Six carried files of up to four clauses each, with nothing but a survival
+clamp:
+
+| | shipped defaults, before | first version of case files |
+| --- | --- | --- |
+| deaths per fortnight | 12.3 | **0.00 — none in 30 careers of 30** |
+| pension banked | 49,151 | **0 — none in 30 of 30** |
+| empty 12h windows | 6.1% | 32.0% |
+| carried stat block | — | +254 vigour, survival pinned, +160% loot |
+
+That is precisely the failure the *old default orders* had, rebuilt by a new
+system: no death, no pension, and the entire prestige half of the game
+invisible. Two causes, and the second is the interesting one.
+
+**Cause one: no ceiling.** Twenty-four stacked clauses had nothing to stop
+them. The caps in `items.ts` are the design now rather than a safety net —
+vigour is capped as a *share* of the recruit's own maximum, so a file is worth
+the same proportion at Grade 2 and Grade 20.
+
+**Cause two: the drop rate was twenty times too high, and it read as rare.**
+`0.07` was chosen as "about one find in fourteen". But a recruit on Floor 8
+has an encounter about a third of all ticks and finds something on roughly
+half of those — on the order of two hundred acquisitions a day. One in
+fourteen is forty case files a day. *A rate is not rare because the
+denominator sounds big.* It is rare when the measured count is small, and
+nobody measured the count. At 0.004 it is two or three a day.
+
+### Where it landed
+
+30 careers × 14 days on the shipped defaults:
+
+| | before | with case files |
+| --- | --- | --- |
+| deaths per fortnight | 12.3 | 9.07 |
+| pension banked (median) | 49,151 | 51,786 |
+| banked nothing | 0 of 20 | 1 of 30 |
+| empty 12h windows | 6.1% | 6.8% |
+| final grade (median) | 12 | 15 |
+
+Gear cuts mortality by about a quarter, pays slightly better, and leaves the
+check-in cadence alone. That is what gear should do.
+
+### Loot Priority is no longer thin
+
+The open M4 item, closed. 25 careers × 14 days each:
+
+| priority | deaths | pension | gold | grade | files carried |
+| --- | --- | --- | --- | --- | --- |
+| gold | 10.2 | 55,700 | 20,000 | 12 | 0 |
+| gear | 8.5 | 51,800 | 17,700 | 15 | 2 |
+| relics | 8.6 | 56,300 | 16,200 | 13 | 2 |
+| knowledge | 6.8 | 35,400 | 12,500 | 20 | 3 |
+
+Four legible strategies: gold is raw yield and the highest body count, gear
+buys survivability, relics trade coin for pension, knowledge buys grade and
+protection at a real cost in income.
+
+**Relics needed fixing and the reason is worth recording.** `CASE_FILE_BIAS`
+multiplies `LOOT_EFFECT.findChance`, and relics only finds anything 55% as
+often — so a 1.3 bias made the *relic hunter* carry fewer and worse case files
+than the gear hunter, exactly inverting the design. Two multiplicative knobs
+in different files, and the product was nobody's intent.
+
+### The measurement bug in the measurement
+
+The cadence probe did not count "Case #… opened" as a genuine event, so its
+first report of this system was partly its own blind spot. Worth stating
+plainly because it is the third time this session that an instrument, not the
+game, produced the surprising number.

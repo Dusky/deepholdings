@@ -5,6 +5,7 @@
  * Every read that touches a character resolves it first, server-side: there is
  * no endpoint that returns stale character state.
  */
+import type { CaseFile } from './items.js';
 import type {
   Account,
   Character,
@@ -67,6 +68,8 @@ export interface StateResponse {
    * Ledger because several requisitions change screens the Ledger is not.
    */
   office: Office;
+  /** Case files the recruit is carrying. Lost when they are. */
+  caseFiles: CaseFile[];
   world: WorldState;
   /** Newest journal entries, oldest first. */
   journal: JournalEntry[];

@@ -29,14 +29,21 @@ import {
   rngInt,
   rngPick,
   tickSeed,
+  maxHpForLevel,
+  caseFileTitle,
+  clauseLine,
+  statsOf,
+  type CaseFile,
   type Character,
   type InventoryItem,
   type LootPriority,
   type StandingOrders,
   type UnlockId,
 } from '@deepholdings/shared';
+import { file as fileCaseFile, rollCaseFile, rollsCaseFile } from './caseFiles.js';
 import { applyLevelUps, permitLimit } from './character.js';
 import {
+  caseRef,
   COMBAT_DEATH_CAUSES,
   combatNote,
   emptyHandedNote,
@@ -76,11 +83,15 @@ export interface ResolveCounters {
   permitsApproved: number;
   /** Ticks spent working under a permit ceiling, waiting on the office. */
   stalledTicks: number;
+  /** Case files opened in this span. */
+  caseFilesFound: number;
 }
 
 export interface ResolveResult {
   character: Character;
   inventory: InventoryItem[];
+  /** Case files the recruit is carrying, after this span. */
+  caseFiles: CaseFile[];
   counters: ResolveCounters;
   journal: PendingJournalEntry[];
   death: DeathOutcome | null;
@@ -94,6 +105,8 @@ export interface ResolveOptions {
   character: Character;
   /** Carried through resolution: acquisitions land here, not just in the log. */
   inventory: InventoryItem[];
+  /** Case files carried in. Their clauses feed the stat block below. */
+  caseFiles?: readonly CaseFile[];
   orders: StandingOrders;
   unlocks: readonly UnlockId[];
   /** Absolute tick index for "now". */
@@ -128,12 +141,17 @@ function encounterDamage(
   roll: number,
   maxHp: number,
   grievous: boolean,
+  survival = 0,
 ): number {
   const raw =
     (2 + Math.pow(depth, 1.4) * 1.2) *
     gradeMismatchMultiplier(depth, level) *
     (0.6 + roll * 0.8) *
-    (grievous ? GRIEVOUS_MULTIPLIER : 1);
+    (grievous ? GRIEVOUS_MULTIPLIER : 1) *
+    // Clause survival, applied before the cap rather than after: a case file
+    // should soften an ordinary blow, not raise the ceiling on the worst one.
+    // Clamped in statsOf, so this can never reach zero.
+    (1 - survival);
   const cap = maxHp * (grievous ? GRIEVOUS_MAX_FRACTION : MAX_HIT_FRACTION);
   return Math.max(1, Math.round(Math.min(raw, cap)));
 }
@@ -190,7 +208,35 @@ function stow(
 export function resolve(options: ResolveOptions): ResolveResult {
   const character: Character = { ...options.character };
   const inventory: InventoryItem[] = options.inventory.map((item) => ({ ...item }));
+  let caseFiles: CaseFile[] = (options.caseFiles ?? []).map((f) => ({ ...f }));
   const { orders, unlocks } = options;
+
+  /**
+   * The carried stat block, recomputed whenever the files change.
+   *
+   * Held in a variable rather than derived at each use so the cost is paid
+   * once per acquisition instead of once per tick — this runs inside the tick
+   * loop, and the loop runs up to MAX_CATCHUP_TICKS times per read.
+   */
+  let stats = statsOf(caseFiles);
+
+  /**
+   * Keeps `maxHp` equal to level plus carried vigour, and hp inside it.
+   *
+   * `maxHp` is nine different reads in the loop below — the retreat threshold,
+   * the damage cap, every "% HP" line — so vigour is folded into the field
+   * rather than threaded through all of them as an effective value. That is
+   * the version that cannot be got wrong in one place and right in eight.
+   *
+   * Must run after anything that changes level *or* the carried files:
+   * `applyLevelUps` recomputes maxHp from level alone and would otherwise wipe
+   * the vigour, and releasing a file can lower the ceiling below current hp.
+   */
+  const syncVitals = () => {
+    character.maxHp = Math.max(1, maxHpForLevel(character.level) + stats.vigour);
+    if (character.hp > character.maxHp) character.hp = character.maxHp;
+  };
+  syncVitals();
   const journal: PendingJournalEntry[] = [];
   let death: DeathOutcome | null = null;
   let permitAppliedTick = options.permitAppliedTick;
@@ -204,10 +250,13 @@ export function resolve(options: ResolveOptions): ResolveResult {
     acquisitions: 0,
     permitsApproved: 0,
     stalledTicks: 0,
+    caseFilesFound: 0,
   };
   const finish = (): ResolveResult => {
     counters.goldAfter = character.gold;
-    return { character, inventory, counters, journal, death, permitAppliedTick, ticksResolved };
+    return {
+      character, inventory, caseFiles, counters, journal, death, permitAppliedTick, ticksResolved,
+    };
   };
 
   let ticksResolved = 0;
@@ -372,7 +421,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
       const creature = faunaFor(character.depth, prose);
       const grievous = rngChance(rng, GRIEVOUS_CHANCE);
       const damage = encounterDamage(
-        character.depth, character.level, rng(), character.maxHp, grievous,
+        character.depth, character.level, rng(), character.maxHp, grievous, stats.survival,
       );
       character.hp -= damage;
       character.xp += Math.round(encounterXp(character.depth) * loot.xp);
@@ -413,24 +462,60 @@ export function resolve(options: ResolveOptions): ResolveResult {
 
       if (rngChance(rng, 0.45 * loot.findChance)) {
         const item = lootFor(orders.lootPriority, character.depth, prose);
-        const value = Math.round(encounterReward(character.depth, rng()) * loot.value);
+        const value = Math.round(
+          encounterReward(character.depth, rng()) * loot.value * (1 + stats.lootValue),
+        );
         counters.acquisitions += 1;
 
-        const stowed = stow(
-          inventory, item, orders.lootPriority, value, orders.spendPolicy === 'hoard', slots,
-        );
-        character.gold += stowed.gold;
-        log(
-          tick,
-          stowed.liquidated
-            ? `Acquired: ${item}. Filing cabinet at capacity; liquidated at depot rates for ${stowed.gold} gold.`
-            : `Acquired: ${item}. ${lootNote(prose)}`,
-        );
+        // A case file arrives *instead of* a stack, so this draw is a share of
+        // finds rather than a new source of them. Simulation rng, not prose:
+        // it changes the stat block, so it is a simulation event that happens
+        // to have a name.
+        if (rollsCaseFile(character.depth, orders.lootPriority, rng)) {
+          const rolled = rollCaseFile({
+            id: caseRef(prose),
+            name: item,
+            priority: orders.lootPriority,
+            depth: character.depth,
+            baseValue: value,
+            rng,
+          });
+          const filed = fileCaseFile(caseFiles, rolled);
+          caseFiles = filed.files;
+          stats = statsOf(caseFiles);
+          syncVitals();
+          counters.caseFilesFound += 1;
+
+          log(tick, `Case ${rolled.id} opened: ${caseFileTitle(rolled)}. ${clauseLine(rolled)}.`);
+          if (filed.displaced) {
+            // Never silently: the drawer is full and something had to go, and
+            // a player who is not told will believe the game lost it.
+            const gone = filed.displaced.id === rolled.id ? 'the new file' : filed.displaced.id;
+            log(
+              tick,
+              `Drawer full. ${gone === 'the new file' ? `Case ${rolled.id} was not worth the space and has been released` : `Case ${gone} released to make room`}.`,
+            );
+          }
+        } else {
+          const stowed = stow(
+            inventory, item, orders.lootPriority, value, orders.spendPolicy === 'hoard', slots,
+          );
+          character.gold += stowed.gold;
+          log(
+            tick,
+            stowed.liquidated
+              ? `Acquired: ${item}. Filing cabinet at capacity; liquidated at depot rates for ${stowed.gold} gold.`
+              : `Acquired: ${item}. ${lootNote(prose)}`,
+          );
+        }
       } else if (rngChance(rng, 0.3)) {
         log(tick, emptyHandedNote(orders.lootPriority, prose));
       }
 
       const levels = applyLevelUps(character);
+      // applyLevelUps recomputes maxHp from level alone, so carried vigour has
+      // to be folded back in immediately or a promotion silently strips it.
+      if (levels > 0) syncVitals();
       counters.levelsGained += levels;
       if (levels > 0) {
         log(tick, `Grade review passed. Now Grade ${character.level}. Union Standing +${levels}.`);

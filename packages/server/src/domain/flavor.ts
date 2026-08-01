@@ -213,7 +213,12 @@ function formRef(rng: Rng): string {
   return `Form ${rngInt(rng, 2, 96)}-${rngPick(rng, ['A', 'B', 'C', 'D', 'E', 'G', 'K'])}`;
 }
 
-function caseRef(rng: Rng): string {
+/**
+ * A case number. Exported because case files carry one for real now, not just
+ * as a joke in a combat note — and both should look the same, because in the
+ * fiction they are the same registry.
+ */
+export function caseRef(rng: Rng): string {
   return `#${rngInt(rng, 1000, 9899)}-${rngPick(rng, ['A', 'B', 'C', 'D', 'F', 'R'])}`;
 }
 
@@ -377,7 +382,7 @@ const KIND_PATTERNS: readonly (readonly [JournalKind, RegExp])[] = [
     'authority',
     /Permit D-|Grade review|Union Standing|Form [A-Z0-9]|Form \d|Arbitration|Clearance amended|Service review|Form R-1|Form SO-1|Case file opened|Replacement recruit|Timesheet|per diem|recess|Class C/i,
   ],
-  ['loot', /^Acquired:|Sold \d|Resupplied|Deposited/],
+  ['loot', /^Acquired:|^Case \S+ opened|^Drawer full|Sold \d|Resupplied|Deposited/],
   ['combat', /^Encountered:/],
   ['progress', /^Down to Floor|^Pulled back to Floor|^Back at the surface|^Rested at/],
 ];

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import type {
   Account,
+  CaseFile,
   DeathRecord,
   InventoryItem,
   JournalEntry,
@@ -163,12 +164,14 @@ export class PostgresRepository implements Repository {
     await this.db.query(
       `INSERT INTO characters
          (id, account_id, name, recruit_num, level, xp, hp, max_hp, depth, permit_tier,
-          gold, supplies, alive, last_resolved_tick, permit_applied_tick, inventory, born_tick)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17)`,
+          gold, supplies, alive, last_resolved_tick, permit_applied_tick, inventory, born_tick,
+          case_files)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18::jsonb)`,
       [
         c.id, c.accountId, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth,
         c.permitTier, c.gold, c.supplies, c.alive, c.lastResolvedTick,
         record.permitAppliedTick, JSON.stringify(record.inventory), c.bornTick,
+        JSON.stringify(record.caseFiles ?? []),
       ],
     );
   }
@@ -180,12 +183,13 @@ export class PostgresRepository implements Repository {
          name = $2, recruit_num = $3, level = $4, xp = $5, hp = $6, max_hp = $7, depth = $8,
          permit_tier = $9, gold = $10, supplies = $11, alive = $12, last_resolved_tick = $13,
          permit_applied_tick = $14, inventory = $15::jsonb, born_tick = $16,
+         case_files = $17::jsonb,
          died_at = CASE WHEN $12 THEN died_at ELSE COALESCE(died_at, now()) END
        WHERE id = $1`,
       [
         c.id, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth, c.permitTier,
         c.gold, c.supplies, c.alive, c.lastResolvedTick, record.permitAppliedTick,
-        JSON.stringify(record.inventory), c.bornTick,
+        JSON.stringify(record.inventory), c.bornTick, JSON.stringify(record.caseFiles ?? []),
       ],
     );
   }
@@ -542,5 +546,6 @@ function toCharacterRecord(row: Record<string, unknown>): CharacterRecord {
     permitAppliedTick:
       row.permit_applied_tick === null ? null : Number(row.permit_applied_tick),
     inventory: (row.inventory ?? []) as InventoryItem[],
+    caseFiles: (row.case_files ?? []) as CaseFile[],
   };
 }

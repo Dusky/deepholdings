@@ -210,6 +210,7 @@ export async function loadState(
         unlocks: pension.unlocks,
         toTick: tickOf(now),
         permitAppliedTick: record.permitAppliedTick,
+        caseFiles: record.caseFiles,
       });
 
       if (result.journal.length > 0) {
@@ -227,6 +228,7 @@ export async function loadState(
         character: result.character,
         permitAppliedTick: result.permitAppliedTick,
         inventory: result.inventory,
+        caseFiles: result.caseFiles,
       };
 
       if (result.ticksResolved > 0) {
@@ -282,6 +284,7 @@ export async function loadState(
       clearance: clearanceFor(current.character, pension),
       digest,
       ordersFiled: await tx.hasFiledOrders(accountId),
+      caseFiles: current.caseFiles ?? [],
       pendingPermit: pendingPermitOf(current, pension.unlocks, now),
       retirement: retirementOffer(current, pension.unlocks),
       character: current.character,
@@ -417,6 +420,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     unlocks: pension.unlocks,
     toTick: tickOf(worldNow()),
     permitAppliedTick: record.permitAppliedTick,
+    caseFiles: record.caseFiles,
   });
 
   if (result.ticksResolved === 0) return record;
@@ -436,6 +440,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     character: result.character,
     permitAppliedTick: result.permitAppliedTick,
     inventory: result.inventory,
+    caseFiles: result.caseFiles,
   };
   await tx.saveCharacter(updated);
 

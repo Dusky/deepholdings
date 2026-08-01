@@ -12,6 +12,7 @@ import {
   maxHpForLevel,
   unlockTier,
   xpForLevel,
+  type CaseFile,
   type Character,
   type InventoryItem,
   type UnlockId,
@@ -80,6 +81,7 @@ export function succeed(input: Succession): {
   character: Character;
   inventory: InventoryItem[];
   permitAppliedTick: null;
+  caseFiles: CaseFile[];
 } {
   const { previous } = input;
   return {
@@ -95,6 +97,14 @@ export function succeed(input: Succession): {
     ),
     inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
     permitAppliedTick: null,
+    /**
+     * A successor inherits the case *file* — grade, permit, standing — and
+     * none of the case files. That asymmetry is the point: death was a wipe,
+     * then it became almost free, and gear is what gives it a second stake
+     * that is not the grade ladder. What the last recruit was carrying went
+     * down with them.
+     */
+    caseFiles: [],
   };
 }
 

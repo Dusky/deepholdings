@@ -259,10 +259,14 @@ always knows what they are working toward.
 - [x] **Target Depth and Retreat Threshold matter.** Depth is the income dial
       (106 → 265 gold/h across profiles); retreat is the death dial (60% never
       dies, 5% dies constantly).
-- [ ] **Loot Priority and Spend Policy are still thin.** Measured: switching
-      balanced play to relics and hoard costs 4% of income and triples pension
-      rate, which is a real but small trade. The interesting version needs
-      crafting (M5).
+- [x] **Loot Priority is no longer thin.** Case files — the first slice of
+      Requisition & Arbitration — make it the knob that decides what gear you
+      end up carrying. 25 careers × 14 days each: gold 10.2 deaths and the most
+      coin, gear 8.5 and two carried files, relics 8.6 with the best pension,
+      knowledge 6.8 and Grade 20 at a third less income. Four legible
+      strategies where there was one small trade.
+      **Spend Policy is still thin** and stays open.
+      See [`docs/design/balance.md`](docs/design/balance.md).
 - [x] **Greedy play should pay better** — wrong diagnosis, real bug behind it.
       Depth already pays: ordering Floor 9 with an ordinary retreat threshold
       gives up 6% of income and returns 105 pension/h, better than the daily

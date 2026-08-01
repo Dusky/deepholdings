@@ -23,6 +23,8 @@
 import {
   DEFAULT_ORDERS,
   pensionAward,
+  statsOf,
+  type CaseFile,
   type InventoryItem,
   type StandingOrders,
 } from '@deepholdings/shared';
@@ -40,6 +42,7 @@ const ORDERS: StandingOrders = {
   ...DEFAULT_ORDERS,
   targetDepth: Number(process.env.DEPTH ?? DEFAULT_ORDERS.targetDepth),
   retreatPct: Number(process.env.RETREAT ?? DEFAULT_ORDERS.retreatPct),
+  lootPriority: (process.env.LOOT ?? DEFAULT_ORDERS.lootPriority) as StandingOrders['lootPriority'],
 };
 
 /**
@@ -54,6 +57,11 @@ const GENUINE = [
   /application filed/,
   /Grade review passed/,
   /died on Floor/,
+  // A case file opening is state changing and the player got something. It
+  // was missing from this list on the first run, which under-counted the very
+  // system being measured — the probe reported a cadence regression that was
+  // partly its own blind spot.
+  /^Case #?\S+ opened/,
 ];
 const FLOOR = /Service review/;
 
@@ -64,7 +72,12 @@ interface Career {
   finalLevel: number;
   deepest: number;
   pension: number;
+  goldEarned: number;
   permitTier: number;
+  caseFiles: number;
+  vigour: number;
+  survival: number;
+  lootValue: number;
 }
 
 function runCareer(seed: number): Career {
@@ -84,10 +97,12 @@ function runCareer(seed: number): Career {
   let character = first.character;
   let inventory: InventoryItem[] = first.inventory;
   let permitAppliedTick: number | null = first.permitAppliedTick;
+  let caseFiles: CaseFile[] = first.caseFiles;
 
   let deaths = 0;
   let deepest = 0;
   let pension = 0;
+  let goldEarned = 0;
   const chunk = 240;
   let tick = EPOCH;
 
@@ -100,6 +115,7 @@ function runCareer(seed: number): Career {
       unlocks: [],
       toTick: to,
       permitAppliedTick,
+      caseFiles,
     });
 
     for (const entry of out.journal) {
@@ -116,8 +132,10 @@ function runCareer(seed: number): Career {
       }
     }
 
+    goldEarned += Math.max(0, out.counters.goldAfter - out.counters.goldBefore);
     character = out.character;
     inventory = out.inventory;
+    caseFiles = out.caseFiles;
     permitAppliedTick = out.permitAppliedTick;
     tick = character.lastResolvedTick;
 
@@ -142,10 +160,12 @@ function runCareer(seed: number): Career {
       windows[Math.min(windows.length - 1, Math.floor((tick - EPOCH) / WINDOW))] += 1;
       character = heir.character;
       inventory = heir.inventory;
+      caseFiles = heir.caseFiles;
       permitAppliedTick = heir.permitAppliedTick;
     }
   }
 
+  const stats = statsOf(caseFiles);
   return {
     windows,
     floors,
@@ -153,7 +173,12 @@ function runCareer(seed: number): Career {
     finalLevel: character.level,
     deepest,
     pension,
+    goldEarned,
     permitTier: character.permitTier,
+    caseFiles: caseFiles.length,
+    vigour: stats.vigour,
+    survival: stats.survival,
+    lootValue: stats.lootValue,
   };
 }
 
@@ -188,7 +213,7 @@ for (const c of careers) {
   }
 }
 
-console.log(`orders: depth ${ORDERS.targetDepth}  retreat ${ORDERS.retreatPct}%`);
+console.log(`orders: depth ${ORDERS.targetDepth}  retreat ${ORDERS.retreatPct}%  loot ${ORDERS.lootPriority}`);
 console.log(`runs ${RUNS}  days ${DAYS}  windows/career ${careers[0].windows.length}  window ${WINDOW}t (12h)`);
 console.log(`genuine events        ${genuineEvents}  (${(genuineEvents / (RUNS * DAYS)).toFixed(2)} per career-day)`);
 console.log(`windows with nothing  ${emptyGenuine}/${totalWindows} = ${((emptyGenuine / totalWindows) * 100).toFixed(1)}% genuine-empty`);
@@ -208,6 +233,13 @@ console.log(
   `final grade: min ${Math.min(...careers.map((c) => c.finalLevel))}  ` +
     `median ${med(careers.map((c) => c.finalLevel))}  ` +
     `max ${Math.max(...careers.map((c) => c.finalLevel))}`,
+);
+console.log(`gold earned: median ${med(careers.map((c) => c.goldEarned))}`);
+console.log(
+  `carried at end: ${med(careers.map((c) => c.caseFiles))} files, ` +
+    `vigour ${med(careers.map((c) => c.vigour))}, ` +
+    `survival ${(med(careers.map((c) => c.survival)) * 100).toFixed(0)}%, ` +
+    `loot ${(med(careers.map((c) => c.lootValue)) * 100).toFixed(0)}%`,
 );
 console.log(
   `final permit: min D-${Math.min(...careers.map((c) => c.permitTier))}  ` +

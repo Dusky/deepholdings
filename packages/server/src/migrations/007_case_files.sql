@@ -1,0 +1,14 @@
+-- Case files: the first slice of Requisition & Arbitration.
+--
+-- A JSONB column on `characters` rather than the `items` table the design
+-- calls for, and the reason is scope rather than laziness. At this stage there
+-- are no queries against an individual item: case files are always loaded with
+-- the character that carries them, capped at six, and mutated only inside the
+-- resolver's transaction. That is exactly the shape `inventory` already has,
+-- and it sits in the same row for the same reasons.
+--
+-- The table becomes right the moment forms land. Form filings resolve on a
+-- clock — "Estimated processing: 2 hours" — which means a query for filings
+-- due before tick N across all characters, and that is a join, not a column.
+-- When 3-B and 12-C are built, this column moves.
+ALTER TABLE characters ADD COLUMN IF NOT EXISTS case_files JSONB NOT NULL DEFAULT '[]'::jsonb;

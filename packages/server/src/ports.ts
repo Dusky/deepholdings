@@ -1,5 +1,6 @@
 import type {
   Account,
+  CaseFile,
   Character,
   DeathRecord,
   InventoryItem,
@@ -16,6 +17,8 @@ export interface CharacterRecord {
   character: Character;
   permitAppliedTick: number | null;
   inventory: InventoryItem[];
+  /** Case files the recruit is carrying. Lost with them, by design. */
+  caseFiles: CaseFile[];
 }
 
 export interface NewJournalEntry {

@@ -522,3 +522,60 @@ export const JOURNAL_PAGE_SIZE = 60;
 
 /** Hard ceiling on a bulk filing, so one form can never be an unbounded query. */
 export const BULK_FILING_MAX_STACKS = 64;
+
+/**
+ * Case files: how often one turns up, and how many a recruit can carry.
+ *
+ * Per *acquisition*, not per tick — a case file arrives instead of ordinary
+ * loot, so this is a share of finds rather than a new source of them.
+ *
+ * **The first value here was twenty times too high**, and the mistake is worth
+ * keeping because it is easy to repeat: 0.07 was chosen as "about one find in
+ * fourteen", which sounds rare and is not. A recruit on Floor 8 has an
+ * encounter about a third of all ticks and finds something on roughly half of
+ * those, which is on the order of two hundred acquisitions a day — so one in
+ * fourteen is forty case files a day, every stat cap pinned within hours, and
+ * a balance run reporting zero deaths in thirty careers of thirty.
+ *
+ * A rate is not rare because the denominator sounds big. It is rare when the
+ * measured count is small: these numbers put a case file at roughly two or
+ * three a day at depth, which is a thing you read about rather than a feed.
+ */
+export const CASE_FILE_CHANCE_BASE = 0.004;
+export const CASE_FILE_CHANCE_PER_DEPTH = 0.0005;
+/**
+ * Three, not six. Six carried files stacked up to twenty-four clauses, which
+ * is how the first version of this reached +254 vigour and killed the death
+ * loop outright. Three is a set the player can hold in their head, and it is
+ * what the equipment slots in `crafting.md` were always going to be.
+ */
+export const CASE_FILE_SLOTS = 3;
+
+/**
+ * What Loot Priority does to case files, layered on top of `LOOT_EFFECT`
+ * rather than replacing it.
+ *
+ * This is the knob's second job and the reason the crafting slice was worth
+ * building before the forms: Loot Priority was measured as a real but small
+ * trade — 4% of income for triple the pension rate — and "still thin" has been
+ * the last open item on M4 for as long as M4 has existed.
+ *
+ *   find     multiplies the chance a find is a case file
+ *   grade    added to the grade roll, so relics skew to better files
+ *   riders   share of clauses drawn from the rider pool, where the drawbacks
+ *            live. Relics are the gamble: better clauses, more strings.
+ */
+export const CASE_FILE_BIAS = {
+  gold: { find: 0.5, grade: 0, riders: 0.2 },
+  gear: { find: 1.6, grade: 0.4, riders: 0.3 },
+  // `find` compounds with LOOT_EFFECT.findChance, and relics only finds
+  // anything 55% as often — so a 1.3 bias made the *relic* hunter carry fewer
+  // and worse case files than the gear hunter, which is the opposite of the
+  // design. 2.4 puts its effective rate a little under gear's while the grade
+  // bias keeps what it does find better: fewer, richer, and stringier.
+  relics: { find: 2.4, grade: 1.1, riders: 0.6 },
+  knowledge: { find: 0.9, grade: 0.6, riders: 0.25 },
+} as const;
+
+/** Case files are worth more than the stack they displaced. */
+export const CASE_FILE_VALUE_MULTIPLIER = 3.2;

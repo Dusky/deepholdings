@@ -60,6 +60,12 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
       typeof config.corsOrigins === 'function'
         ? (origin, callback) => callback(null, origin === undefined || allow(origin))
         : config.corsOrigins,
+    // Stated rather than defaulted. The default is GET,HEAD,POST, which
+    // silently blocked `PUT /v1/orders` — the one endpoint that files Form
+    // SO-1, and therefore the whole game — in every cross-origin browser. The
+    // client is always cross-origin: Vite on :5173 in dev, and the Android
+    // build serves from capacitor://localhost against a hosted API.
+    methods: ['GET', 'HEAD', 'POST', 'PUT', 'OPTIONS'],
     credentials: false,
   });
 

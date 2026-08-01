@@ -705,6 +705,42 @@ for (const adapter of adapters) {
       }
     });
 
+
+    test('the preflight allows every method the client actually uses', async () => {
+      // The default is GET,HEAD,POST, which blocked `PUT /v1/orders` — the
+      // endpoint that files Form SO-1 — in every cross-origin browser. The
+      // client is always cross-origin: Vite in dev, capacitor://localhost on
+      // Android. It failed silently as a CORS error, not a 4xx.
+      for (const method of ['GET', 'POST', 'PUT']) {
+        const preflight = await app.inject({
+          method: 'OPTIONS',
+          url: '/v1/orders',
+          headers: {
+            origin: 'http://localhost:5173',
+            'access-control-request-method': method,
+          },
+        });
+        assert.equal(preflight.statusCode, 204, `${method} preflight should succeed`);
+        assert.match(
+          preflight.headers['access-control-allow-methods'] as string,
+          new RegExp(method),
+          `${method} must be allowed`,
+        );
+      }
+
+      // And the real request goes through, not just the preflight.
+      const filed = await app.inject({
+        method: 'PUT',
+        url: '/v1/orders',
+        headers: { ...auth(), origin: 'http://localhost:5173' },
+        payload: {
+          orders: { targetDepth: 4, retreatPct: 30, lootPriority: 'gear', spendPolicy: 'resupply' },
+        },
+      });
+      assert.equal(filed.statusCode, 200);
+      assert.equal(filed.json().orders.targetDepth, 4);
+    });
+
   });
 }
 

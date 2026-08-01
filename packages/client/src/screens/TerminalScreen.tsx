@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
+import { journalLines } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
@@ -58,7 +59,11 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
     loading: loadingEarlier,
     failed: earlierFailed,
     loadEarlier,
-  } = useEarlierJournal(state?.character.id, state?.journal ?? []);
+  } = useEarlierJournal(
+    state?.character.id,
+    state?.journal ?? [],
+    journalLines(state?.office.requisitions ?? []),
+  );
 
   const animate = effectsOn && !highContrast && !reducedMotion;
   const revealed = revealSkipped || !animate;

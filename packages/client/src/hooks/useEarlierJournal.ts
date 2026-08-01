@@ -15,9 +15,16 @@ function byId(a: JournalEntry, b: JournalEntry): number {
  * prepended, so retention decides what arrives unasked and never what may be
  * read.
  */
-export function useEarlierJournal(characterId: string | undefined, current: JournalEntry[]) {
+export function useEarlierJournal(
+  characterId: string | undefined,
+  current: JournalEntry[],
+  /** Lines the opening page carries, so a short file offers no dead control. */
+  openingSize: number,
+) {
   const [older, setOlder] = useState<JournalEntry[]>([]);
-  const [hasMore, setHasMore] = useState(true);
+  // A first-day officer with three lines has nothing behind them, and offering
+  // to fetch it is a button that exists only to say "there is nothing here".
+  const [hasMore, setHasMore] = useState(() => current.length >= openingSize);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const anchor = useRef<{ element: Element; fromBottom: number } | null>(null);
@@ -25,8 +32,11 @@ export function useEarlierJournal(characterId: string | undefined, current: Jour
   // A successor is a new case file: nothing paged in belongs to them.
   useEffect(() => {
     setOlder([]);
-    setHasMore(true);
+    setHasMore(current.length >= openingSize);
     setFailed(false);
+    // Deliberately keyed on the recruit alone: this resets the file, and must
+    // not re-run every time a tick appends a line.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [characterId]);
 
   const entries = useMemo(() => {

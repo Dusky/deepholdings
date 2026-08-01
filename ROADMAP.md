@@ -140,12 +140,16 @@ with no direction.
       absences over fifteen minutes, dismissible.
 - [x] **Empty and error states in voice.** Quiet channel, unavailable ledger,
       empty death feed, link fault, rejected filing, refused redemption.
-- [ ] **The command line has to be genuinely good.** It is a power-user path
-      that some players should *prefer*, not a fallback — history, autocomplete,
-      and more verbs than navigation. This became load-bearing the moment
-      interface upgrades went on the M7 SKU list: the free path being pleasant
-      is what stops those from being a toll (see
-      [`docs/design/monetization.md`](docs/design/monetization.md)).
+- [x] **The command line is genuinely good.** Thirteen verbs, not five screen
+      names: `depth 9`, `retreat 30`, `loot relics`, `spend hoard`, `sell
+      <partial name>`, `retire confirm`, `sync`, `help`. Persisted history on
+      the arrow keys, completion on Tab *and* as tappable chips — completion
+      that needs a desktop keyboard would make typing exactly the second-class
+      path it must not be.
+      **It answers now.** An unrecognised word used to do nothing whatsoever,
+      which reads as a broken input rather than a wrong word.
+      This changes what Keyboard Requisition can sell — see
+      [`docs/design/requisitions.md`](docs/design/requisitions.md).
 - [ ] **The exit criterion still needs a stranger.** Everything above is built;
       whether it *works* is a question only someone who has never seen the game
       can answer.

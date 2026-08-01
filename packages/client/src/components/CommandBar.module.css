@@ -1,3 +1,53 @@
+/* The dock stacks what the command line says back above the line itself:
+   a response, then completions, then the input. All three are hidden while
+   the bar is collapsed on a phone. */
+.dock {
+  display: flex;
+  flex-direction: column;
+}
+
+/* What the command line answered. Never silent — an unrecognised word used to
+   do nothing at all, which reads as a broken input rather than a wrong word. */
+.response {
+  padding: 6px 26px 0;
+  font-family: var(--font-mono);
+  font-size: calc(10.5px * var(--font-scale));
+  line-height: 1.5;
+  white-space: pre-wrap;
+  /* `help` is a dozen lines. Scrolls rather than shoves the input off-screen. */
+  max-height: 18em;
+  overflow-y: auto;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 26px 0;
+}
+
+.suggestion {
+  padding: 2px 8px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: calc(10px * var(--font-scale));
+  letter-spacing: 0.04em;
+}
+
+.suggestion:hover {
+  color: var(--phosphor-bright);
+  border-color: var(--phosphor-dim);
+}
+
+@media (pointer: coarse) {
+  .suggestion {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+}
+
 .bar {
   display: flex;
   align-items: center;
@@ -33,6 +83,17 @@
 }
 
 @media (max-width: 720px) and (orientation: portrait) {
+  .response,
+  .suggestions {
+    padding-left: calc(var(--safe-left) + 16px);
+    padding-right: calc(var(--safe-right) + 16px);
+  }
+
+  /* A phone has less to spare, and the input must stay reachable. */
+  .response {
+    max-height: 9.5em;
+  }
+
   .bar {
     padding: 10px calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 10px)
       calc(var(--safe-left) + 16px);

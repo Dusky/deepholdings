@@ -57,10 +57,10 @@ control produces "I earned Ledger clearance and there is still no tab", which
 reads as a bug rather than a purchase opportunity.
 
 **Clearance keeps granting tabs.** The command line stays because some players
-prefer typing — it is a power-user path, not the penalty path, and M2 now
-carries the work to make it genuinely good (history, autocomplete, more verbs
-than navigation). If the command line is ever the worse option for everybody,
-it has stopped being a feature and started being leverage.
+prefer typing — it is a power-user path, not the penalty path. That work is
+done: thirteen verbs, persisted history, completion by Tab or by tapping a
+chip, and an answer every time. If the command line is ever the worse option
+for everybody, it has stopped being a feature and started being leverage.
 
 ## The catalogue
 
@@ -106,12 +106,22 @@ Two decisions the implementation forced:
 | Requisition | Effect | Notes |
 | --- | --- | --- |
 | **Form SO-1 Carbon Copies** | Saved standing-order presets, one-tap switching | One set of orders still in force at a time — presets are not slots |
-| **Keyboard Requisition** | Command history, autocomplete, aliases | Deliberately makes the *free* path better; needs the M2 command-line work first |
+| **Keyboard Requisition** | User-defined aliases and saved command chains | Rewritten — see below |
 | **Second Monitor** | Landscape split view: Terminal beside Orders | Screen real estate, not privileged information |
 | **Departmental Stationery** | Boot sequences, bezel finishes, palettes | Pure cosmetic; overlaps the phosphor prestige track, so needs a story about which currency owns cosmetics |
 
 These four are what make the catalogue longer, which is what the balance run
 says it needs — the alternative is pricing seven conveniences absurdly.
+
+**Keyboard Requisition needed rewriting.** It was specified as selling command
+history and autocomplete. Those are now free, and had to be: M2's goal is a
+command line that some players *prefer*, and a version of it without history or
+completion is not one anybody would prefer — it would be the penalty path,
+which is the thing this document exists to forbid. What is left for it to sell
+is **user-defined aliases**: naming your own shortcut for a command you type
+often. The full command keeps working, so the free path stays complete and the
+requisition saves keystrokes on top of it. Same resolution as Extended Journal
+Retention, for the same reason.
 
 ## Questions the build answered
 

@@ -19,4 +19,5 @@ packages/client/android/app/google-services.json
 # alone would not have matched — so the obvious thing to do with the file
 # straight out of the browser (drop it in the repo) would have committed it.
 *service-account*.json
+
 *firebase-adminsdk*.json

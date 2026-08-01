@@ -101,8 +101,23 @@ CRT shell, server-authoritative resolution, client wired to the API.
 - [x] **Capacitor wrapper.** `android/` generated and committed, config set,
       hardware back returns to the Terminal. **Native build unverified** — no
       Android SDK in the dev environment; `./gradlew assembleDebug` is yours.
-- [ ] **App icon and splash screen.** Placeholders from the Capacitor template
-      are still in place.
+- [x] **App icon and splash screen.** Generated from one definition by
+      `packages/client/tools/make-icons.mjs` — 27 files: legacy mipmaps at five
+      densities, adaptive foreground at five, both splash orientations, and the
+      512 Play icon. Rendered geometry at the game's exact token values rather
+      than a resampled raster, because an icon is judged at 48dp and lives on
+      crisp edges. Verified down to 48 and under the circular mask.
+      The mark is the command prompt: `>` and a cursor block on the screen, in
+      the beige bezel. The bezel is the adaptive *background* layer, so it
+      fills whatever shape a launcher masks to and the foreground carries only
+      the screen — sized to the 66/108 safe circle.
+      The rounded-bezel composition came out of a Krea 2 generation that read
+      better than the squared frame drawn first; its palette and soft edges did
+      not survive, the idea did.
+      **The splash is flat, not photographic.** The app boots into a stylised
+      CRT sequence and a photograph ahead of it is a cut between two media in
+      the first second of the game — plus five densities of photo in the APK
+      for something on screen under a second.
 - [ ] **Deploy the server.** Managed Postgres + a small container host. Set
       `TOKEN_SECRET`, `DATABASE_URL`, `CORS_ORIGINS` (must include
       `capacitor://localhost`). TLS.

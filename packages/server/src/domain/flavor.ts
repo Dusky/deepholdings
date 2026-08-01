@@ -46,7 +46,7 @@
  * Everything here takes an rng so the same tick always reads the same way. A
  * journal that rewrites itself on refresh is a bug report.
  */
-import { rngChance, rngInt, rngPick } from '@deepholdings/shared';
+import { rngChance, rngInt, rngPick, type JournalKind } from '@deepholdings/shared';
 
 type Rng = () => number;
 
@@ -352,3 +352,39 @@ export const RESUPPLY_NOTE = 'Resupplied at Depot 3.';
 export const HOARD_NOTE = 'Depot passed without stopping. Spend policy: Hoard.';
 
 export const INSURE_NOTE = 'Premium remitted. Spend policy: Insure.';
+
+/**
+ * What kind of line this is, so the client can colour it.
+ *
+ * Derived from the text at read time rather than stored on the row. Three
+ * reasons: no migration, it works on journals already written, and — the one
+ * that actually decided it — it lives *here*, next to the copy. A `kind`
+ * column set at write time drifts silently the moment someone rewords a line
+ * in this file and forgets the enum. A classifier in the same file is at least
+ * in the writer's eyeline, and `journalKind.test.ts` asserts every authored
+ * line still lands where it should.
+ *
+ * `routine` is the default and by far the commonest, which is correct: most
+ * ticks are a recruit walking down a corridor.
+ */
+const KIND_PATTERNS: readonly (readonly [JournalKind, RegExp])[] = [
+  // Order matters: a death line also mentions a floor, and it is a death first.
+  ['death', /died on Floor|Cause of death|Next of kin/],
+  // Not a death — a recruit who will be one shortly if nothing changes. Same
+  // urgency, different fact, and the enum should not claim otherwise.
+  ['alert', /not eating|Form 9 \(Industrial Injury\)|Grievous/],
+  [
+    'authority',
+    /Permit D-|Grade review|Union Standing|Form [A-Z0-9]|Form \d|Arbitration|Clearance amended|Service review|Form R-1|Form SO-1|Case file opened|Replacement recruit|Timesheet|per diem|recess|Class C/i,
+  ],
+  ['loot', /^Acquired:|Sold \d|Resupplied|Deposited/],
+  ['combat', /^Encountered:/],
+  ['progress', /^Down to Floor|^Pulled back to Floor|^Back at the surface|^Rested at/],
+];
+
+export function journalKind(text: string): JournalKind {
+  for (const [kind, pattern] of KIND_PATTERNS) {
+    if (pattern.test(text)) return kind;
+  }
+  return 'routine';
+}

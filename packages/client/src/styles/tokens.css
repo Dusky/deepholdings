@@ -10,9 +10,29 @@
   /* Phosphor palette (amber, default) */
   --phosphor-bright: #ffb742;
   --phosphor-body: #d98a2b;
-  --phosphor-dim: #7a4a18;
+  --phosphor-dim: #8a5620;
   --screen-black: #14100c;
   --alert-red: #ff4530;
+
+  /*
+   * Semantic colours for the log.
+   *
+   * The token set used to be `bright / body / dim` and nothing else — one hue,
+   * three brightnesses — so every component downstream had no other option.
+   * Counted across the screen CSS: dim 24 uses, bright 20, body 3, red 3. The
+   * monotony was encoded in the design system and then followed faithfully.
+   *
+   * A real amber CRT is monochrome, but this is a stylised object rather than
+   * a simulation of a monitor, and the phosphor-swap unlock already proves the
+   * palette is a variable. Amber stays the base; these are the exceptions, and
+   * they exist so a wall of log text can be scanned rather than read.
+   */
+  --log-routine: #8a5620;
+  --log-progress: #ffb742;
+  --log-combat: #ff8a4c;
+  --log-loot: #ffd24a;
+  --log-authority: #7fc6dd;
+  --log-death: #ff4530;
   --hairline: rgba(122, 74, 24, 0.25);
   --paper-tint: rgba(217, 138, 43, 0.05);
   --chip-fill: rgba(255, 183, 66, 0.08);
@@ -74,9 +94,17 @@
 [data-phosphor='green'] {
   --phosphor-bright: #7cffa4;
   --phosphor-body: #3fd97a;
-  --phosphor-dim: #1c6b36;
+  --phosphor-dim: #2a8047;
   --screen-black: #0b1410;
   --alert-red: #ff6b5c;
+
+  /* Same roles, rotated to sit around green rather than amber. */
+  --log-routine: #2a8047;
+  --log-progress: #7cffa4;
+  --log-combat: #ffd166;
+  --log-loot: #b8ff7c;
+  --log-authority: #6fd6d0;
+  --log-death: #ff6b5c;
   --hairline: rgba(28, 107, 54, 0.3);
   --paper-tint: rgba(63, 217, 122, 0.05);
   --chip-fill: rgba(124, 255, 164, 0.08);
@@ -90,6 +118,18 @@
   --phosphor-dim: #9a9a9a;
   --screen-black: #000000;
   --alert-red: #ff6b5c;
+
+  /*
+   * High contrast keeps the log legible over pretty. Hue is the first thing to
+   * go when someone needs contrast, so these are near-white with only enough
+   * separation to remain distinguishable, and routine is the only one dimmed.
+   */
+  --log-routine: #9a9a9a;
+  --log-progress: #ffffff;
+  --log-combat: #ffd6c2;
+  --log-loot: #fff3c2;
+  --log-authority: #c2e8ff;
+  --log-death: #ff9d8f;
   --hairline: rgba(154, 154, 154, 0.35);
   --paper-tint: #111111;
   --chip-fill: rgba(255, 255, 255, 0.1);

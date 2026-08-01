@@ -24,6 +24,7 @@ import {
   type DeathRecord,
   type AdvanceTimeResponse,
   type InventoryItem,
+  type JournalEntry,
   type JournalResponse,
   type LadderEntry,
   type LadderOffer,
@@ -51,6 +52,7 @@ import {
 } from '@deepholdings/shared';
 import { succeed } from './domain/character.js';
 import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
+import { journalKind } from './domain/flavor.js';
 import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
 import { advanceClock, now as worldNow } from './clock.js';
 import type { CharacterRecord, Repository } from './ports.js';
@@ -271,10 +273,8 @@ export async function loadState(
     }
 
     // Extended Journal Retention buys more of this, and nothing else does.
-    const journal = await tx.listJournal(
-      current.character.id,
-      -1,
-      journalLines(office.requisitions),
+    const journal = withKinds(
+      await tx.listJournal(current.character.id, -1, journalLines(office.requisitions)),
     );
 
     return {
@@ -917,7 +917,7 @@ export async function getJournalPage(
       JOURNAL_PAGE_SIZE + 1,
     );
     const hasMore = found.length > JOURNAL_PAGE_SIZE;
-    return { entries: hasMore ? found.slice(1) : found, hasMore };
+    return { entries: withKinds(hasMore ? found.slice(1) : found), hasMore };
   });
 }
 
@@ -1045,6 +1045,18 @@ export async function devMakeAway(
   advanceClock(ticks);
   await repo.markAwayForTesting(accountId, 3600);
   return { away: true, hoursElapsed: ticks / 60 };
+}
+
+/**
+ * Tags each line with what sort of line it is, so the client can colour it.
+ *
+ * Done on read rather than on write: no migration, and it applies to every
+ * journal already on disk. The cost is running a handful of regexes over at
+ * most a few hundred rows per request, which is nothing next to the resolve
+ * that produced them.
+ */
+function withKinds(entries: readonly JournalEntry[]): JournalEntry[] {
+  return entries.map((entry) => ({ ...entry, kind: journalKind(entry.text) }));
 }
 
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {

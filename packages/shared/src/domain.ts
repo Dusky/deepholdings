@@ -105,7 +105,26 @@ export interface JournalEntry {
   tick: number;
   at: string;
   text: string;
+  /**
+   * What sort of line this is, so the client can colour it. Derived server-side
+   * from the text — see `journalKind` — rather than stored, so it applies to
+   * journals written before this field existed.
+   *
+   * Optional because a client older than this field must still render: it
+   * falls back to the body colour, which is exactly what every line used to be.
+   */
+  kind?: JournalKind;
 }
+
+export type JournalKind =
+  | 'death'
+  /** Not a death — a recruit who is about to be one. Starvation, bad injury. */
+  | 'alert'
+  | 'authority'
+  | 'loot'
+  | 'combat'
+  | 'progress'
+  | 'routine';
 
 export interface DeathRecord {
   id: string;

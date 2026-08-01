@@ -4,16 +4,33 @@
   border-bottom: 1px solid var(--phosphor-dim);
 }
 
+/*
+ * The standing notices — permit in processing, Form R-1 available, orders
+ * unfiled. These are the Authority talking, which is the one place the
+ * clerical register belongs, so they take the authority colour and the log
+ * beneath them does not have to shout to be distinguishable.
+ */
 .ladder {
   margin-bottom: 12px;
   padding-left: 10px;
-  border-left: 2px solid var(--phosphor-dim);
+  border-left: 2px solid var(--log-authority);
 }
 
 .nudge {
   margin-bottom: 12px;
   padding-left: 10px;
-  border-left: 2px solid var(--phosphor-dim);
+  border-left: 2px solid var(--log-authority);
+}
+
+/*
+ * Doubled class for specificity. `text-dim` is a global utility on the *same*
+ * element, not a child, so a descendant selector never matches it and a single
+ * class ties on specificity and loses to whichever stylesheet loads last —
+ * which is a coin toss to depend on.
+ */
+.ladder.ladder,
+.nudge.nudge {
+  color: var(--log-authority);
 }
 
 .activity {
@@ -107,4 +124,47 @@
   .earlier {
     min-height: 44px;
   }
+}
+
+/*
+ * Log colour by line kind.
+ *
+ * Every line used to render in --phosphor-body, which made the log a wall of
+ * one colour and the most-read screen in the game the least scannable. The
+ * kind comes from the server (`journalKind`), so the classification lives next
+ * to the copy rather than in a regex here.
+ *
+ * Routine is deliberately the dimmest and by far the commonest: most ticks are
+ * a recruit walking down a corridor, and if everything is emphasised nothing
+ * is. The colours are for the four or five lines an hour that are not that.
+ */
+.logRow[data-kind='routine'] .text {
+  color: var(--log-routine);
+}
+
+.logRow[data-kind='progress'] .text {
+  color: var(--log-progress);
+}
+
+.logRow[data-kind='combat'] .text {
+  color: var(--log-combat);
+}
+
+.logRow[data-kind='loot'] .text {
+  color: var(--log-loot);
+}
+
+.logRow[data-kind='authority'] .text {
+  color: var(--log-authority);
+}
+
+/* Same red as a death, without the glow: urgent, but not final. */
+.logRow[data-kind='alert'] .text {
+  color: var(--log-death);
+}
+
+/* A death is the one line that should stop the eye. */
+.logRow[data-kind='death'] .text {
+  color: var(--log-death);
+  text-shadow: var(--fx-glow-sm);
 }

@@ -146,7 +146,7 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
           // watching two hundred lines cascade is not a reward.
           const done = revealed || typed.has(entry.id) || history.has(entry.id);
           return (
-            <div key={entry.id} className={styles.logRow}>
+            <div key={entry.id} className={styles.logRow} data-kind={entry.kind ?? 'routine'}>
               <span className={`text-dim ${styles.time}`}>{clockOf(entry.at)}</span>
               <span
                 className={`text-body ${styles.text}`}

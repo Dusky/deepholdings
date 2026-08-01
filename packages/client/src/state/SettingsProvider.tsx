@@ -66,7 +66,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     [setSettings],
   );
   const toggleNotificationKind = useCallback(
-    (kind: 'permitReady' | 'shiftReady') =>
+    (kind: 'permitReady' | 'shiftReady' | 'deathPush') =>
       setSettings((s) => ({
         ...s,
         notifications: { ...s.notifications, [kind]: !s.notifications[kind] },

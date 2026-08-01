@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 export interface Config {
   port: number;
   host: string;
@@ -34,6 +36,21 @@ export interface Config {
    * player's career.
    */
   devTools: boolean;
+  /**
+   * FCM service account JSON, or null for a server that cannot push.
+   *
+   * Read from `FCM_SERVICE_ACCOUNT` (the JSON itself) or
+   * `FCM_SERVICE_ACCOUNT_FILE` (a path to it). Never committed and never
+   * logged: it is a private key that can send notifications to every device
+   * registered to the project.
+   *
+   * Absent is a supported state, not a broken one. Without it the server runs
+   * the whole push path into a sender that reports success and does nothing,
+   * so tests and a laptop exercise every line except the wire.
+   */
+  fcmServiceAccount: string | null;
+  /** Run the death sweep alongside the world heartbeat. */
+  runSweep: boolean;
 }
 
 export type CorsOrigin = string[] | ((origin: string) => boolean);
@@ -70,7 +87,17 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       : env.NODE_ENV !== 'production',
     corsOrigins: resolveCorsOrigins(env),
     devTools: env.DEV_TOOLS === 'true' && env.NODE_ENV !== 'production',
+    fcmServiceAccount: readServiceAccount(env),
+    runSweep: env.RUN_SWEEP !== 'false',
   };
+}
+
+function readServiceAccount(env: NodeJS.ProcessEnv): string | null {
+  if (env.FCM_SERVICE_ACCOUNT) return env.FCM_SERVICE_ACCOUNT;
+  if (!env.FCM_SERVICE_ACCOUNT_FILE) return null;
+  // Read eagerly so a bad path fails at boot rather than at the first death,
+  // which would be hours later and on somebody else's schedule.
+  return readFileSync(env.FCM_SERVICE_ACCOUNT_FILE, 'utf8');
 }
 
 function resolveCorsOrigins(env: NodeJS.ProcessEnv): CorsOrigin {

@@ -155,6 +155,14 @@ export class ApiClient {
     return this.request('PUT', '/v1/orders', { orders });
   }
 
+  registerPush(token: string, platform: string): Promise<{ registered: boolean }> {
+    return this.request('POST', '/v1/push/register', { token, platform });
+  }
+
+  unregisterPush(token: string): Promise<{ registered: boolean }> {
+    return this.request('POST', '/v1/push/unregister', { token });
+  }
+
   getLedger(): Promise<LedgerResponse> {
     return this.request('GET', '/v1/ledger');
   }

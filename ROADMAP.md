@@ -168,9 +168,32 @@ game nobody is reminded about is an app nobody opens.
 - [x] **Scheduled local notifications** — permit approved, shift report ready.
       No push server, no credentials, no delivery cost, works offline. Most of
       what this game has to say is predictable, so most of it needs no FCM.
-- [ ] **FCM push** for the unpredictable events only: death, guild objectives.
-      Needs a Firebase project; the same project gives Crashlytics, which M8
-      wants anyway.
+- [x] **FCM push** for the one genuinely unpredictable event: death.
+      HTTP v1 with a service account, against `fetch` and `node:crypto` rather
+      than firebase-admin — fifty megabytes of dependency to sign a JWT is a
+      poor trade, and the legacy server key is a bearer credential with no
+      scope and no expiry.
+      **The hard part was not FCM.** Resolution is lazy, so a recruit who dies
+      at 3am is not dead on the server until the officer next opens the app —
+      by which point the notification has nothing to announce. The heartbeat
+      now runs a bounded **death sweep**: accounts with a token, unread for
+      fifteen minutes, 200 per beat, oldest first. It calls `resolve()` and
+      throws the result away rather than calling `loadState`, because the
+      obvious version would have eaten the "while you were away" digest for
+      exactly the players who were away longest, and would have marked swept
+      officers as present in the tavern. Ticks are seeded from
+      `(characterId, tick)`, so the death the sweep sees is bit-for-bit the
+      death the player's next read produces.
+      Server-side rate discipline mirrors the client's: two pushes per account
+      per day, deduped on `death:<characterId>` by primary key rather than by
+      check-then-write, so two workers racing on one death send once.
+      Without credentials the server runs `NullSender` and says so at boot —
+      a supported state, not a broken one. See
+      [`docs/ops/push.md`](docs/ops/push.md).
+      **The FCM wire itself is unverified**: there is no Firebase project in
+      the dev environment, so only credential parsing is tested. Everything
+      else — sweep, budget, dedupe, registration — is tested against both
+      storage adapters.
 - [x] **Notification preferences.** Master switch, per-type toggles and quiet
       hours (23:00–08:00), persisted with the other quality-floor settings. A
       delivery landing in quiet hours waits rather than being dropped.

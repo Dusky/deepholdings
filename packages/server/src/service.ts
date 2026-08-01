@@ -974,6 +974,47 @@ export async function advanceTime(
   return { ticksAdvanced: advanced, died, character: state.character };
 }
 
+/**
+ * Registers a device for push.
+ *
+ * The platform string is recorded but not validated against a list: a new
+ * Capacitor target should be able to register before this file has heard of
+ * it, and nothing here branches on the value.
+ */
+export async function registerPushToken(
+  repo: Repository,
+  accountId: string,
+  token: unknown,
+  platform: unknown,
+): Promise<{ registered: true }> {
+  const value = typeof token === 'string' ? token.trim() : '';
+  // 4096 is well above any FCM registration token and well below anything
+  // worth storing by accident.
+  if (value.length === 0 || value.length > 4096) {
+    throw new ServiceError('invalid_request', 'a push token is required');
+  }
+  const kind = typeof platform === 'string' && platform.trim() ? platform.trim().slice(0, 32) : 'unknown';
+  await repo.savePushToken(accountId, value, kind);
+  return { registered: true };
+}
+
+/**
+ * Unregisters a device.
+ *
+ * Deliberately not scoped to the calling account: a token names one device,
+ * the device is asking to stop being rung, and refusing because the row is
+ * filed under a previous owner would leave a phone permanently subscribed to
+ * somebody else's deaths.
+ */
+export async function unregisterPushToken(
+  repo: Repository,
+  token: unknown,
+): Promise<{ registered: false }> {
+  const value = typeof token === 'string' ? token.trim() : '';
+  if (value) await repo.deletePushTokens([value]);
+  return { registered: false };
+}
+
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {
   const world = await repo.getWorld();
   const deaths = await repo.listDeaths(12);

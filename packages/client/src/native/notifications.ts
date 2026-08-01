@@ -17,6 +17,15 @@ export interface NotificationPrefs {
   enabled: boolean;
   permitReady: boolean;
   shiftReady: boolean;
+  /**
+   * Death alerts, which are the only thing that arrives by push.
+   *
+   * Turning this off unregisters the FCM token rather than filtering on
+   * arrival — death is the sole payload push carries, so a client that kept a
+   * live token after being told to be quiet would be holding a subscription
+   * it has no use for.
+   */
+  deathPush: boolean;
   /** Local hours during which nothing is delivered. */
   quietFrom: number;
   quietTo: number;
@@ -26,6 +35,7 @@ export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
   enabled: true,
   permitReady: true,
   shiftReady: true,
+  deathPush: true,
   quietFrom: 23,
   quietTo: 8,
 };

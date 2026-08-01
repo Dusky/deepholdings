@@ -419,6 +419,65 @@ export class PostgresRepository implements Repository {
   async touchAccountSeen(accountId: string): Promise<void> {
     await this.db.query('UPDATE accounts SET last_seen_at = now() WHERE id = $1', [accountId]);
   }
+
+  async savePushToken(accountId: string, token: string, platform: string): Promise<void> {
+    // A token can move between accounts on a shared device, so the conflict
+    // updates the owner too rather than leaving a stranger's phone registered
+    // to the previous officer.
+    await this.db.query(
+      `INSERT INTO push_tokens (token, account_id, platform)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (token) DO UPDATE
+         SET account_id = EXCLUDED.account_id,
+             platform = EXCLUDED.platform,
+             refreshed_at = now()`,
+      [token, accountId, platform],
+    );
+  }
+
+  async deletePushTokens(tokens: readonly string[]): Promise<void> {
+    if (tokens.length === 0) return;
+    await this.db.query('DELETE FROM push_tokens WHERE token = ANY($1::text[])', [tokens]);
+  }
+
+  async listPushTokens(accountId: string): Promise<string[]> {
+    const { rows } = await this.db.query(
+      'SELECT token FROM push_tokens WHERE account_id = $1',
+      [accountId],
+    );
+    return rows.map((row) => row.token as string);
+  }
+
+  async listSweepCandidates(awaySeconds: number, limit: number): Promise<string[]> {
+    const { rows } = await this.db.query(
+      `SELECT a.id
+         FROM accounts a
+        WHERE a.last_seen_at < now() - ($1 || ' seconds')::interval
+          AND EXISTS (SELECT 1 FROM push_tokens t WHERE t.account_id = a.id)
+        ORDER BY a.last_seen_at ASC
+        LIMIT $2`,
+      [awaySeconds, limit],
+    );
+    return rows.map((row) => row.id as string);
+  }
+
+  async claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean> {
+    // The insert is the dedupe: two workers racing on the same death both try
+    // to write the same primary key and exactly one succeeds. Doing it as a
+    // SELECT-then-INSERT would make that a coin toss.
+    const { rows } = await this.db.query(
+      `INSERT INTO push_sends (account_id, event_key)
+       SELECT $1, $2
+        WHERE (
+          SELECT count(*) FROM push_sends
+           WHERE account_id = $1 AND sent_at > now() - interval '1 day'
+        ) < $3
+       ON CONFLICT (account_id, event_key) DO NOTHING
+       RETURNING event_key`,
+      [accountId, eventKey, dailyCap],
+    );
+    return rows.length > 0;
+  }
 }
 
 function toDeath(row: Record<string, unknown>): DeathRecord {

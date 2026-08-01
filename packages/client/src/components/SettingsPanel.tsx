@@ -101,6 +101,17 @@ export function SettingsPanel({ onClose }: SettingsPanelProps) {
               {settings.notifications.shiftReady ? 'ON' : 'OFF'}
             </button>
           </div>
+          <div className={styles.row}>
+            <span className={`${styles.label} ${styles.sub}`}>Recruit lost</span>
+            <button
+              type="button"
+              className={styles.toggle}
+              aria-pressed={settings.notifications.deathPush}
+              onClick={() => settings.toggleNotificationKind('deathPush')}
+            >
+              {settings.notifications.deathPush ? 'ON' : 'OFF'}
+            </button>
+          </div>
           <div className={`${styles.label} ${styles.quiet}`}>
             Quiet {settings.notifications.quietFrom}:00–{settings.notifications.quietTo}:00.
             Deliveries wait.

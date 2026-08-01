@@ -22,7 +22,7 @@ export interface SettingsContextValue extends Settings {
   increaseFont: () => void;
   decreaseFont: () => void;
   toggleNotifications: () => void;
-  toggleNotificationKind: (kind: 'permitReady' | 'shiftReady') => void;
+  toggleNotificationKind: (kind: 'permitReady' | 'shiftReady' | 'deathPush') => void;
 }
 
 export const FONT_SCALE_MIN = 0.85;

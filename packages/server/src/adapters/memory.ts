@@ -31,6 +31,9 @@ export class MemoryRepository implements Repository {
   private deaths: (DeathRecord & { accountId: string })[] = [];
   private tavern: TavernMessage[] = [];
   private world: WorldState = initialWorld(new Date());
+  private pushTokens = new Map<string, { accountId: string; platform: string }>();
+  /** account -> event key -> when it was sent. */
+  private pushSends = new Map<string, Map<string, number>>();
   private journalSeq = 0;
   private tavernSeq = 0;
   private queue: Promise<unknown> = Promise.resolve();
@@ -216,6 +219,42 @@ export class MemoryRepository implements Repository {
   async touchAccountSeen(accountId: string): Promise<void> {
     const account = this.accounts.get(accountId);
     if (account) account.lastSeenAt = new Date();
+  }
+
+  async savePushToken(accountId: string, token: string, platform: string): Promise<void> {
+    this.pushTokens.set(token, { accountId, platform });
+  }
+
+  async deletePushTokens(tokens: readonly string[]): Promise<void> {
+    for (const token of tokens) this.pushTokens.delete(token);
+  }
+
+  async listPushTokens(accountId: string): Promise<string[]> {
+    return [...this.pushTokens.entries()]
+      .filter(([, row]) => row.accountId === accountId)
+      .map(([token]) => token);
+  }
+
+  async listSweepCandidates(awaySeconds: number, limit: number): Promise<string[]> {
+    const cutoff = Date.now() - awaySeconds * 1000;
+    const withTokens = new Set([...this.pushTokens.values()].map((row) => row.accountId));
+    return [...this.accounts.values()]
+      .filter((account) => withTokens.has(account.id) && account.lastSeenAt.getTime() < cutoff)
+      .sort((a, b) => a.lastSeenAt.getTime() - b.lastSeenAt.getTime())
+      .slice(0, limit)
+      .map((account) => account.id);
+  }
+
+  async claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean> {
+    const day = Date.now() - 24 * 3600 * 1000;
+    const sent = this.pushSends.get(accountId) ?? new Map<string, number>();
+    if (sent.has(eventKey)) return false;
+    let recent = 0;
+    for (const at of sent.values()) if (at > day) recent += 1;
+    if (recent >= dailyCap) return false;
+    sent.set(eventKey, Date.now());
+    this.pushSends.set(accountId, sent);
+    return true;
   }
 }
 

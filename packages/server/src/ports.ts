@@ -103,4 +103,31 @@ export interface Repository {
   appendTavern(accountId: string, author: string, body: string): Promise<TavernMessage>;
   countActiveOfficers(withinSeconds: number): Promise<number>;
   touchAccountSeen(accountId: string): Promise<void>;
+
+  /** Upserts: FCM reissues tokens, and a reinstall must not add a second row. */
+  savePushToken(accountId: string, token: string, platform: string): Promise<void>;
+  deletePushTokens(tokens: readonly string[]): Promise<void>;
+  listPushTokens(accountId: string): Promise<string[]>;
+
+  /**
+   * Accounts the sweep should resolve: they hold at least one push token and
+   * have not been read for `awaySeconds`.
+   *
+   * `limit` is not politeness, it is the bound. A sweep that resolves every
+   * away account on every heartbeat is a background job whose cost grows with
+   * total signups rather than with players, which is the thing lazy resolution
+   * exists to avoid. Oldest-seen first, so nobody starves.
+   */
+  listSweepCandidates(awaySeconds: number, limit: number): Promise<string[]>;
+
+  /**
+   * Records a push, and answers whether it was already recorded.
+   *
+   * Returns false if this account has already been sent this event, or has
+   * spent its daily allowance. The check and the write are one operation on
+   * purpose — two heartbeat workers racing on the same death must produce one
+   * notification, and that is a property of the primary key, not of the
+   * caller's care.
+   */
+  claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean>;
 }

@@ -4,6 +4,8 @@ import { buildApp } from './app.js';
 import { loadConfig } from './config.js';
 import { startHeartbeat } from './heartbeat.js';
 import type { Repository } from './ports.js';
+import { makeSender } from './push/sender.js';
+import { sweepOnce } from './push/sweep.js';
 
 const config = loadConfig();
 
@@ -19,8 +21,22 @@ if (!config.databaseUrl) {
   app.log.warn('DATABASE_URL not set — using the in-memory adapter. State is lost on restart.');
 }
 
+const sender = makeSender(config, app.log);
+
+// The sweep exists because resolution is lazy: a recruit who dies while the
+// phone is asleep is not dead on the server until somebody reads them. It
+// replays away accounts and writes nothing — see `push/sweep.ts`.
+const sweep = config.runSweep
+  ? async () => {
+      const report = await sweepOnce(repo, sender, (error) =>
+        app.log.error(error, 'sweep: one account failed'),
+      );
+      if (report.pushed > 0 || report.replayed > 0) app.log.info(report, 'death sweep');
+    }
+  : undefined;
+
 const stopHeartbeat = config.runHeartbeat
-  ? startHeartbeat(repo, (error) => app.log.error(error, 'heartbeat failed'))
+  ? startHeartbeat(repo, (error) => app.log.error(error, 'heartbeat failed'), sweep)
   : () => {};
 
 const shutdown = async () => {

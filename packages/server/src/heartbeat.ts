@@ -20,12 +20,31 @@ export async function beatOnce(repo: Repository, now = worldNow()): Promise<bool
   });
 }
 
-export function startHeartbeat(repo: Repository, onError: (error: unknown) => void): () => void {
+export function startHeartbeat(
+  repo: Repository,
+  onError: (error: unknown) => void,
+  sweep?: () => Promise<unknown>,
+): () => void {
   // Checked more often than the interval so a missed beat catches up quickly.
   const timer = setInterval(() => {
     beatOnce(repo).catch(onError);
   }, (HEARTBEAT_SECONDS / 5) * 1000);
-
   timer.unref?.();
-  return () => clearInterval(timer);
+
+  // The death sweep runs on its own timer at the full interval, not on the
+  // world beat's five-times-a-beat schedule. The world beat is idempotent and
+  // cheap to over-call; a sweep replays simulation for every away account, and
+  // running it five times as often would be five times the cost for the same
+  // result.
+  const sweepTimer = sweep
+    ? setInterval(() => {
+        sweep().catch(onError);
+      }, HEARTBEAT_SECONDS * 1000)
+    : null;
+  sweepTimer?.unref?.();
+
+  return () => {
+    clearInterval(timer);
+    if (sweepTimer) clearInterval(sweepTimer);
+  };
 }

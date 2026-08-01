@@ -23,9 +23,11 @@ import {
   loadState,
   purchaseRequisition,
   purchaseUnlock,
+  registerPushToken,
   sellItem,
   sendTavernMessage,
   ServiceError,
+  unregisterPushToken,
   updateOrders,
 } from './service.js';
 
@@ -161,6 +163,20 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
     const { id } = (request.body ?? {}) as { id?: UnlockId };
     if (!id) throw new ServiceError('invalid_request', 'id required');
     return purchaseUnlock(repo, accountId, id);
+  });
+
+  // Push registration. The token is a device identifier from FCM, not a
+  // credential of ours — it is stored so the sweep knows where to ring.
+  app.post('/v1/push/register', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { token, platform } = (request.body ?? {}) as { token?: unknown; platform?: unknown };
+    return registerPushToken(repo, accountId, token, platform);
+  });
+
+  app.post('/v1/push/unregister', async (request, reply) => {
+    await requireAccount(request, reply);
+    const { token } = (request.body ?? {}) as { token?: unknown };
+    return unregisterPushToken(repo, token);
   });
 
   app.post('/v1/pension/claim', async (request, reply) => {

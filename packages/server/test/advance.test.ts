@@ -2,21 +2,13 @@ import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
 import { MAX_CATCHUP_TICKS, RETREAT_MAX_PCT, type StateResponse } from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
-import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import type { Repository } from '../src/ports.js';
+import { adapters } from './adapters.js';
 
 const dev = loadConfig({ NODE_ENV: 'test', TOKEN_SECRET: 't', DEV_TOOLS: 'true' });
 const off = loadConfig({ NODE_ENV: 'test', TOKEN_SECRET: 't' });
-
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const adapters: { name: string; make: () => Repository }[] = [
-  { name: 'memory', make: () => new MemoryRepository() },
-  ...(databaseUrl
-    ? [{ name: 'postgres', make: () => new PostgresRepository(databaseUrl) as Repository }]
-    : []),
-];
 
 test('developer time travel is off unless asked for, and impossible in production', () => {
   assert.equal(off.devTools, false, 'off by default');

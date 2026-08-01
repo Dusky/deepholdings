@@ -488,7 +488,14 @@ Things that are not milestones because they run alongside all of them.
 
 Not a milestone; pick these up as they start to hurt.
 
-- [ ] CI: typecheck, test (with a Postgres service), build on every push
+- [x] CI: typecheck, test (with a Postgres service), build and `cap sync` on
+      every push. `.github/workflows/ci.yml`. The Postgres service is not
+      optional: `test/adapters.ts` refuses to run when `CI` is set without
+      `TEST_DATABASE_URL`, because the skip is silent and a green tick would
+      otherwise cover 69 of 115 tests. The `cap sync` step found
+      `@capacitor/local-notifications` missing from the committed gradle
+      files on its first run — M3's notifications were in `package.json` and
+      absent from any APK built off this tree.
 - [ ] Idempotency keys on mutations — a retried purchase must not double-charge
 - [ ] Rate limiting on write endpoints
 - [ ] Structured logging and error tracking (Sentry or equivalent)

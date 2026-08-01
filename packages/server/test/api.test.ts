@@ -11,27 +11,13 @@ import {
   type JournalResponse,
   type StateResponse,
 } from '@deepholdings/shared';
-import { MemoryRepository } from '../src/adapters/memory.js';
-import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import { beatOnce } from '../src/heartbeat.js';
 import type { Repository } from '../src/ports.js';
+import { adapters } from './adapters.js';
 
 const config = loadConfig({ NODE_ENV: 'test', TOKEN_SECRET: 'test-secret' });
-
-/**
- * The same suite runs against both adapters — that is the point of the port.
- * Postgres joins in only when TEST_DATABASE_URL is set; registering it
- * conditionally keeps the skip decision out of test bodies.
- */
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const adapters: { name: string; make: () => Repository }[] = [
-  { name: 'memory', make: () => new MemoryRepository() },
-  ...(databaseUrl
-    ? [{ name: 'postgres', make: () => new PostgresRepository(databaseUrl) as Repository }]
-    : []),
-];
 
 for (const adapter of adapters) {
   describe(`api (${adapter.name})`, () => {
@@ -591,7 +577,6 @@ for (const adapter of adapters) {
       assert.equal(successor.hp, successor.maxHp);
     });
 
-
     test('retreat thresholds outside the live band are clamped, not rejected', async () => {
       // The slider was narrowed from 5-80 to 10-45 because everything above 35
       // resolved identically. Orders filed under the old range must still PUT
@@ -631,7 +616,6 @@ for (const adapter of adapters) {
         assert.equal(bad.statusCode, 400, `retreatPct ${String(retreatPct)} should be refused`);
       }
     });
-
 
     test('the journal pages backwards to the start of the file', async () => {
       const account = await accountId(app, token);
@@ -705,7 +689,6 @@ for (const adapter of adapters) {
       }
     });
 
-
     test('the preflight allows every method the client actually uses', async () => {
       // The default is GET,HEAD,POST, which blocked `PUT /v1/orders` — the
       // endpoint that files Form SO-1 — in every cross-origin browser. The
@@ -740,7 +723,6 @@ for (const adapter of adapters) {
       assert.equal(filed.statusCode, 200);
       assert.equal(filed.json().orders.targetDepth, 4);
     });
-
 
     test('a dead recruit still has a screen', async () => {
       // The game bricked on the first death: `/v1/state` loaded only the

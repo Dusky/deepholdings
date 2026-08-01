@@ -3,8 +3,7 @@ import { after, before, describe, test } from 'node:test';
 import pg from 'pg';
 import { PostgresRepository } from '../src/adapters/postgres.js';
 import { loadMigrations, pendingMigrations, runMigrations } from '../src/migrations/runner.js';
-
-const databaseUrl = process.env.TEST_DATABASE_URL;
+import { postgresUrl as databaseUrl } from './adapters.js';
 
 describe('migrations', { skip: databaseUrl ? false : 'TEST_DATABASE_URL not set' }, () => {
   // A throwaway database per run, so "fresh" means fresh.

@@ -8,21 +8,12 @@ import {
   type RequisitionId,
   type StateResponse,
 } from '@deepholdings/shared';
-import { MemoryRepository } from '../src/adapters/memory.js';
-import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
 import { loadConfig } from '../src/config.js';
 import type { Repository } from '../src/ports.js';
+import { adapters } from './adapters.js';
 
 const config = loadConfig({ NODE_ENV: 'test', TOKEN_SECRET: 'test-secret' });
-
-const databaseUrl = process.env.TEST_DATABASE_URL;
-const adapters: { name: string; make: () => Repository }[] = [
-  { name: 'memory', make: () => new MemoryRepository() },
-  ...(databaseUrl
-    ? [{ name: 'postgres', make: () => new PostgresRepository(databaseUrl) as Repository }]
-    : []),
-];
 
 const cost = (id: RequisitionId): number =>
   REQUISITION_CATALOGUE.find((entry) => entry.id === id)!.cost;

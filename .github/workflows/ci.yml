@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A second push to the same branch cancels the first — the interesting answer
+# is always about the newest commit.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    # The suite runs against both storage adapters, and the Postgres half is
+    # the half that catches SQL. Without a real database `npm test` skips it
+    # and still exits zero, so the service container is not optional here —
+    # test/adapters.ts refuses to run on CI without TEST_DATABASE_URL rather
+    # than let a green tick mean half of what it appears to.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: deepholdings_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/deepholdings_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `ci` rather than `install`: the lockfile is the input, and a build that
+      # silently resolves a different tree is not reproducing anything.
+      - run: npm ci
+
+      # Shared must be built before the others typecheck against it.
+      - run: npm run build
+
+      - run: npm test
+
+      # The Android project is committed but its build needs an SDK this job
+      # does not have. `cap sync` is the part that can rot silently — it
+      # reconciles android/'s gradle plugin list against package.json — so it
+      # runs here and the APK does not. M1 says the native build is unverified;
+      # this keeps that honest rather than pretending otherwise.
+      #
+      # The copied web assets are gitignored, so the only thing a dirty tree
+      # after this step can mean is that a Capacitor plugin was added to
+      # package.json and never synced into the native project. That is not
+      # hypothetical: adding it here found @capacitor/local-notifications
+      # missing from the committed gradle files, which is M3's entire
+      # notification feature absent from any APK built off this tree.
+      - run: npx cap sync android
+        working-directory: packages/client
+
+      - name: android/ is in sync with package.json
+        run: git diff --exit-code -- packages/client/android

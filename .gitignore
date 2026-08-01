@@ -13,4 +13,10 @@ dist-ssr
 # over out of band than to un-publish. See docs/ops/push.md.
 packages/client/android/app/google-services.json
 # The service account private key. This one is not arguable.
+#
+# Both patterns matter: Firebase downloads these as
+# `<project>-firebase-adminsdk-<hash>-<digits>.json`, which the first pattern
+# alone would not have matched — so the obvious thing to do with the file
+# straight out of the browser (drop it in the repo) would have committed it.
 *service-account*.json
+*firebase-adminsdk*.json

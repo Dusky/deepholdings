@@ -91,13 +91,32 @@ when it is not.
 ### 2. Server credentials
 
 Firebase Console → Project settings → Service accounts → Generate new private
-key. Then either:
+key. It downloads as `<project>-firebase-adminsdk-<hash>-<digits>.json`.
+
+**Put it outside the repository.** Somewhere like `~/.config/deepholdings/`,
+readable only by you:
 
 ```bash
-export FCM_SERVICE_ACCOUNT_FILE=/secure/path/deep-holdings-service-account.json
-# or, for a platform that only takes env vars:
-export FCM_SERVICE_ACCOUNT='{"project_id":"…","client_email":"…","private_key":"…"}'
+mkdir -p ~/.config/deepholdings
+mv ~/Downloads/*firebase-adminsdk*.json "$HOME/.config/deepholdings/fcm.json"
+chmod 600 "$HOME/.config/deepholdings/fcm.json"
 ```
+
+`.gitignore` covers both the `*service-account*` and `*firebase-adminsdk*`
+shapes if it lands in the tree anyway, but out of the tree is the version that
+cannot go wrong. Then either:
+
+```bash
+export FCM_SERVICE_ACCOUNT_FILE="$HOME/.config/deepholdings/fcm.json"
+# or, for a host that only takes environment variables — Fly secrets, Railway
+# variables, a systemd unit:
+export FCM_SERVICE_ACCOUNT="$(cat "$HOME/.config/deepholdings/fcm.json")"
+```
+
+There is no `.env` loading in this server; it reads `process.env` and nothing
+else. So the variable has to be exported in the shell that starts it, or set
+in whatever the host uses for secrets. For local work that means one line
+before `npm run dev:server`, not a file the process finds on its own.
 
 Both are read at boot and a malformed one fails immediately, because a typo in
 a private key must not present as "push is quietly off". With neither set the

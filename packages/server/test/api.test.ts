@@ -741,6 +741,49 @@ for (const adapter of adapters) {
       assert.equal(filed.json().orders.targetDepth, 4);
     });
 
+
+    test('a dead recruit still has a screen', async () => {
+      // The game bricked on the first death: `/v1/state` loaded only the
+      // *active* character, so every request after the one they died in
+      // returned 404. No overlay, no claim button, nothing the client could do.
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      Object.assign(record.character, { hp: 0, alive: false, depth: 5, level: 7 });
+      await repo.saveCharacter(record);
+      await repo.recordDeath(account, {
+        id: randomUUID(),
+        characterName: record.character.name,
+        depth: 5,
+        cause: 'the floor, generally',
+        goldHandled: 12,
+        pensionAwarded: 34,
+        at: new Date().toISOString(),
+      });
+
+      const state = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
+      assert.equal(state.statusCode, 200, 'a dead recruit must not 404 the whole client');
+      const body = state.json() as StateResponse;
+      assert.equal(body.character.alive, false);
+      assert.ok(body.pendingDeath, 'the death overlay needs the record');
+      assert.equal(body.pendingDeath?.pensionAwarded, 34);
+      // Nothing to retire — they are already gone.
+      assert.equal(body.retirement, null);
+      // And the screens they earned are still on file.
+      assert.ok(body.clearance.includes('terminal'));
+
+      // Asking twice is the ordinary case: a player reopens the app.
+      const again = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
+      assert.equal(again.statusCode, 200);
+
+      // And the claim still works from there.
+      const claim = await app.inject({
+        method: 'POST', url: '/v1/pension/claim', headers: auth(),
+      });
+      assert.equal(claim.statusCode, 200);
+      assert.equal(claim.json().character.alive, true);
+    });
+
   });
 }
 

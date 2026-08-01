@@ -398,6 +398,51 @@ distance (86/h against 11 at r30), it costs a fifth of income, and nothing below
 it is worth choosing — 20 and 15 are worse on *both* currencies. The dominated
 region is now mostly off the slider.
 
+## The default orders are a dead end
+
+Every number above describes a *profile* — a set of standing orders someone
+chose. None of them described the orders a player actually starts with. The
+developer time machine (`advance <hours>`, dev builds only) made that cheap to
+check, and it is the most alarming result in this document.
+
+A player who never opens Form SO-1, fast-forwarded 29 days:
+
+| | +6h | +24h | +48h | +96h | +360h | +696h |
+| --- | --- | --- | --- | --- | --- | --- |
+| grade | 4 | 6 | 8 | 10 | 15 | 19 |
+| floor | 3 | 2 | 2 | 2 | 2 | 2 |
+| permit | D-2 | D-2 | D-2 | D-2 | D-2 | D-2 |
+| pension | 0 | 0 | 0 | 0 | 0 | 0 |
+| unlocks affordable | 0 | 0 | 0 | 0 | 0 | 0 |
+
+**Nothing changes after hour six.** The recruit grades up forever and never
+goes anywhere, and the entire prestige half of the game — nineteen unlocks
+across seven ladders — is invisible for a month, because pension is zero and
+stays zero.
+
+Two mechanisms, both defaults:
+
+- **Target Depth defaults to 3, which is exactly what Permit D-2 authorises.**
+  A permit application is only filed when the recruit is *stalled*, and stalled
+  means `depth >= limit && targetDepth > limit`. When the target equals the
+  limit there is no stall, so no application, so no permit, forever. The ladder
+  the Terminal was built to display never starts climbing.
+- **Retreat defaults to 28% at Floor 2, which never kills anybody.** No death
+  means no pension, and pension is the only currency the prestige ladders take.
+  Form R-1 exists, but nothing prompts it and it is on a screen the player has
+  no reason to visit when the Ledger shows an empty PENSION column.
+
+An officer who files orders on day one (Floor 9, retreat 30) has the opposite
+problem: five deaths in 29 days, ~10,000 pension, seven unlocks affordable —
+but grade and permit ratchet *downward* across successors, from Grade 7 / D-6
+at 48 hours to Grade 4 / D-4 at 696. Deaths cost a permit tier each and are
+arriving faster than the ladder can be re-climbed.
+
+Neither of these is a content problem, which is what makes it worth writing
+down: no amount of new fauna or new loot fixes a player who is never asked to
+descend. The fix is in the defaults and in what the game says on day one, and
+it should be settled before anybody is asked to test.
+
 ## Known imperfections
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the

@@ -20,6 +20,9 @@ import type { ScreenId } from '../types';
 
 export interface CommandContext {
   navigate(screen: ScreenId): void;
+  /** Whether the server exposes developer time travel. Never true in production. */
+  devTools: boolean;
+  advance(hours: number): Promise<string>;
   clearance: readonly ScreenId[];
   refresh(): Promise<void>;
   orders: StandingOrders | null;
@@ -164,6 +167,22 @@ export const COMMANDS: readonly CommandSpec[] = [
   },
 
   {
+    name: 'advance',
+    aliases: ['ff'],
+    usage: 'advance <hours>',
+    summary: 'Development only. Simulate time passing, to see a later shift.',
+    run(args, ctx) {
+      if (!ctx.devTools) {
+        return 'Unrecognised: advance. Type `help`.';
+      }
+      const hours = Number(args[0]);
+      if (!Number.isFinite(hours) || hours <= 0 || hours > 720) {
+        return 'Advance by 1 to 720 hours.';
+      }
+      return ctx.advance(hours);
+    },
+  },
+  {
     name: 'sync',
     aliases: ['refresh'],
     usage: 'sync',
@@ -178,15 +197,18 @@ export const COMMANDS: readonly CommandSpec[] = [
     aliases: ['?', 'commands'],
     usage: 'help [command]',
     summary: 'What can be typed here.',
-    run(args) {
+    run(args, ctx) {
+      const listed = COMMANDS.filter((spec) => ctx.devTools || spec.name !== 'advance');
       const wanted = String(args[0] ?? '').toLowerCase();
       if (wanted) {
-        const found = findCommand(wanted);
+        const found = listed.find(
+          (spec) => spec.name === wanted || spec.aliases.includes(wanted),
+        );
         if (!found) return `No such command: ${wanted}.`;
         const also = found.aliases.length ? `\nAlso: ${found.aliases.join(', ')}` : '';
         return `${found.usage}\n${found.summary}${also}`;
       }
-      return COMMANDS.map((spec) => `${spec.usage.padEnd(22)} ${spec.summary}`).join('\n');
+      return listed.map((spec) => `${spec.usage.padEnd(22)} ${spec.summary}`).join('\n');
     },
   },
 ];

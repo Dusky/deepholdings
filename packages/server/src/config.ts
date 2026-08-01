@@ -22,6 +22,18 @@ export interface Config {
    * deliberate step, not a side effect of a restart.
    */
   autoMigrate: boolean;
+  /**
+   * Developer time travel (`POST /v1/dev/advance`).
+   *
+   * An idle game reveals itself over days, so a playtest that takes a fortnight
+   * to say anything never gets run. This lets you look at hour one, day three
+   * and day fourteen in a couple of minutes each.
+   *
+   * Off unless explicitly asked for, and impossible in production regardless of
+   * what the environment says. Both conditions, deliberately: this rewrites a
+   * player's career.
+   */
+  devTools: boolean;
 }
 
 export type CorsOrigin = string[] | ((origin: string) => boolean);
@@ -57,6 +69,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       ? env.AUTO_MIGRATE === 'true'
       : env.NODE_ENV !== 'production',
     corsOrigins: resolveCorsOrigins(env),
+    devTools: env.DEV_TOOLS === 'true' && env.NODE_ENV !== 'production',
   };
 }
 

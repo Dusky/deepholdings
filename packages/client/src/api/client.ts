@@ -1,4 +1,5 @@
 import type {
+  AdvanceTimeResponse,
   ApiError,
   BulkSellRequest,
   BulkSellResponse,
@@ -185,6 +186,11 @@ export class ApiClient {
   /** Older journal lines, oldest first. `before` is the oldest id on screen. */
   getJournalBefore(before: string): Promise<JournalResponse> {
     return this.request('GET', `/v1/journal?before=${encodeURIComponent(before)}`);
+  }
+
+  /** Development only. The route does not exist unless the server enabled it. */
+  advanceTime(hours: number): Promise<AdvanceTimeResponse> {
+    return this.request('POST', '/v1/dev/advance', { hours });
   }
 
   getBulletin(): Promise<BulletinResponse> {

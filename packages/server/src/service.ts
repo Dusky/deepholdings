@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   BULK_FILING_MAX_STACKS,
+  MAX_CATCHUP_TICKS,
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
   HOARD_SALE_BONUS,
@@ -20,6 +21,7 @@ import {
   type Character,
   type ClaimPensionResponse,
   type DeathRecord,
+  type AdvanceTimeResponse,
   type InventoryItem,
   type JournalResponse,
   type LadderEntry,
@@ -66,6 +68,9 @@ export class ServiceError extends Error {
     super(message);
   }
 }
+
+/** Thirty days. Long enough to see the wall, short enough to finish. */
+const MAX_ADVANCE_TICKS = 30 * 24 * 60;
 
 const TAVERN_PAGE = 50;
 const PRESENCE_WINDOW_SECONDS = 900;
@@ -164,7 +169,11 @@ function firstRecruit(accountId: string): CharacterRecord {
  * The one read that matters. Resolves the missed ticks inside a transaction,
  * writes the journal, then returns everything a cold client needs.
  */
-export async function loadState(repo: Repository, accountId: string): Promise<StateResponse> {
+export async function loadState(
+  repo: Repository,
+  accountId: string,
+  devTools = false,
+): Promise<StateResponse> {
   const now = new Date();
 
   return repo.transaction(async (tx) => {
@@ -173,18 +182,25 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
     await tx.touchAccountSeen(accountId);
 
     const record = await tx.getActiveCharacterForUpdate(accountId);
+    // A dead recruit still has a screen — the death overlay, and the button
+    // that files for their pension. Loading only the *active* character meant
+    // every request after the one they died in returned 404, so the game
+    // bricked on the first death: no overlay, no way to claim, nothing to do
+    // but reinstall. The branch below that surfaces a death "recorded on an
+    // earlier request" has never been reachable.
+    const existing = record ?? (await tx.getLatestCharacter(accountId));
     const pension = await tx.getPension(accountId);
     const office = await tx.getOffice(accountId);
     const orders = await tx.getOrders(accountId);
     const world = await tx.getWorld();
 
     let pendingDeath: DeathRecord | null = null;
-    let current = record;
+    let current = existing;
     let digest: ShiftDigest | null = null;
     // Clearance is derived, so the "before" picture has to be taken before the
     // ticks are replayed — that difference is what gets journalled.
-    const clearanceBefore: ScreenId[] = record
-      ? clearanceFor(record.character, pension)
+    const clearanceBefore: ScreenId[] = existing
+      ? clearanceFor(existing.character, pension)
       : ['terminal'];
 
     if (record) {
@@ -280,6 +296,7 @@ export async function loadState(repo: Repository, accountId: string): Promise<St
       now: now.toISOString(),
       nextBeatInSeconds: secondsUntil(world.nextBeatAt, now),
       pendingDeath,
+      devTools,
     };
   });
 }
@@ -905,6 +922,69 @@ export async function getJournalPage(
     const hasMore = found.length > JOURNAL_PAGE_SIZE;
     return { entries: hasMore ? found.slice(1) : found, hasMore };
   });
+}
+
+/**
+ * Developer time travel.
+ *
+ * There is no new simulation here, and there must not be. Advancing works by
+ * winding the character's watermark *backwards* and letting the ordinary
+ * resolver replay forward to now — so a fast-forwarded career is bit-for-bit
+ * the career a real absence of that length produces, including its journal,
+ * its permits and its deaths.
+ *
+ * It runs in catch-up-sized chunks because a single span longer than
+ * `MAX_CATCHUP_TICKS` is deliberately summarised rather than simulated. Ten
+ * days advanced in one call would produce a recess note and nothing else, which
+ * is the opposite of what a playtester wants to look at.
+ *
+ * `bornTick` moves with the watermark, or a recruit who has apparently worked
+ * for a fortnight would have served four minutes and be worth no pension.
+ */
+export async function advanceTime(
+  repo: Repository,
+  accountId: string,
+  ticks: number,
+): Promise<AdvanceTimeResponse> {
+  if (!Number.isInteger(ticks) || ticks < 1 || ticks > MAX_ADVANCE_TICKS) {
+    throw new ServiceError(
+      'invalid_request',
+      `advance by 1 to ${MAX_ADVANCE_TICKS} ticks (${MAX_ADVANCE_TICKS / 60} hours)`,
+    );
+  }
+
+  let advanced = 0;
+  let died = false;
+
+  while (advanced < ticks && !died) {
+    const chunk = Math.min(MAX_CATCHUP_TICKS, ticks - advanced);
+    const outcome = await repo.transaction(async (tx) => {
+      const record = await tx.getActiveCharacterForUpdate(accountId);
+      if (!record) return { moved: 0, dead: true };
+
+      await tx.saveCharacter({
+        ...record,
+        character: {
+          ...record.character,
+          lastResolvedTick: record.character.lastResolvedTick - chunk,
+          bornTick: record.character.bornTick - chunk,
+        },
+        permitAppliedTick:
+          record.permitAppliedTick === null ? null : record.permitAppliedTick - chunk,
+      });
+
+      const resolved = await loadStateInside(tx, accountId);
+      return { moved: chunk, dead: !resolved || !resolved.character.alive };
+    });
+
+    advanced += outcome.moved;
+    died = outcome.dead;
+  }
+
+  // The death record and the successor are the ordinary flow's business, so a
+  // fast-forwarded death lands on the same overlay a real one does.
+  const state = await loadState(repo, accountId);
+  return { ticksAdvanced: advanced, died, character: state.character };
 }
 
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {

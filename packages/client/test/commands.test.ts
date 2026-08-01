@@ -22,6 +22,8 @@ function context(overrides: Partial<CommandContext> = {}) {
   const ctx: CommandContext = {
     navigate: (screen) => visited.push(screen),
     clearance: ['terminal', 'orders', 'ledger', 'bulletin', 'tavern'],
+    devTools: false,
+    advance: async (hours) => `advanced ${hours}`,
     refresh: async () => {},
     orders: ORDERS,
     fileOrders: async (orders) => {
@@ -55,10 +57,40 @@ test('every command has help, and help lists every command', () => {
     assert.ok(spec.summary.length > 0, `${spec.name} needs a summary`);
     assert.ok(spec.usage.startsWith(spec.name), `${spec.name} usage should start with its name`);
   }
-  const help = String(run('help', ctx));
+  const help = String(run('help', { ...ctx, devTools: true }));
   for (const spec of COMMANDS) {
     assert.ok(help.includes(spec.name), `help omits ${spec.name}`);
   }
+});
+
+test('developer time travel does not exist unless the server offers it', async () => {
+  let advanced = 0;
+  const { ctx } = context({
+    advance: async (hours) => {
+      advanced += hours;
+      return `advanced ${hours}`;
+    },
+  });
+
+  // Off: indistinguishable from a word the game has never heard of, and it
+  // must not reach the server either.
+  assert.match(String(await run('advance 24', ctx)), /Unrecognised/);
+  assert.equal(advanced, 0);
+  assert.doesNotMatch(String(run('help', ctx)), /advance/);
+
+  const dev = { ...ctx, devTools: true };
+  assert.match(String(run('help', dev)), /advance/);
+  assert.equal(await run('advance 24', dev), 'advanced 24');
+  assert.equal(advanced, 24);
+});
+
+test('advance refuses spans it cannot simulate', async () => {
+  const { ctx } = context();
+  const dev = { ...ctx, devTools: true };
+  for (const input of ['advance 0', 'advance -5', 'advance 5000', 'advance soon', 'advance']) {
+    assert.match(String(await run(input, dev)), /Advance by 1 to 720 hours/);
+  }
+  assert.equal(await run('advance 24', dev), 'advanced 24');
 });
 
 test('aliases are unique across the whole table', () => {

@@ -93,6 +93,27 @@ export interface StateResponse {
   pendingPermit: PendingPermit | null;
   /** What Form R-1 would pay right now. Null once the recruit is dead. */
   retirement: RetirementOffer | null;
+  /** True when the server will accept `POST /v1/dev/advance`. Never in production. */
+  devTools: boolean;
+}
+
+/**
+ * POST /v1/dev/advance — simulate time passing, for playtesting.
+ *
+ * Runs the ordinary resolver over the requested span in catch-up-sized chunks,
+ * so the result is exactly the state a real absence of that length produces —
+ * journal, deaths, permits and all. Development only; the route does not exist
+ * otherwise.
+ */
+export interface AdvanceTimeRequest {
+  hours: number;
+}
+
+export interface AdvanceTimeResponse {
+  ticksAdvanced: number;
+  /** Careers lost along the way. Resolution stops at the first one. */
+  died: boolean;
+  character: Character;
 }
 
 /**

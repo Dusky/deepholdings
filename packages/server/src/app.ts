@@ -11,6 +11,7 @@ import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
 import {
+  advanceTime,
   authenticateDevice,
   bulkSell,
   claimPension,
@@ -107,8 +108,19 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
 
   app.get('/v1/state', async (request, reply) => {
     const accountId = await requireAccount(request, reply);
-    return loadState(repo, accountId);
+    return loadState(repo, accountId, config.devTools);
   });
+
+  // Time travel for playtesting. Registered only when enabled, so when it is
+  // off the route does not exist rather than existing and refusing — an
+  // endpoint that 403s still tells you it is there.
+  if (config.devTools) {
+    app.post('/v1/dev/advance', async (request, reply) => {
+      const accountId = await requireAccount(request, reply);
+      const { hours } = (request.body ?? {}) as { hours?: number };
+      return advanceTime(repo, accountId, Math.round(Number(hours) * 60));
+    });
+  }
 
   app.put('/v1/orders', async (request, reply) => {
     const accountId = await requireAccount(request, reply);

@@ -64,6 +64,15 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
     () => ({
       navigate: onNavigate,
       clearance: state?.clearance ?? ['terminal'],
+      devTools: state?.devTools ?? false,
+      async advance(hours) {
+        const result = await api.advanceTime(hours);
+        await refresh();
+        const shift = `${result.ticksAdvanced} minutes simulated`;
+        return result.died
+          ? `${shift}. ${result.character.name} did not survive it.`
+          : `${shift}. ${result.character.name} is on Floor ${result.character.depth}, Grade ${result.character.level}.`;
+      },
       refresh,
       orders: state?.orders ?? null,
       fileOrders,
@@ -90,7 +99,7 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
         return `Separation processed. ${result.character.name} assigned.`;
       },
     }),
-    [onNavigate, refresh, state?.clearance, state?.orders, fileOrders],
+    [onNavigate, refresh, state?.clearance, state?.orders, state?.devTools, fileOrders],
   );
 
   const suggestions = useMemo(

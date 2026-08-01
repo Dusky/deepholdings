@@ -275,6 +275,21 @@ always knows what they are working toward.
       checks in twice a day. See `docs/design/balance.md`.
 - [ ] **Milestone cadence.** Something visible moves every session. No
       multi-week walls — they are churn events with a countdown attached.
+- [ ] **The default standing orders are a dead end — fix before any tester.**
+      Target Depth defaults to 3, which is exactly what Permit D-2 authorises,
+      so the recruit never stalls, never applies for a permit and never
+      descends. Retreat defaults to 28%, which at Floor 2 never kills anybody,
+      so pension stays zero and all nineteen prestige unlocks are invisible.
+      Measured with the time machine: a player who never opens Form SO-1 sees
+      **nothing change between hour six and day twenty-nine**. This is the
+      "there is nothing to do" problem, and it is a defaults problem rather
+      than a content one. See
+      [`docs/design/balance.md`](docs/design/balance.md).
+- [x] **Developer time travel.** `advance <hours>` in dev builds winds the
+      watermark back and lets the ordinary resolver replay forward in
+      catch-up-sized chunks, so a fast-forwarded career is the career a real
+      absence produces. An idle game that takes a fortnight to answer a
+      question never gets asked one.
 
 **Exit:** a tester plays for two weeks and can explain their strategy to you.
 

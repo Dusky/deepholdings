@@ -166,8 +166,25 @@ for (const adapter of adapters) {
         end.character.permitTier > startTier,
         `permit stuck at D-${end.character.permitTier} after a week on default orders`,
       );
+
+      // Prestige must become *reachable* — which is not the same as "somebody
+      // died". Death is a rare-event process at the default retreat threshold
+      // and one career in eight sees none in a fortnight; this test used to
+      // assert a death had happened and duly failed about that often, which
+      // was the measurement telling the truth about the design rather than a
+      // flaky test. Form R-1 is the other route, so either counts.
       const pension = banked + (await fresh.getPension(start.account.id)).total;
-      assert.ok(pension > 0, 'a week on default orders earned no pension at all');
+      const offered = end.retirement?.award ?? 0;
+      assert.ok(
+        pension > 0 || offered > 0,
+        'a week on default orders left the pension system entirely out of reach',
+      );
+
+      // And whichever route applies, the officer was told about it.
+      if (pension === 0) {
+        const told = end.journal.some((entry) => /Service review/.test(entry.text));
+        assert.ok(told, 'a recruit who never died was never told Form R-1 exists');
+      }
 
       await solo.close();
       await fresh.close();

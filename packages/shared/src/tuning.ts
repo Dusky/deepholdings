@@ -418,7 +418,21 @@ export const RETIREMENT_MIN_SERVICE_TICKS = 120;
  * day is worth a real award, and the officer should be told the number rather
  * than having to guess that the Ledger has one.
  */
-export const RETIREMENT_REMINDER_TICKS = 1440;
+export const RETIREMENT_REMINDER_TICKS = 720;
+
+/**
+ * Twelve hours, matching the design's stated assumption that two check-ins a
+ * day is plenty. At a day it covered exactly every other check-in window,
+ * which is visible in the measurement as alternating empty windows.
+ *
+ * This is a **floor, not a milestone.** The number in it climbs, so it is a
+ * real signal for an officer who is not dying, but a game that guarantees
+ * "something happened" by printing a status line twice a day has not earned
+ * the M4 criterion. Measured density of genuine events — promotions, permits,
+ * deaths, successors, clearances — is about one per 1.4 days, which is
+ * thinner than "something visible moves every session". That gap is the
+ * remaining M4 work and this does not close it.
+ */
 
 /**
  * Requisitions: what gold buys, once supplies are paid for.

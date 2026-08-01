@@ -275,15 +275,16 @@ always knows what they are working toward.
       checks in twice a day. See `docs/design/balance.md`.
 - [ ] **Milestone cadence.** Something visible moves every session. No
       multi-week walls — they are churn events with a countdown attached.
-- [ ] **The default standing orders are a dead end — fix before any tester.**
+- [x] **The default standing orders are a dead end — fixed.**
       Target Depth defaults to 3, which is exactly what Permit D-2 authorises,
       so the recruit never stalls, never applies for a permit and never
       descends. Retreat defaults to 28%, which at Floor 2 never kills anybody,
       so pension stays zero and all nineteen prestige unlocks are invisible.
-      Measured with the time machine: a player who never opens Form SO-1 sees
-      **nothing change between hour six and day twenty-nine**. This is the
-      "there is nothing to do" problem, and it is a defaults problem rather
-      than a content one. See
+      Now Target Depth 12, Retreat 35: a recruit lost about every 2.3 days,
+      Permit D-8 reached in every sampled run, 18–28k pension over a fortnight.
+      Retreat 35 rather than something safer because 38 is *bimodal* — two
+      sampled careers in three never died and banked nothing, so a third of
+      players would hit the dead end by luck. See
       [`docs/design/balance.md`](docs/design/balance.md).
 - [x] **Developer time travel.** `advance <hours>` in dev builds winds the
       watermark back and lets the ordinary resolver replay forward in

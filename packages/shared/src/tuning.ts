@@ -204,13 +204,21 @@ export const MAX_HIT_FRACTION = 0.35;
  * allowed", which is the only value that lets the permit ladder run its full
  * length. Anything lower silently truncates the ladder at that floor.
  *
- * Measured over 29 simulated days: permits climb D-2 to D-6, pension reaches
- * ~8,700, the first unlocks become affordable inside four days, and a recruit
- * is lost about every six days.
+ * Retreat is 35 because it is the only value at which every sampled career
+ * both loses somebody and reaches the top of the permit ladder. Lower and
+ * deaths arrive daily, knocking grade back faster than it climbs — at 28 the
+ * recruit is still Grade 4-6 and Permit D-3 after a fortnight. Higher is worse
+ * in a nastier way: at 38 the outcome is *bimodal*, and two sampled careers in
+ * three never died at all, so a third of players would see zero pension for
+ * two weeks. That is the dead end again, arrived at by luck.
+ *
+ * Measured over 14 days of elapsed simulation, three seeds: a recruit lost
+ * about every 2.3 days, Permit D-8 in every run, grade 12-18, pension 18,000
+ * to 28,000.
  */
 export const DEFAULT_ORDERS = {
   targetDepth: MAX_DEPTH,
-  retreatPct: 28,
+  retreatPct: 35,
   lootPriority: 'gear',
   spendPolicy: 'resupply',
 } as const;

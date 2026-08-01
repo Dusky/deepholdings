@@ -444,43 +444,67 @@ descend.
 
 ### What the defaults are now
 
-Target Depth defaults to **12** and retreat stays at **28%**. Both were chosen
-by measuring the four candidates rather than by argument:
+Target Depth defaults to **12** and Retreat to **35%**.
 
-| default | permit ladder | pension | unlocks reachable |
-| --- | --- | --- | --- |
-| depth 3, retreat 28 *(old)* | D-2 forever | 0 forever | never |
-| depth 6, retreat 28 | D-4, then stops | 2,917 then flat | 7 |
-| **depth 12, retreat 28** | **D-2 → D-6** | **779 → 8,688** | **7 by day 8** |
-| depth 12, retreat 35 | D-2 → D-8 | 0 forever | never |
+**The first attempt at this got the retreat value wrong, and the reason is
+worth more than the number.** `advanceTime` stops at the first death, and the
+probe driving it added the *requested* hours to its running total rather than
+the hours actually advanced. So every profile that died was credited with far
+more elapsed time than it had lived, and the ones that never died were credited
+correctly — which made safe settings look like they produced nothing at all.
+On that reading, "depth 12, retreat 35" appeared to earn zero pension forever,
+and 28 was chosen to avoid it. The opposite was true.
 
-The two failures are independent, which is why only one combination works.
-Target Depth has to be the maximum or the permit ladder truncates at whatever
-it is set to — a permit is applied for only when the target *exceeds* the
-current limit, so any lower value stops the ladder the moment it catches up.
-Retreat has to stay below the hit cap or nothing ever dies and the prestige
-half of the game never appears.
+Measuring elapsed ticks instead of requested ones, at Target Depth 12, three
+seeds each, fourteen days of real simulation:
 
-Defaulting Target Depth to the maximum is not reckless: `authorisedDepth`
-clamps it to grade and permit, so it reads as "as deep as I am allowed", which
-is what the aspiration was always documented to mean. The same run on the new
-defaults:
+| retreat | deaths | pension | grade | permit | cadence |
+| --- | --- | --- | --- | --- | --- |
+| 28 | 14, 13, 15 | ~27,000 | 4–6 | D-3 to D-5 | 1 per 1.0d |
+| 32 | 11, 15, 11 | 28–44,000 | 6–13 | D-4 to D-7 | 1 per 1.1d |
+| **35** | **9, 4, 5** | **18–28,000** | **12–18** | **D-8 every run** | **1 per 2.3d** |
+| 38 | **0, 9, 0** | **0**, 45,000, **0** | 13–21 | D-7 to D-8 | bimodal |
+| 42 | 2, 1, 6 | 5–29,000 | 17–20 | D-8 | 1 per 4.7d |
+| 45 | 1, 1, 0 | 15,000, 16,000, **0** | 20–21 | D-8 | 1 per 21d |
 
-| | +6h | +24h | +48h | +96h | +360h | +696h |
-| --- | --- | --- | --- | --- | --- | --- |
-| permit | D-2 | D-2 | D-3 | D-3 | D-5 | D-5 |
-| pension | 0 | 457 | 1,598 | 2,903 | 6,357 | 8,322 |
-| unlocks affordable | 0 | 0 | 3 | 7 | 7 | 7 |
-| recruits lost | 0 | 1 | 2 | 3 | 5 | 6 |
+35 is the only setting where every sampled career both loses somebody *and*
+reaches the top of the permit ladder. Below it, deaths arrive daily and knock
+grade back faster than it climbs — at 28 the recruit is still Grade 4–6 on
+Permit D-3 after a fortnight, which is its own kind of standing still.
+
+38 is disqualified for a subtler reason: it is **bimodal**. Two sampled careers
+in three never died at all and banked nothing, so roughly a third of players
+would get the dead end anyway, by luck. A default has to be reliable, not
+merely good on average.
+
+Target Depth is the maximum for a structural reason rather than a measured one:
+a permit is applied for only when the recruit *stalls*, which needs the target
+to exceed the current limit, so any lower value stops the ladder the moment it
+catches up. Depth 6 confirms it — fourteen days, zero deaths, Permit D-4, and
+pension still zero. Defaulting to the maximum is not reckless, because
+`authorisedDepth` clamps it to grade and permit: it means "as deep as I am
+allowed", which is what the aspiration was always documented to mean.
 
 The defaults also lived in **three** places — both adapters and the sign-up
 path — which is the same shape as the successor bug. They are one exported
 constant now.
 
-One thing this exposes rather than fixes: requisitions stay unaffordable
-across the whole run, because a player who dies every five days never
-accumulates gold. That is the 40% estate-to-pension rate competing with the
-sink it was supposed to feed, which `requisitions.md` already lists as open.
+### The gold sink is reachable, and the estate rate is not the problem
+
+`requisitions.md` asked whether the 40% estate-to-pension rate starves the sink
+it was meant to feed. Measured three ways over fourteen days:
+
+| behaviour | gold at day 14 | requisitions affordable |
+| --- | --- | --- |
+| never sells, never spends pension | 50 | 0 of 4 |
+| sells the cabinet, never spends pension | 89 | 0 of 4 |
+| **sells, and spends pension as it arrives** | **7,926** | **4 of 4** |
+
+The bridge is the prestige ladder itself: `stipend1` pays gold every tick and
+`estate1` hands a successor 120 gold of effects, so an officer who spends
+pension stops losing their purse to every funeral. Gold surviving death is
+something you *buy*, which is a better answer than a tuning constant. The open
+question can be closed: leave the rate alone.
 
 ## Known imperfections
 

@@ -141,9 +141,15 @@ Retention, for the same reason.
 
 ## Still open
 
-- **Does gold need to survive death at all now?** 40% of the estate still
-  converts to pension, a rate set when gold had nowhere else to go. It now
-  competes directly with the sink it was meant to feed.
+- ~~**Does gold need to survive death at all now?**~~ **Answered: leave the
+  rate alone.** Measured over fourteen days — an officer who never spends
+  pension ends with 50 gold and cannot afford a single requisition; one who
+  spends it as it arrives ends with 7,926 and can afford all four tracks. The
+  bridge is the prestige ladder itself: `stipend1` pays gold every tick and
+  `estate1` hands a successor 120 gold of effects, so gold surviving death is
+  something you *buy*. That is a better answer than a tuning constant, and it
+  gives the two currencies a reason to be spent in order. See
+  [`balance.md`](balance.md).
 - **Is a complete office worth what it costs in pension?** The harness cannot
   answer this — it turns on how much the conveniences are worth to a person
   using them. It is the first requisitions question that needs a playtester

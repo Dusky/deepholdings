@@ -78,6 +78,13 @@ export interface SweepReport {
   considered: number;
   replayed: number;
   pushed: number;
+  /**
+   * Ticks of simulation actually replayed. Reported so the load check can tell
+   * the difference between a sweep that is cheap and a sweep that is idle —
+   * they look identical from the outside, and this project has already shipped
+   * one measurement that turned out to be timing an empty loop.
+   */
+  ticksReplayed: number;
 }
 
 /**
@@ -89,15 +96,17 @@ export async function sweepOnce(
   sender: PushSender,
   onError: (error: unknown) => void,
 ): Promise<SweepReport> {
-  const report: SweepReport = { considered: 0, replayed: 0, pushed: 0 };
+  const report: SweepReport = { considered: 0, replayed: 0, pushed: 0, ticksReplayed: 0 };
 
   const candidates = await repo.listSweepCandidates(AWAY_SECONDS, SWEEP_LIMIT);
   report.considered = candidates.length;
 
   for (const accountId of candidates) {
     try {
-      const death = await peekDeath(repo, accountId);
+      const peeked = await peekDeath(repo, accountId);
       report.replayed += 1;
+      report.ticksReplayed += peeked.ticks;
+      const death = peeked.death;
       if (!death) continue;
 
       // Keyed on the recruit, not on the death record — the death row does not
@@ -136,13 +145,16 @@ interface PeekedDeath {
  * Replays this account's outstanding ticks and reports a death, without
  * writing anything at all — no character row, no journal, no `last_seen_at`.
  */
-async function peekDeath(repo: Repository, accountId: string): Promise<PeekedDeath | null> {
+async function peekDeath(
+  repo: Repository,
+  accountId: string,
+): Promise<{ death: PeekedDeath | null; ticks: number }> {
   // The latest recruit rather than `getActiveCharacterForUpdate`: this takes no
   // row lock, and a sweep has no business making a player's own read queue
   // behind it. A recruit already recorded dead is skipped — they died on a
   // read, which means the officer was there to see it.
   const record = await repo.getLatestCharacter(accountId);
-  if (!record || !record.character.alive) return null;
+  if (!record || !record.character.alive) return { death: null, ticks: 0 };
 
   const orders = await repo.getOrders(accountId);
   const pension = await repo.getPension(accountId);
@@ -156,11 +168,14 @@ async function peekDeath(repo: Repository, accountId: string): Promise<PeekedDea
     permitAppliedTick: record.permitAppliedTick,
   });
 
-  if (!result.death) return null;
+  if (!result.death) return { death: null, ticks: result.ticksResolved };
   return {
-    characterId: record.character.id,
-    name: record.character.name,
-    depth: result.death.depth,
-    cause: result.death.cause,
+    death: {
+      characterId: record.character.id,
+      name: record.character.name,
+      depth: result.death.depth,
+      cause: result.death.cause,
+    },
+    ticks: result.ticksResolved,
   };
 }

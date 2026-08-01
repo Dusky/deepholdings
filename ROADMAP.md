@@ -545,7 +545,19 @@ Not a milestone; pick these up as they start to hurt.
 - [ ] Rate limiting on write endpoints
 - [ ] Structured logging and error tracking (Sentry or equivalent)
 - [ ] Heartbeat health metric and an alert when beats stop
-- [ ] Load check: how many resolutions per second before Postgres complains?
+- [x] Load check: `npm run load -w @deepholdings/server`. 500 accounts on
+      Postgres 16, staleness spread across the whole catch-up window, single
+      connection: **read path p50 11.7ms, p99 36.9ms — about 86 reads/sec.**
+      The sweep costs 2.4ms an account, so a full 200-account beat is 486ms
+      against a 300s interval, or 0.16% of one worker. `SWEEP_LIMIT = 200` was
+      a guess and turns out to be conservative by two orders of magnitude.
+      **It found a real one.** The journal read — the hottest query in the
+      game, one per `/v1/state` — had no usable index and the planner was
+      walking the *primary key* backwards, discarding 7,871 rows to return 60.
+      That cost scales with how much everybody has played rather than with this
+      player, and the journal is never pruned by design. Migration 006 adds
+      `(character_id, id DESC)`: 16x on the query, and the read path's p99 on a
+      caught-up account went 143.8ms to 12.2ms.
 
 ---
 

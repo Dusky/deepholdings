@@ -93,6 +93,62 @@ for (const adapter of adapters) {
       );
     });
 
+    test('six advanced hours are six different hours', async () => {
+      // The regression this exists for: advancing used to wind the *character*
+      // back and let the resolver replay to a fixed now. Every tick is seeded
+      // from (characterId, tick), so replaying the same absolute window
+      // replayed the same seeds — six one-hour advances simulated the same
+      // hour six times. Nothing threw, every other assertion in this file
+      // passed, and the death rate measured through the endpoint came out
+      // about sixteen times too low.
+      //
+      // The tell is the journal's span. Six hours of advance must cover six
+      // hours of ticks; a treadmill covers one however long you run it.
+      const fresh = new MemoryRepository();
+      await fresh.init();
+      const solo = buildApp({ repo: fresh, config: dev });
+      const login = await solo.inject({
+        method: 'POST',
+        url: '/v1/auth/device',
+        payload: { deviceId: 'treadmill' },
+      });
+      const headers = { authorization: `Bearer ${login.json().token}` };
+
+      let advanced = 0;
+      for (let hour = 0; hour < 6; hour += 1) {
+        const res = await solo.inject({
+          method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 1 },
+        });
+        advanced += res.json().ticksAdvanced;
+        if (res.json().died) break;
+      }
+
+      // The whole file, not the opening page: the last sixty lines say nothing
+      // about how much time was covered.
+      const opening = (await solo.inject({
+        method: 'GET', url: '/v1/state', headers,
+      })).json() as StateResponse;
+      const all = [...opening.journal];
+      for (;;) {
+        const page = (await solo.inject({
+          method: 'GET', url: `/v1/journal?before=${all[0]?.id ?? 0}`, headers,
+        })).json() as { entries: typeof all; hasMore: boolean };
+        if (page.entries.length === 0) break;
+        all.unshift(...page.entries);
+        if (!page.hasMore) break;
+      }
+
+      const ticks = all.map((entry) => entry.tick);
+      const span = Math.max(...ticks) - Math.min(...ticks);
+      assert.ok(
+        span >= advanced - 60,
+        `${advanced} ticks advanced but the journal only spans ${span} — time is on a loop`,
+      );
+
+      await solo.close();
+      await fresh.close();
+    });
+
     test('chunks stay inside the catch-up window', async () => {
       // Orders nobody dies under, so this measures chunking rather than
       // mortality — advancing stops at a death, and under the real defaults a
@@ -167,32 +223,35 @@ for (const adapter of adapters) {
         `permit stuck at D-${end.character.permitTier} after a week on default orders`,
       );
 
-      // Prestige must become *reachable* — which is not the same as "somebody
-      // died". Death is a rare-event process at the default retreat threshold
-      // and one career in eight sees none in a fortnight; this test used to
-      // assert a death had happened and duly failed about that often, which
-      // was the measurement telling the truth about the design rather than a
-      // flaky test. Form R-1 is the other route, so either counts.
+      // This assertion used to fail about one run in eight, and I wrote a
+      // comment explaining that death is a rare-event process at the default
+      // retreat threshold. It is not. Advancing was replaying one hour on a
+      // loop, so a "week" here was a week only if that hour happened to be
+      // lethal. With the clock fixed, forty careers over a week banked
+      // something in forty of forty, at a mean of 4.75 deaths each — which
+      // agrees with the resolver harness's 5.35 for the same orders and span.
+      // The flake was the endpoint, and the right response to a test that
+      // fails an eighth of the time is to find out why, not to weaken it.
       const pension = banked + (await fresh.getPension(start.account.id)).total;
-      const offered = end.retirement?.award ?? 0;
-      assert.ok(
-        pension > 0 || offered > 0,
-        'a week on default orders left the pension system entirely out of reach',
-      );
+      assert.ok(pension > 0, 'a week on default orders earned no pension at all');
 
-      // And whichever route applies, the officer was told about it.
-      if (pension === 0) {
-        const told = end.journal.some((entry) => /Service review/.test(entry.text));
-        assert.ok(told, 'a recruit who never died was never told Form R-1 exists');
-      }
+      // Not asserted here: a service review. It is measured from bornTick, so
+      // it needs a recruit who serves twelve unbroken hours, and at the
+      // defaults most do not — the same 4.75 deaths a week that make the
+      // assertion above safe are what keep the reminder from firing. An
+      // officer on the defaults learns about the pension from the death
+      // overlay instead, which is the louder teacher of the two. The reminder
+      // is for the cautious player who never sees one; that case is the test
+      // below.
 
       await solo.close();
       await fresh.close();
     });
 
     test('a recruit who never dies is still told the pension exists', async () => {
-      // Death is otherwise the only way a pension appears, and one career in
-      // eight banked nothing over a fortnight on the default orders. Form R-1
+      // Death is otherwise the only way a pension appears, and a player who
+      // sets a cautious retreat threshold can go a long time without one —
+      // that is the point of a cautious threshold, not a bug in it. Form R-1
       // is the other way; nothing used to mention it.
       const safe = new MemoryRepository();
       await safe.init();

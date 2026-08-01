@@ -189,7 +189,12 @@ export const MAX_HIT_FRACTION = 0.35;
  *
  * These were a dead end, and the developer time machine is how that surfaced.
  * The old defaults — Target Depth 3, Retreat 28% — produced a career in which
- * **nothing changed between hour six and day twenty-nine**:
+ * **nothing changed between hour six and day twenty-nine**. Confirmed since on
+ * a harness that drives the resolver directly, 20 careers × 14 days: zero
+ * deaths in 20 of 20, zero pension in 20 of 20, Permit D-2 in all of them, and
+ * three check-ins in five with nothing to show.
+ *
+ * The two mechanisms:
  *
  * - A permit is only applied for when the recruit *stalls*, and stalling needs
  *   the target to exceed the permit's limit. Target Depth 3 is exactly what
@@ -204,17 +209,31 @@ export const MAX_HIT_FRACTION = 0.35;
  * allowed", which is the only value that lets the permit ladder run its full
  * length. Anything lower silently truncates the ladder at that floor.
  *
- * Retreat is 35 because it is the only value at which every sampled career
- * both loses somebody and reaches the top of the permit ladder. Lower and
- * deaths arrive daily, knocking grade back faster than it climbs — at 28 the
- * recruit is still Grade 4-6 and Permit D-3 after a fortnight. Higher is worse
- * in a nastier way: at 38 the outcome is *bimodal*, and two sampled careers in
- * three never died at all, so a third of players would see zero pension for
- * two weeks. That is the dead end again, arrived at by luck.
+ * Retreat is 35. The sweep behind it, 20 careers × 14 days per row:
  *
- * Measured over 14 days of elapsed simulation, three seeds: a recruit lost
- * about every 2.3 days, Permit D-8 in every run, grade 12-18, pension 18,000
- * to 28,000.
+ * | retreat | deaths | pension | grade | permit | empty check-ins |
+ * | --- | --- | --- | --- | --- | --- |
+ * | 28 | 20.0 | 34,800 | 6 | D-5 | 0.0% |
+ * | 32 | 16.1 | 42,800 | 7 | D-6 | 0.5% |
+ * | 35 | 12.3 | 49,200 | 12 | D-8 | 6.1% |
+ * | 38 | 6.8 | 49,200 | 17 | D-8 | 21.1% |
+ * | 42 | 1.7 | 21,600 | 20 | D-8 | 36.3% |
+ * | 45 | 1.1 | 7,100 | 20 | D-8 | 37.5% |
+ *
+ * Below 35 the recruit treads water — 20 deaths a fortnight at 28, and still
+ * Grade 6 on Permit D-5, because deaths knock grade back faster than it
+ * climbs. 35 and 38 tie on pension, and 35 wins on cadence by a factor of
+ * three: an empty check-in about once a fortnight against three a week. Above
+ * 42 the game goes quiet and careers start banking nothing at all — 4 in 20 at
+ * retreat 42, 8 in 20 at 45.
+ *
+ * **The earlier justification for this same number was wrong**, and it is worth
+ * knowing why, because it read as careful. It said 38 was *bimodal* — two
+ * sampled careers in three never dying — and that above `MAX_HIT_FRACTION`
+ * death collapses to the 3% grievous tail. Neither is true. Both came from
+ * measurements taken through `/v1/dev/advance`, which wound the character
+ * backwards against a fixed clock and so replayed one hour on a loop. The
+ * sweep above is monotone in every column. See `docs/design/balance.md`.
  */
 export const DEFAULT_ORDERS = {
   targetDepth: MAX_DEPTH,
@@ -233,21 +252,28 @@ export const DEFAULT_ORDERS = {
  * | deaths/wk | 0.0 | 0.0 | 0.0 | 0.2 | 1.7 | 9.2 | 17.4 | 27.6 | 49.4 | 148 |
  * | value/h | 279 | 279 | 281 | 280 | 271 | 212 | 154 | 116 | 96 | 108 |
  *
- * Everything from 35 upward is the same setting, because a recruit who
- * withdraws above `MAX_HIT_FRACTION` cannot be killed by a normal blow and only
- * the rare grievous tail can reach them. Below 10 the recruit dies before they
- * can descend, which makes the numbers non-monotonic nonsense rather than a
- * harder difficulty.
+ * Below 10 the recruit dies before they can descend, which makes the numbers
+ * non-monotonic nonsense rather than a harder difficulty. Above 45 nothing
+ * moves. So the meaning of the slider lived in about twenty of its
+ * seventy-five points, and 10–45 is where moving it changes something.
  *
- * So the whole meaning of the slider lived in about twenty of its seventy-five
- * points. Narrowing it to 10–45 spends the control on the range where moving it
- * changes something: 45 never dies, 30 occasionally, 25 is where pension income
- * peaks, and 10 is a formality.
+ * **The reason for the top end was wrong.** It read: everything from 35 upward
+ * is the same setting, because a recruit withdrawing above `MAX_HIT_FRACTION`
+ * can only be reached by the rare grievous tail. The table above is at Target
+ * Depth 6, where that is true of the *numbers* — but Target Depth is the
+ * default now, and re-measured there (12 careers × 14 days per point) 35, 38,
+ * 42 and 45 give 12.3, 6.8, 1.7 and 1.3 deaths a fortnight. Not one setting;
+ * four. The genuine collapse starts near 55: retreat 60 and 80 are identical,
+ * zero deaths in 12 of 12 with every career finishing Grade 21.
+ *
+ * 45 is still the right ceiling, for a better reason than sameness — it is
+ * where careers begin banking nothing at all, 8 in 20 over a fortnight, and
+ * beyond it the pension half of the game stops existing.
  */
 export const RETREAT_MIN_PCT = 10;
 export const RETREAT_MAX_PCT = 45;
 
-/** Old orders were stored anywhere in 5–80; 60 and 45 behave identically. */
+/** Old orders were stored anywhere in 5–80; above 55 nothing changes. */
 export function clampRetreatPct(pct: number): number {
   return Math.min(RETREAT_MAX_PCT, Math.max(RETREAT_MIN_PCT, Math.round(pct)));
 }
@@ -401,38 +427,31 @@ export const RETIREMENT_MIN_SERVICE_TICKS = 120;
 /**
  * How often a long-serving recruit is reminded that Form R-1 exists.
  *
+ * Twelve hours, matching the design's assumption of two check-ins a day.
+ *
  * Death is otherwise the *only* way a pension ever appears, and whether it
- * appears is not something the officer controls. Measured over eight
- * fourteen-day careers on the default orders: deaths came out 0, 1, 2, 2, 6,
- * 10, 10, 10. One career in eight banked nothing at all, because at a retreat
- * threshold above `MAX_HIT_FRACTION` no ordinary blow can kill and death
- * collapses to the 3% grievous tail — a rare event, and rare events are
- * wildly uneven over a fortnight.
+ * appears is not something the officer controls. A cautious retreat threshold
+ * is a legitimate way to play and it can run a long time without a funeral;
+ * the officer should still be told what a separation is worth, with the
+ * number, rather than having to guess the Ledger has one.
  *
- * Lowering the threshold makes death common and consistent, at the cost of a
- * recruit who dies daily and never climbs. Neither end of that dial is a good
- * default, because the dial has a cliff in it.
+ * **The measurement this constant was first justified by was wrong**, and the
+ * correction is worth keeping because it explains why the reasoning above no
+ * longer mentions rare events. It read: eight fourteen-day careers on the
+ * default orders, deaths 0, 1, 2, 2, 6, 10, 10, 10, one career in eight
+ * banking nothing — from which I concluded that death above `MAX_HIT_FRACTION`
+ * collapses to the 3% grievous tail. Those careers were fast-forwarded through
+ * `/v1/dev/advance`, which wound the character backwards against a fixed clock
+ * and so replayed one hour on a loop. Re-measured against a clock that moves:
+ * forty careers over a week bank a pension in forty of forty, at 4.75 deaths
+ * each, agreeing with the resolver harness's 5.35 for the same orders and
+ * span. Death at the default threshold is ordinary, not rare.
  *
- * So the fix is not a third number: it is that Form R-1 already *is* the other
- * way to bank a pension, and nothing ever says so. A recruit who has served a
- * day is worth a real award, and the officer should be told the number rather
- * than having to guess that the Ledger has one.
+ * The reminder stays anyway. It is not load-bearing for mortality, it is
+ * load-bearing for *choice*: an officer who never sees the number never knows
+ * retiring was an option.
  */
 export const RETIREMENT_REMINDER_TICKS = 720;
-
-/**
- * Twelve hours, matching the design's stated assumption that two check-ins a
- * day is plenty. At a day it covered exactly every other check-in window,
- * which is visible in the measurement as alternating empty windows.
- *
- * This is a **floor, not a milestone.** The number in it climbs, so it is a
- * real signal for an officer who is not dying, but a game that guarantees
- * "something happened" by printing a status line twice a day has not earned
- * the M4 criterion. Measured density of genuine events — promotions, permits,
- * deaths, successors, clearances — is about one per 1.4 days, which is
- * thinner than "something visible moves every session". That gap is the
- * remaining M4 work and this does not close it.
- */
 
 /**
  * Requisitions: what gold buys, once supplies are paid for.

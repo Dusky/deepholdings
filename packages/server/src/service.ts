@@ -52,6 +52,7 @@ import {
 import { succeed } from './domain/character.js';
 import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
 import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
+import { advanceClock, now as worldNow } from './clock.js';
 import type { CharacterRecord, Repository } from './ports.js';
 
 export class ServiceError extends Error {
@@ -157,7 +158,7 @@ function firstRecruit(accountId: string): CharacterRecord {
     previous: null,
     depthReached: 0,
     unlocks: [],
-    atTick: tickOf(new Date()),
+    atTick: tickOf(worldNow()),
   });
 }
 
@@ -170,7 +171,7 @@ export async function loadState(
   accountId: string,
   devTools = false,
 ): Promise<StateResponse> {
-  const now = new Date();
+  const now = worldNow();
 
   return repo.transaction(async (tx) => {
     const account = await tx.getAccount(accountId);
@@ -414,7 +415,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     inventory: record.inventory,
     orders,
     unlocks: pension.unlocks,
-    toTick: tickOf(new Date()),
+    toTick: tickOf(worldNow()),
     permitAppliedTick: record.permitAppliedTick,
   });
 
@@ -875,7 +876,7 @@ async function claimInside(
     previous: previous?.character ?? null,
     depthReached: award.depth,
     unlocks: banked.unlocks,
-    atTick: tickOf(new Date()),
+    atTick: tickOf(worldNow()),
   });
   await tx.insertCharacter(record);
   await tx.appendJournal([replacementEntry(record.character)]);
@@ -923,19 +924,26 @@ export async function getJournalPage(
 /**
  * Developer time travel.
  *
- * There is no new simulation here, and there must not be. Advancing works by
- * winding the character's watermark *backwards* and letting the ordinary
- * resolver replay forward to now — so a fast-forwarded career is bit-for-bit
- * the career a real absence of that length produces, including its journal,
- * its permits and its deaths.
+ * There is no new simulation here, and there must not be. Advancing moves the
+ * world clock forward and lets the ordinary resolver catch up to it — so a
+ * fast-forwarded career is bit-for-bit the career a real absence of that
+ * length produces, including its journal, its permits and its deaths.
  *
  * It runs in catch-up-sized chunks because a single span longer than
  * `MAX_CATCHUP_TICKS` is deliberately summarised rather than simulated. Ten
  * days advanced in one call would produce a recess note and nothing else, which
  * is the opposite of what a playtester wants to look at.
  *
- * `bornTick` moves with the watermark, or a recruit who has apparently worked
- * for a fortnight would have served four minutes and be worth no pension.
+ * **This used to wind the character backwards instead**, on the reasoning that
+ * moving the recruit relative to a fixed now is the same as moving now. It is
+ * not, and the difference is the whole point of the endpoint. Every tick is
+ * seeded from `tickSeed(characterId, tick)`, so rewinding to the same absolute
+ * window replays the same seeds: six one-hour advances simulated the same hour
+ * six times, and the journal proved it — sixty entries across twenty-eight
+ * distinct ticks spanning fifty-nine minutes. A recruit fast-forwarded through
+ * a fortnight lived one hour, over and over, and died only if that particular
+ * hour killed them. Death rates measured through the old endpoint came out
+ * about sixteen times too low.
  */
 export async function advanceTime(
   repo: Repository,
@@ -954,27 +962,10 @@ export async function advanceTime(
 
   while (advanced < ticks && !died) {
     const chunk = Math.min(MAX_CATCHUP_TICKS, ticks - advanced);
-    const outcome = await repo.transaction(async (tx) => {
-      const record = await tx.getActiveCharacterForUpdate(accountId);
-      if (!record) return { moved: 0, dead: true };
-
-      await tx.saveCharacter({
-        ...record,
-        character: {
-          ...record.character,
-          lastResolvedTick: record.character.lastResolvedTick - chunk,
-          bornTick: record.character.bornTick - chunk,
-        },
-        permitAppliedTick:
-          record.permitAppliedTick === null ? null : record.permitAppliedTick - chunk,
-      });
-
-      const resolved = await loadStateInside(tx, accountId);
-      return { moved: chunk, dead: !resolved || !resolved.character.alive };
-    });
-
-    advanced += outcome.moved;
-    died = outcome.dead;
+    advanceClock(chunk);
+    const resolved = await repo.transaction((tx) => loadStateInside(tx, accountId));
+    advanced += chunk;
+    died = !resolved || !resolved.character.alive;
   }
 
   // The death record and the successor are the ordinary flow's business, so a

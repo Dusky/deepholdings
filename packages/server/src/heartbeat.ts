@@ -1,5 +1,6 @@
 import { HEARTBEAT_SECONDS } from '@deepholdings/shared';
 import { advanceWorld } from './domain/world.js';
+import { now as worldNow } from './clock.js';
 import type { Repository } from './ports.js';
 
 /**
@@ -10,7 +11,7 @@ import type { Repository } from './ports.js';
  * Safe to run from several instances: the world row is locked inside the
  * transaction and the beat is only advanced once its due time has passed.
  */
-export async function beatOnce(repo: Repository, now = new Date()): Promise<boolean> {
+export async function beatOnce(repo: Repository, now = worldNow()): Promise<boolean> {
   return repo.transaction(async (tx) => {
     const world = await tx.getWorld();
     if (new Date(world.nextBeatAt).getTime() > now.getTime()) return false;

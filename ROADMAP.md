@@ -207,10 +207,16 @@ always knows what they are working toward.
       Depth already pays: ordering Floor 9 with an ordinary retreat threshold
       gives up 6% of income and returns 105 pension/h, better than the daily
       retirer. The failure was entirely the **retreat threshold**, which ran
-      5-80 and meant something across about twenty of those points — everything
-      from 35 up resolved identically, because a recruit withdrawing above the
-      hit cap can only be killed by the rare grievous tail. Narrowed to 10-45,
-      so every position on the slider changes an outcome.
+      5-80 and meant something across only part of that. Narrowed to 10-45, so
+      every position on the slider changes an outcome.
+      *Re-measured after the fast-forward fix, 12 careers × 14 days per point:*
+      the collapse is real but starts higher than first reported — retreat 60
+      and 80 are identical (zero deaths in 12 of 12, Grade 21 in all of them)
+      and 50 is nearly there, at 0.42 deaths with 10 of 12 careers banking
+      nothing. 35 through 45 are *not* identical: 12.3, 6.8, 1.7 and 1.3 deaths
+      a fortnight. So 45 is the right ceiling, but because it is where careers
+      start banking nothing at all — not because everything above 35 resolves
+      the same way. The original claim came off the broken endpoint.
       Found on the way: successors never inherited anything, so death was a
       total wipe in the shipped game. Both in
       [`docs/design/balance.md`](docs/design/balance.md).
@@ -273,24 +279,44 @@ always knows what they are working toward.
       depth it authorises and an estimate — and permit processing was
       lengthened to three hours so the wait is actually visible to someone who
       checks in twice a day. See `docs/design/balance.md`.
-- [ ] **Milestone cadence.** Something visible moves every session. No
-      multi-week walls — they are churn events with a countdown attached.
+- [x] **Milestone cadence.** Something visible moves every session, and there
+      is now a number for it: on the shipped defaults, over 20 careers × 14
+      days, 6.1% of 12-hour windows contain no state change and the longest
+      silence is one day. The old defaults were 60.7% and 2.5 days. Measured
+      with `npm run cadence -w @deepholdings/server`, which drives the resolver
+      rather than the server. Repeating "you are still stuck" lines are
+      excluded, as is the guaranteed twice-daily service review — counting
+      either would make the criterion unfalsifiable.
+      **What this does not settle:** whether the 93.9% *reads* as something
+      happening. Journal-line density is not the same as a player feeling their
+      career moved, and that needs the tester in the exit criterion.
 - [x] **The default standing orders are a dead end — fixed.**
       Target Depth defaults to 3, which is exactly what Permit D-2 authorises,
       so the recruit never stalls, never applies for a permit and never
       descends. Retreat defaults to 28%, which at Floor 2 never kills anybody,
       so pension stays zero and all nineteen prestige unlocks are invisible.
-      Now Target Depth 12, Retreat 35: a recruit lost about every 2.3 days,
-      Permit D-8 reached in every sampled run, 18–28k pension over a fortnight.
-      Retreat 35 rather than something safer because 38 is *bimodal* — two
-      sampled careers in three never died and banked nothing, so a third of
-      players would hit the dead end by luck. See
-      [`docs/design/balance.md`](docs/design/balance.md).
-- [x] **Developer time travel.** `advance <hours>` in dev builds winds the
-      watermark back and lets the ordinary resolver replay forward in
+      Confirmed on 20 careers × 14 days: zero deaths in 20 of 20, zero pension
+      in 20 of 20, Permit D-2 in all of them.
+      Now Target Depth 12, Retreat 35: 12.3 deaths a fortnight, median 49k
+      pension, Permit D-8, and 6.1% empty check-ins. 35 over 38 because they
+      tie on pension and 35 is three times better on cadence — *not* because
+      38 is bimodal, which was an artifact of the broken fast-forward below.
+      See [`docs/design/balance.md`](docs/design/balance.md).
+- [x] **Developer time travel.** `advance <hours>` in dev builds moves the
+      world clock forward and lets the ordinary resolver catch up in
       catch-up-sized chunks, so a fast-forwarded career is the career a real
       absence produces. An idle game that takes a fortnight to answer a
       question never gets asked one.
+- [x] **The fast-forward was a treadmill — fixed.** It used to wind the
+      character's watermark *backwards* against a fixed `Date.now()`. Every
+      tick is seeded from `(characterId, tick)`, so replaying the same absolute
+      window replays the same seeds: six one-hour advances simulated the same
+      hour six times. Careers fast-forwarded through a fortnight lived one
+      hour, and death rates came out about sixteen times too low. Nothing threw
+      and all four endpoint tests passed, because none asserted that advanced
+      time was *different* time — which is the regression test now. Every
+      balance number taken through the endpoint has been re-measured on a
+      harness that drives the resolver directly.
 
 **Exit:** a tester plays for two weeks and can explain their strategy to you.
 

@@ -420,6 +420,20 @@ goes anywhere, and the entire prestige half of the game — nineteen unlocks
 across seven ladders — is invisible for a month, because pension is zero and
 stays zero.
 
+That table came from the fast-forward endpoint, which was
+[a treadmill](#the-fast-forward-was-a-treadmill) at the time, so it is here as
+the observation that started the investigation rather than as evidence. It has
+been re-run on the clean harness — the old defaults, 20 careers × 14 days:
+
+| deaths | pension | grade | permit | empty 12h windows | longest silence |
+| --- | --- | --- | --- | --- | --- |
+| 0.0 (0 in 20 of 20 careers) | 0 (0 in 20 of 20) | 15 | D-2 | 60.7% | 2.5 days |
+
+The clean run makes it worse, not better. Not one career in twenty ever lost a
+recruit, not one ever banked a coin, every single one finished on Permit D-2,
+and three check-ins in five had nothing to show. The diagnosis below was right
+for the right reasons; only the sample size was wrong.
+
 Two mechanisms, both defaults:
 
 - **Target Depth defaults to 3, which is exactly what Permit D-2 authorises.**
@@ -446,36 +460,60 @@ descend.
 
 Target Depth defaults to **12** and Retreat to **35%**.
 
-**The first attempt at this got the retreat value wrong, and the reason is
-worth more than the number.** `advanceTime` stops at the first death, and the
-probe driving it added the *requested* hours to its running total rather than
-the hours actually advanced. So every profile that died was credited with far
-more elapsed time than it had lived, and the ones that never died were credited
-correctly — which made safe settings look like they produced nothing at all.
-On that reading, "depth 12, retreat 35" appeared to earn zero pension forever,
-and 28 was chosen to avoid it. The opposite was true.
+**This value has been measured three times and the first two were wrong.** The
+number did not move on the third pass; the reasons did, entirely. Both wrong
+passes and the working one are below, because the failure modes are the useful
+part.
 
-Measuring elapsed ticks instead of requested ones, at Target Depth 12, three
-seeds each, fourteen days of real simulation:
+*First pass.* `advanceTime` stops at the first death, and the probe driving it
+added the *requested* hours to its running total rather than the hours actually
+advanced. Profiles that died were credited with far more elapsed time than they
+had lived; profiles that never died were credited correctly. That made safe
+settings look barren, "depth 12, retreat 35" appeared to earn zero pension
+forever, and 28 was chosen to avoid it.
 
-| retreat | deaths | pension | grade | permit | cadence |
-| --- | --- | --- | --- | --- | --- |
-| 28 | 14, 13, 15 | ~27,000 | 4–6 | D-3 to D-5 | 1 per 1.0d |
-| 32 | 11, 15, 11 | 28–44,000 | 6–13 | D-4 to D-7 | 1 per 1.1d |
-| **35** | **9, 4, 5** | **18–28,000** | **12–18** | **D-8 every run** | **1 per 2.3d** |
-| 38 | **0, 9, 0** | **0**, 45,000, **0** | 13–21 | D-7 to D-8 | bimodal |
-| 42 | 2, 1, 6 | 5–29,000 | 17–20 | D-8 | 1 per 4.7d |
-| 45 | 1, 1, 0 | 15,000, 16,000, **0** | 20–21 | D-8 | 1 per 21d |
+*Second pass.* Elapsed ticks were counted correctly, and the numbers were still
+wrong, because the endpoint underneath was. `/v1/dev/advance` wound the
+character's watermark backwards against a fixed `Date.now()` — which replays
+the same absolute tick window, and every tick is seeded from
+`tickSeed(characterId, tick)`. Six one-hour advances simulated the same hour six
+times. A fortnight-long fast-forwarded career was one hour on a loop, and it
+died only if that particular hour was lethal. See
+[the clock](#the-fast-forward-was-a-treadmill).
 
-35 is the only setting where every sampled career both loses somebody *and*
-reaches the top of the permit ladder. Below it, deaths arrive daily and knock
-grade back faster than it climbs — at 28 the recruit is still Grade 4–6 on
-Permit D-3 after a fortnight, which is its own kind of standing still.
+*Third pass, below.* The clock moves now, and the sweep is run on
+`tools/cadence.ts`, which drives `resolve()` and never touches an endpoint —
+a harness that touches no endpoint cannot inherit an endpoint's bugs.
 
-38 is disqualified for a subtler reason: it is **bimodal**. Two sampled careers
-in three never died at all and banked nothing, so roughly a third of players
-would get the dead end anyway, by luck. A default has to be reliable, not
-merely good on average.
+Target Depth 12, **20 careers × 14 days per row** (280 career-days each),
+successors created and inherited the way the server creates them:
+
+| retreat | deaths / 14d | pension (median) | grade | permit | empty 12h windows | banked nothing |
+| --- | --- | --- | --- | --- | --- | --- |
+| 28 | 20.0 | 34,800 | 6 | D-5 | 0.0% | 0/20 |
+| 32 | 16.1 | 42,800 | 7 | D-6 | 0.5% | 0/20 |
+| **35** | **12.3** | **49,200** | **12** | **D-8** | **6.1%** | **0/20** |
+| 38 | 6.8 | 49,200 | 17 | D-8 | 21.1% | 0/20 |
+| 42 | 1.7 | 21,600 | 20 | D-8 | 36.3% | 4/20 |
+| 45 | 1.1 | 7,100 | 20 | D-8 | 37.5% | 8/20 |
+
+Monotone in every column, which is the first thing worth saying: the
+bimodality reported last time was the treadmill, not the game. So was the
+claim that death above `MAX_HIT_FRACTION` collapses to the 3% grievous tail.
+At retreat 35 a recruit dies about twelve times a fortnight. That is ordinary.
+
+35 and 38 tie on pension, and 38 buys four more grades. **35 wins on
+cadence**: 6.1% of check-in windows contain nothing against 38's 21.1%. A
+player checking in twice a day sees an empty screen about once a fortnight at
+35 and about three times a week at 38.
+
+Below 35 the recruit is treading water in a different way — 20 deaths a
+fortnight at retreat 28, still Grade 6 on Permit D-5, because deaths knock
+grade back faster than it climbs. Above 42 the game goes quiet and, for the
+first time in the sweep, some careers bank nothing at all: 4 in 20 at retreat
+42 and 8 in 20 at 45. That is the real dead-end risk, and it lives at the
+*cautious* end of the slider, which is the opposite of where the first two
+passes put it.
 
 Target Depth is the maximum for a structural reason rather than a measured one:
 a permit is applied for only when the recruit *stalls*, which needs the target
@@ -506,7 +544,99 @@ pension stops losing their purse to every funeral. Gold surviving death is
 something you *buy*, which is a better answer than a tuning constant. The open
 question can be closed: leave the rate alone.
 
-## Known imperfections
+## The fast-forward was a treadmill
+
+The most expensive bug in this document was not in the game. It was in the
+instrument.
+
+`/v1/dev/advance` advanced time by winding the character's `lastResolvedTick`
+(and `bornTick`) *backwards* by the requested span and letting the ordinary
+lazy resolver replay forward to `Date.now()`. The reasoning was that moving the
+recruit back relative to a fixed now is the same as moving now forward, and
+that it guarantees a fast-forwarded career is bit-for-bit a career a real
+absence produces. The second half is the point of the endpoint. The first half
+is false.
+
+Resolution is seeded per tick from `tickSeed(characterId, tick)` — deliberately,
+so a career is reproducible. Winding backwards to the *same absolute window*
+therefore replays the *same seeds*. Each advance simulated the identical hour
+again:
+
+```
+six one-hour advances requested
+158 journal entries, 109 distinct ticks, spanning 59 minutes
+```
+
+Every fast-forward was one hour on a loop. Careers barely died, because they
+died only if that one hour happened to be lethal — and if it was, they died on
+the first advance. Measured against a clock that moves, the same span kills
+about sixteen times as often.
+
+### How it hid
+
+Nothing threw. The state was internally consistent at every step: ticks
+advanced, grade climbed, permits cleared, the journal grew. `ticksAdvanced` was
+truthful about what the endpoint had been asked to do. Four tests covered the
+endpoint and all four passed, because each asserted a property the treadmill
+satisfies — that time advanced, that service was credited, that chunking
+avoided the recess clamp, that a career happened.
+
+What none of them asserted is that the *time was different time*. The tell is
+one line: the span of the journal has to match the span advanced. That is the
+regression test now.
+
+### What it invalidated
+
+Everything measured through the endpoint, which was the default-orders
+investigation and the retreat sweep. Both have been re-run on
+`tools/cadence.ts`, which drives `resolve()` directly. The conclusions held —
+the old defaults really are a dead end, and retreat 35 really is the right
+default — but two published claims did not, and both had been reasoned about at
+length:
+
+- *"Death above `MAX_HIT_FRACTION` collapses to the 3% grievous tail — a rare
+  event, wildly uneven over a fortnight."* No. 12.3 deaths per fortnight at the
+  shipped default.
+- *"Retreat 38 is bimodal; a third of players get the dead end by luck."* No.
+  The sweep is monotone in every column. Bimodality is what one replayed hour
+  looks like when you sample it three times.
+
+Both were written to explain a shape in the data. The shape was the
+instrument's.
+
+The general lesson is the one this document keeps re-learning: **a measurement
+that surprises you is a claim about your instrument before it is a claim about
+the world.** The tell was available and I explained it away — a test that
+failed one run in eight got a comment about rare-event processes instead of an
+investigation. The comment was well-argued and wrong. A flaky test is a
+measurement, and the right response to a measurement you do not like is to find
+out why.
+
+## Milestone cadence
+
+M4 asks that something visible move every session, where a session is a
+check-in and the design assumes two a day. Measured on the shipped defaults,
+20 careers × 14 days, cutting each journal into 12-hour windows and counting
+only lines where state actually changed — a promotion, a permit filed or
+approved, a death, a successor, a new deepest floor:
+
+| | shipped defaults | old defaults |
+| --- | --- | --- |
+| genuine events per career-day | 7.2 | 1.4 |
+| 12h windows with nothing in them | 6.1% | 60.7% |
+| longest silent stretch | 1 day | 2.5 days |
+
+Repeating lines are excluded on purpose. "Descent limited pending grade review"
+fires every three hours for as long as the recruit is stuck, so counting it
+would fill almost every window with a report that the game is *not* moving.
+The twice-daily service review is excluded for the same reason in the other
+direction: it is guaranteed, so it proves nothing. Counting it, no window is
+ever empty, which is a fact about the reminder and not about the game.
+
+6.1% is roughly one empty check-in a fortnight. That is defensible against the
+criterion. What the criterion does not cover, and what still needs a human, is
+whether the 93.9% *read* as something happening — an event density measured in
+journal lines is not the same as a player feeling their career moved.
 
 - **Greedy is still not clearly worth it.** It trades gold for pension, but the
   deaths cost enough grade that it never reaches its target depth. It is a

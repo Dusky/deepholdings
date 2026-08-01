@@ -8,6 +8,7 @@ import {
   RETIREMENT_MIN_SERVICE_TICKS,
   clampRetreatPct,
   UNLOCK_CATALOGUE,
+  JOURNAL_PAGE_SIZE,
   journalLines,
   pensionAward,
   requisitionTier,
@@ -20,6 +21,7 @@ import {
   type ClaimPensionResponse,
   type DeathRecord,
   type InventoryItem,
+  type JournalResponse,
   type LadderEntry,
   type LadderOffer,
   type LedgerResponse,
@@ -872,6 +874,38 @@ async function claimInside(
   };
 }
 
+
+/**
+ * Page backwards through the current recruit's journal.
+ *
+ * Scoped to the account's own recruit, never an id the client happened to
+ * guess: `before` selects a position in *this* character's file and nothing
+ * else. Always available at every tier of Extended Journal Retention, which
+ * buys how much arrives unasked rather than how far back reading is permitted.
+ */
+export async function getJournalPage(
+  repo: Repository,
+  accountId: string,
+  before: string,
+): Promise<JournalResponse> {
+  if (!/^\d+$/.test(before)) {
+    throw new ServiceError('invalid_request', 'before must be an entry id');
+  }
+
+  return repo.transaction(async (tx) => {
+    const record = await tx.getLatestCharacter(accountId);
+    if (!record) throw new ServiceError('not_found', 'no character');
+
+    // One extra tells us whether anything remains, without a second count.
+    const found = await tx.listJournalBefore(
+      record.character.id,
+      before,
+      JOURNAL_PAGE_SIZE + 1,
+    );
+    const hasMore = found.length > JOURNAL_PAGE_SIZE;
+    return { entries: hasMore ? found.slice(1) : found, hasMore };
+  });
+}
 
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {
   const world = await repo.getWorld();

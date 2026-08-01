@@ -76,3 +76,35 @@
   clip-path: inset(0 0 0 0);
   animation: none;
 }
+
+/* Paging back through the file. Sits at the head of the log because that is
+   where the oldest line is, and that is where the reader runs out. */
+.earlier {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 5px 0;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: calc(10px * var(--font-scale));
+  letter-spacing: 0.08em;
+}
+
+.earlier:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+.fileStart {
+  display: block;
+  margin-bottom: 8px;
+  font-size: calc(10px * var(--font-scale));
+}
+
+@media (pointer: coarse) {
+  .earlier {
+    min-height: 44px;
+  }
+}

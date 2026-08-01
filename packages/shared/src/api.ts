@@ -126,10 +126,20 @@ export interface ClaimPensionResponse {
   orders: StandingOrders;
 }
 
-/** GET /v1/journal?sinceTick=N */
+/**
+ * GET /v1/journal?before=<entry id>&limit=N — pages *backwards*.
+ *
+ * Nothing in the journal is ever deleted, so this is always available and
+ * always reaches the start of the current recruit's file. Extended Journal
+ * Retention buys how many lines the Terminal opens with, not how far back an
+ * officer is permitted to read — a requisition may add a faster path to a
+ * function and may never be the only path to one.
+ */
 export interface JournalResponse {
+  /** Older entries, oldest first, ready to prepend to what is on screen. */
   entries: JournalEntry[];
-  lastResolvedTick: number;
+  /** Whether anything remains before the first entry returned. */
+  hasMore: boolean;
 }
 
 /** PUT /v1/orders */

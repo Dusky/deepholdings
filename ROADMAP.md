@@ -254,10 +254,17 @@ always knows what they are working toward.
       the way to prestige — it pays exactly what death pays, so the only thing
       it buys is choosing the moment. Retiring at the legal minimum is a
       measured trap; see [`docs/design/balance.md`](docs/design/balance.md).
-- [ ] **Journal pagination.** Retention is now 60/150/400 lines depending on
-      the Extended Journal Retention requisition, which raises the ceiling
-      without solving the problem: there is still no way to page back past
-      whatever the ceiling is.
+- [x] **Journal pagination.** `GET /v1/journal?before=<id>` pages backwards to
+      the start of the recruit's file, sixty lines a tap, with the scroll
+      position anchored so a prepend does not throw the reader across the log.
+      Paged-in history is not typed out — the officer asked for it.
+      This settled what Extended Journal Retention actually sells. Nothing in
+      the journal is ever deleted, so if retention capped how far back you
+      could read, the requisition would be the **only** path to older lines —
+      which the requisitions rule forbids. It buys how many lines the Terminal
+      *opens* with; paging is free and unlimited for everyone. The catalogue
+      copy said "keeps 150 lines", implying a deletion that never happened, and
+      now says "opens with".
 - [x] **A legible ladder.** The Terminal shows the permit in processing, the
       depth it authorises and an estimate — and permit processing was
       lengthened to three hours so the wait is actually visible to someone who

@@ -265,13 +265,23 @@ export class PostgresRepository implements Repository {
        ) recent ORDER BY id ASC`,
       [characterId, sinceTick, limit],
     );
-    return rows.map((row) => ({
-      id: String(row.id),
-      characterId: row.character_id,
-      tick: Number(row.tick),
-      at: new Date(row.at).toISOString(),
-      text: row.text,
-    }));
+    return rows.map(toJournalEntry);
+  }
+
+  async listJournalBefore(
+    characterId: string,
+    beforeId: string,
+    limit: number,
+  ): Promise<JournalEntry[]> {
+    const { rows } = await this.db.query(
+      `SELECT * FROM (
+         SELECT id, character_id, tick, at, text FROM journal
+         WHERE character_id = $1 AND id < $2
+         ORDER BY id DESC LIMIT $3
+       ) earlier ORDER BY id ASC`,
+      [characterId, beforeId, limit],
+    );
+    return rows.map(toJournalEntry);
   }
 
   async getPension(accountId: string): Promise<Pension> {
@@ -432,6 +442,16 @@ function worldParams(world: WorldState): unknown[] {
     world.beat, world.event, world.guildName, world.guildObjective,
     world.guildProgress, world.guildTarget, JSON.stringify(world.market), world.nextBeatAt,
   ];
+}
+
+function toJournalEntry(row: Record<string, unknown>): JournalEntry {
+  return {
+    id: String(row.id),
+    characterId: row.character_id as string,
+    tick: Number(row.tick),
+    at: new Date(row.at as string).toISOString(),
+    text: row.text as string,
+  };
 }
 
 function toAccount(row: { id: string; callsign: string; created_at: Date }): Account {

@@ -143,6 +143,18 @@ export class MemoryRepository implements Repository {
       .slice(-limit);
   }
 
+  async listJournalBefore(
+    characterId: string,
+    beforeId: string,
+    limit: number,
+  ): Promise<JournalEntry[]> {
+    const cutoff = Number(beforeId);
+    if (!Number.isFinite(cutoff)) return [];
+    return this.journal
+      .filter((e) => e.characterId === characterId && Number(e.id) < cutoff)
+      .slice(-limit);
+  }
+
   async getPension(accountId: string): Promise<Pension> {
     return this.pensions.get(accountId) ?? { total: 0, spent: 0, unlocks: [] };
   }

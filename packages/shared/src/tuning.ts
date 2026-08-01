@@ -384,8 +384,8 @@ export const REQUISITION_CATALOGUE = [
   { id: 'index1', track: 'index', tier: 1, label: 'Cabinet Index I', detail: 'Sort the filing cabinet by value, category or demand.', cost: 700 },
   { id: 'index2', track: 'index', tier: 2, label: 'Cabinet Index II', detail: 'Filter to a single category, remembered between visits.', cost: 7000 },
 
-  { id: 'journal1', track: 'journal', tier: 1, label: 'Extended Journal Retention I', detail: 'The journal keeps 150 lines instead of 60.', cost: 600 },
-  { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The journal keeps 400 lines.', cost: 6000 },
+  { id: 'journal1', track: 'journal', tier: 1, label: 'Extended Journal Retention I', detail: 'The Terminal opens with 150 lines instead of 60.', cost: 600 },
+  { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The Terminal opens with 400 lines.', cost: 6000 },
 
   { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Depth and permit ETA stay on the strip, on every screen.', cost: 2500 },
 ] as const satisfies readonly LadderEntry<RequisitionId, RequisitionTrack>[];
@@ -405,16 +405,26 @@ export function hasRequisition(
 }
 
 /**
- * Journal lines retained, indexed by owned tier.
+ * Journal lines the Terminal opens with, indexed by owned tier.
  *
- * Sixty lines is about a day of play, which is exactly long enough for a
- * returning player to find the run they wanted to read about already gone.
+ * Sixty is about a day of play, which is exactly long enough for a returning
+ * player to have to go looking for the run they wanted to read about. Nothing
+ * is deleted at any tier — paging back is free and unlimited for everyone, so
+ * what this buys is arriving with more already on screen.
  */
 export const JOURNAL_LINES_BY_TIER = [60, 150, 400] as const;
 
 export function journalLines(owned: readonly RequisitionId[]): number {
   return JOURNAL_LINES_BY_TIER[requisitionTier(owned, 'journal')];
 }
+
+/**
+ * Lines fetched per "earlier" request.
+ *
+ * Fixed for everybody. The requisition changes how much arrives without
+ * asking; it does not change how much an officer may read.
+ */
+export const JOURNAL_PAGE_SIZE = 60;
 
 /** Hard ceiling on a bulk filing, so one form can never be an unbounded query. */
 export const BULK_FILING_MAX_STACKS = 64;

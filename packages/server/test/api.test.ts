@@ -3,9 +3,12 @@ import { randomUUID } from 'node:crypto';
 import { after, before, describe, test } from 'node:test';
 import {
   HOARD_SALE_BONUS,
+  JOURNAL_LINES_BY_TIER,
+  JOURNAL_PAGE_SIZE,
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
   inheritedLevel,
+  type JournalResponse,
   type StateResponse,
 } from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
@@ -626,6 +629,79 @@ for (const adapter of adapters) {
           },
         });
         assert.equal(bad.statusCode, 400, `retreatPct ${String(retreatPct)} should be refused`);
+      }
+    });
+
+
+    test('the journal pages backwards to the start of the file', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      const characterId = record.character.id;
+
+      // More lines than any retention tier opens with.
+      await repo.appendJournal(
+        Array.from({ length: 140 }, (_, i) => ({
+          characterId,
+          tick: record.character.lastResolvedTick + i,
+          at: new Date(Date.now() + i),
+          text: `Filed entry ${i}.`,
+        })),
+      );
+
+      const state = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
+      const opening = (state.json() as StateResponse).journal;
+      assert.equal(opening.length, JOURNAL_LINES_BY_TIER[0], 'opens at the base retention');
+
+      // Page back from the oldest line on screen.
+      const first = await app.inject({
+        method: 'GET',
+        url: `/v1/journal?before=${opening[0].id}`,
+        headers: auth(),
+      });
+      assert.equal(first.statusCode, 200);
+      const page = first.json() as JournalResponse;
+      assert.equal(page.entries.length, JOURNAL_PAGE_SIZE);
+      assert.equal(page.hasMore, true);
+
+      // Oldest first, contiguous with what was already on screen, no overlap.
+      const ids = page.entries.map((e) => Number(e.id));
+      assert.deepEqual(ids, [...ids].sort((a, b) => a - b), 'entries arrive oldest first');
+      assert.ok(ids[ids.length - 1] < Number(opening[0].id), 'a page never overlaps the screen');
+
+      // Walk to the start of the file.
+      let cursor = page.entries[0].id;
+      let guard = 0;
+      let last = page;
+      while (last.hasMore && guard < 20) {
+        const next = await app.inject({
+          method: 'GET',
+          url: `/v1/journal?before=${cursor}`,
+          headers: auth(),
+        });
+        last = next.json() as JournalResponse;
+        if (last.entries.length > 0) cursor = last.entries[0].id;
+        guard += 1;
+      }
+      assert.equal(last.hasMore, false, 'paging reaches the start of the file');
+
+      // Nothing before the first line.
+      const beyond = await app.inject({
+        method: 'GET',
+        url: `/v1/journal?before=${cursor}`,
+        headers: auth(),
+      });
+      assert.equal(beyond.statusCode, 200);
+      assert.equal(beyond.json().entries.length, 0);
+      assert.equal(beyond.json().hasMore, false);
+
+      for (const before of ['', 'abc', '-1', "1; DROP TABLE journal"]) {
+        const bad = await app.inject({
+          method: 'GET',
+          url: `/v1/journal?before=${encodeURIComponent(before)}`,
+          headers: auth(),
+        });
+        assert.equal(bad.statusCode, 400, `before=${before} should be refused`);
       }
     });
 

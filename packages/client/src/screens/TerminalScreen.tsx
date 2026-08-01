@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
+import { useEarlierJournal } from '../hooks/useEarlierJournal';
 import { useServerClock } from '../hooks/useServerClock';
 import { clockOf, currentActivity, secondsToNextTick, tickProgress } from '../lib/activity';
 import { useServer } from '../state/serverContext';
@@ -50,11 +51,20 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
     setTyped((previous) => (previous.has(id) ? previous : new Set(previous).add(id)));
   }, []);
 
+  const {
+    entries: journal,
+    history,
+    hasMore,
+    loading: loadingEarlier,
+    failed: earlierFailed,
+    loadEarlier,
+  } = useEarlierJournal(state?.character.id, state?.journal ?? []);
+
   const animate = effectsOn && !highContrast && !reducedMotion;
   const revealed = revealSkipped || !animate;
 
   if (!state) return null;
-  const { character, orders, journal } = state;
+  const { character, orders } = state;
 
   return (
     <>
@@ -95,8 +105,30 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       </div>
 
       <div className={styles.log} role="log">
+        {hasMore && (
+          <button
+            type="button"
+            className={styles.earlier}
+            disabled={loadingEarlier}
+            onClick={() => void loadEarlier()}
+          >
+            {loadingEarlier ? 'RETRIEVING...' : 'EARLIER ENTRIES'}
+          </button>
+        )}
+        {!hasMore && journal.length > 0 && (
+          <div className={`text-dim ${styles.fileStart}`}>
+            Start of file. Nothing precedes this recruit's appointment.
+          </div>
+        )}
+        {earlierFailed && (
+          <div className={`text-dim ${styles.fileStart}`}>
+            Archive did not answer. The clerk suggests trying later.
+          </div>
+        )}
         {journal.map((entry, i) => {
-          const done = revealed || typed.has(entry.id);
+          // Paged-in history is not typed out: the officer asked for it, and
+          // watching two hundred lines cascade is not a reward.
+          const done = revealed || typed.has(entry.id) || history.has(entry.id);
           return (
             <div key={entry.id} className={styles.logRow}>
               <span className={`text-dim ${styles.time}`}>{clockOf(entry.at)}</span>

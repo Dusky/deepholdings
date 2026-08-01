@@ -5,6 +5,7 @@ import type {
   BulletinResponse,
   ClaimPensionResponse,
   DeviceAuthResponse,
+  JournalResponse,
   LedgerResponse,
   PurchaseRequisitionResponse,
   PurchaseUnlockResponse,
@@ -179,6 +180,11 @@ export class ApiClient {
 
   retireRecruit(): Promise<ClaimPensionResponse> {
     return this.request('POST', '/v1/recruit/retire', {});
+  }
+
+  /** Older journal lines, oldest first. `before` is the oldest id on screen. */
+  getJournalBefore(before: string): Promise<JournalResponse> {
+    return this.request('GET', `/v1/journal?before=${encodeURIComponent(before)}`);
   }
 
   getBulletin(): Promise<BulletinResponse> {

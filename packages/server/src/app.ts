@@ -16,6 +16,7 @@ import {
   claimPension,
   retireRecruit,
   getBulletin,
+  getJournalPage,
   getLedger,
   getTavern,
   loadState,
@@ -154,6 +155,15 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
   app.post('/v1/recruit/retire', async (request, reply) => {
     const accountId = await requireAccount(request, reply);
     return retireRecruit(repo, accountId);
+  });
+
+  // Paging back through the log. `before` is the id of the oldest line the
+  // client is currently showing.
+  app.get('/v1/journal', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { before } = request.query as { before?: string };
+    if (!before) throw new ServiceError('invalid_request', 'before required');
+    return getJournalPage(repo, accountId, before);
   });
 
   app.get('/v1/bulletin', async () => getBulletin(repo));

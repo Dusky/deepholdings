@@ -76,8 +76,8 @@ the simulation harness as a different number, it is not a requisition.
 | **Bulk Filing Authorisation II** | 9000 | Also clear every stack under a unit value you set |
 | **Cabinet Index I** | 700 | Sort the cabinet by value, category or demand |
 | **Cabinet Index II** | 7000 | Filter to a single category, remembered between visits |
-| **Extended Journal Retention I** | 600 | The journal keeps 150 lines instead of 60 |
-| **Extended Journal Retention II** | 6000 | The journal keeps 400 lines |
+| **Extended Journal Retention I** | 600 | The Terminal opens with 150 lines instead of 60 |
+| **Extended Journal Retention II** | 6000 | The Terminal opens with 400 lines |
 | **Pinned Readouts** | 2500 | Depth and the permit clock follow you off the Terminal |
 
 Costs were set by simulation, not by feel — see
@@ -94,6 +94,12 @@ Two decisions the implementation forced:
 - **A bulk filing confirms, and the confirmation renders under the control that
   raised it.** Built at the foot of the screen first, where it landed three
   columns below the tap that opened it.
+- **Extended Journal Retention buys the opening page, not the archive.**
+  Nothing in the journal is ever deleted, so capping how far back an officer
+  may page would make the requisition the *only* path to older lines — exactly
+  what the rule forbids. Paging is unlimited for everyone; the requisition
+  saves the taps. The original copy ("keeps 150 lines") implied a deletion that
+  does not happen and has been corrected.
 
 ### Designed, unbuilt
 

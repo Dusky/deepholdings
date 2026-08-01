@@ -71,6 +71,18 @@ export interface Repository {
 
   appendJournal(entries: NewJournalEntry[]): Promise<void>;
   listJournal(characterId: string, sinceTick: number, limit: number): Promise<JournalEntry[]>;
+  /**
+   * The `limit` entries immediately *before* `beforeId`, oldest first.
+   *
+   * Ordered by id rather than tick for the same reason `listJournal` is: several
+   * lines share a tick, and a catch-up can write a line whose tick is older than
+   * one already on file.
+   */
+  listJournalBefore(
+    characterId: string,
+    beforeId: string,
+    limit: number,
+  ): Promise<JournalEntry[]>;
 
   getPension(accountId: string): Promise<Pension>;
   savePension(accountId: string, pension: Pension): Promise<void>;

@@ -399,6 +399,28 @@ export function permitProcessingTicks(unlocks: readonly UnlockId[]): number {
 export const RETIREMENT_MIN_SERVICE_TICKS = 120;
 
 /**
+ * How often a long-serving recruit is reminded that Form R-1 exists.
+ *
+ * Death is otherwise the *only* way a pension ever appears, and whether it
+ * appears is not something the officer controls. Measured over eight
+ * fourteen-day careers on the default orders: deaths came out 0, 1, 2, 2, 6,
+ * 10, 10, 10. One career in eight banked nothing at all, because at a retreat
+ * threshold above `MAX_HIT_FRACTION` no ordinary blow can kill and death
+ * collapses to the 3% grievous tail — a rare event, and rare events are
+ * wildly uneven over a fortnight.
+ *
+ * Lowering the threshold makes death common and consistent, at the cost of a
+ * recruit who dies daily and never climbs. Neither end of that dial is a good
+ * default, because the dial has a cliff in it.
+ *
+ * So the fix is not a third number: it is that Form R-1 already *is* the other
+ * way to bank a pension, and nothing ever says so. A recruit who has served a
+ * day is worth a real award, and the officer should be told the number rather
+ * than having to guess that the Ledger has one.
+ */
+export const RETIREMENT_REMINDER_TICKS = 1440;
+
+/**
  * Requisitions: what gold buys, once supplies are paid for.
  *
  * Every entry is a tap-saver, a reading aid or a cosmetic. None of them changes

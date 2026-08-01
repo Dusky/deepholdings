@@ -100,6 +100,17 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
         </div>
       )}
 
+      {/* Death is not the only way to bank a pension, and for a recruit who
+          is not dying it is the only one they would ever discover. Quiet and
+          standing, like the permit clock — not a nag. */}
+      {state.retirement?.eligible && state.retirement.award > 0 && (
+        <div className={`text-dim ${styles.ladder}`}>
+          Form R-1 available — {character.name} has served{' '}
+          {Math.round(state.retirement.serviceTicks / 60)} hours. Separation assessed at{' '}
+          {state.retirement.award}.
+        </div>
+      )}
+
       <div className={styles.activity}>
         <div className={styles.activityRow}>
           <span className="text-bright">{currentActivity(character, orders)}</span>

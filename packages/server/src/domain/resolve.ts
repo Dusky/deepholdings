@@ -24,6 +24,7 @@ import {
   TICK_SECONDS,
   makeRng,
   pensionAward,
+  RETIREMENT_REMINDER_TICKS,
   rngChance,
   rngInt,
   rngPick,
@@ -243,6 +244,26 @@ export function resolve(options: ResolveOptions): ResolveResult {
     const prose = makeRng(tickSeed(character.id, tick, 'prose'));
 
     if (stipendPerTick > 0) character.gold += stipendPerTick;
+
+    // Death is not the only way to bank a pension, but it is the only one the
+    // game ever mentions. A recruit who is not dying earns nothing and is
+    // never told why — so the pension office writes, with the figure.
+    const served = tick - character.bornTick;
+    if (served > 0 && served % RETIREMENT_REMINDER_TICKS === 0) {
+      const estate =
+        character.gold +
+        inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
+      // Current depth, not the deepest reached: this line is about Form R-1,
+      // and R-1 pays on where the recruit is standing. Death pays on the
+      // deepest floor. Quoting the wrong one makes the Ledger a liar.
+      const award = pensionAward(served, character.depth, estate, unlocks);
+      log(
+        tick,
+        `Service review: ${character.name} has served ${Math.round(served / 60)} hours. ` +
+          `Form R-1 (Voluntary Retirement) remains available; the pension office ` +
+          `assesses the separation at ${award}. No action is required. None ever is.`,
+      );
+    }
 
     // Permit processing clears on its own schedule, wherever the recruit is.
     if (permitAppliedTick !== null && tick - permitAppliedTick >= processingTicks) {

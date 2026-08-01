@@ -173,6 +173,71 @@ for (const adapter of adapters) {
       await fresh.close();
     });
 
+    test('a recruit who never dies is still told the pension exists', async () => {
+      // Death is otherwise the only way a pension appears, and one career in
+      // eight banked nothing over a fortnight on the default orders. Form R-1
+      // is the other way; nothing used to mention it.
+      const safe = new MemoryRepository();
+      await safe.init();
+      const solo = buildApp({ repo: safe, config: dev });
+      const auth = await solo.inject({
+        method: 'POST',
+        url: '/v1/auth/device',
+        payload: { deviceId: 'never-dies' },
+      });
+      const headers = { authorization: `Bearer ${auth.json().token}` };
+
+      // Orders that keep the recruit alive, so the reminder is the only way
+      // the pension could ever come up.
+      await solo.inject({
+        method: 'PUT',
+        url: '/v1/orders',
+        headers,
+        payload: {
+          orders: {
+            targetDepth: 1,
+            retreatPct: RETREAT_MAX_PCT,
+            lootPriority: 'gear',
+            spendPolicy: 'resupply',
+          },
+        },
+      });
+
+      // Exactly one day, so the reminder is still inside the opening page of
+      // the journal. Any further and it scrolls past 60 lines — which is the
+      // reason it is on the Terminal as well as in the log.
+      for (let i = 0; i < 2; i += 1) {
+        await solo.inject({
+          method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 12 },
+        });
+      }
+
+      const body = (await solo.inject({
+        method: 'GET', url: '/v1/state', headers,
+      })).json() as StateResponse;
+      assert.equal(body.character.alive, true, 'these orders should not kill anybody');
+
+      // The reminder quotes a real number, not a nag.
+      const review = body.journal.map((e) => e.text).find((t) => /Service review/.test(t));
+      assert.ok(review, 'a day-old recruit was never told Form R-1 exists');
+      const quoted = Number(review?.match(/assesses the separation at (\d+)/)?.[1]);
+      const offered = body.retirement?.award ?? 0;
+      assert.ok(quoted > 0, `the reminder quoted no award: ${review}`);
+      // Close, not equal: resolution is lazy, so real minutes elapse between
+      // the advance and this read and are resolved into the offer. What
+      // matters is that the line quotes the *Form R-1* award — which pays on
+      // current depth — rather than the death award, which pays on the
+      // deepest floor reached and is a materially different number.
+      assert.ok(offered > 0);
+      assert.ok(
+        Math.abs(quoted - offered) / offered < 0.1,
+        `log quoted ${quoted}, Ledger offers ${offered} — different basis, not drift`,
+      );
+
+      await solo.close();
+      await safe.close();
+    });
+
     test('spans it cannot simulate are refused', async () => {
       for (const hours of [0, -1, 0.001, 1000, Number.NaN]) {
         const bad = await advance(hours);

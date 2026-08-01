@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { App } from '@capacitor/app';
+import { Capacitor, type PluginListenerHandle } from '@capacitor/core';
 import type { StandingOrders, StateResponse, UnlockId } from '@deepholdings/shared';
 import { api, ApiRequestError } from '../api/client';
 import { useInterval } from '../hooks/useInterval';
@@ -60,15 +62,32 @@ export function ServerProvider({ children }: { children: ReactNode }) {
   useInterval(() => void refresh(), POLL_MS);
 
   // Coming back to the app is the moment the journal is most out of date.
+  //
+  // Three signals, because no one of them is reliable everywhere. `focus` and
+  // `visibilitychange` cover the browser. On Android the WebView is not
+  // reliably told it became visible when the app returns from the background —
+  // and worse, `useInterval`'s timer does not run at all while the device is
+  // asleep, so a phone that slept through eight hours of ticks wakes with a
+  // snapshot eight hours old and no scheduled poll to correct it. Capacitor's
+  // `appStateChange` is the signal that actually fires there.
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') void refresh();
     };
     document.addEventListener('visibilitychange', onVisible);
     window.addEventListener('focus', onVisible);
+
+    let native: Promise<PluginListenerHandle> | null = null;
+    if (Capacitor.isNativePlatform()) {
+      native = App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) void refresh();
+      });
+    }
+
     return () => {
       document.removeEventListener('visibilitychange', onVisible);
       window.removeEventListener('focus', onVisible);
+      void native?.then((listener) => listener.remove());
     };
   }, [refresh]);
 

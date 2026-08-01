@@ -174,12 +174,34 @@ game nobody is reminded about is an app nobody opens.
 - [x] **Notification preferences.** Master switch, per-type toggles and quiet
       hours (23:00–08:00), persisted with the other quality-floor settings. A
       delivery landing in quiet hours waits rather than being dropped.
-- [ ] **Deep links.** A death notification opens the death card, not the
-      Terminal.
-- [ ] **Resume behaviour.** Refresh on foreground (done), plus handling for a
-      device that slept through the heartbeat.
-- [ ] **Send rate discipline.** A notification the player did not want is worse
-      than none. Cap the daily count and never push twice for the same event.
+- [x] **Deep links.** A tapped notification refreshes *first*, then routes to
+      the screen named in its `extra`, clamped to the officer's clearance.
+      Refresh-before-navigate is the load-bearing half: a notification is by
+      definition about something that happened while the app was not looking,
+      so landing on a stale Terminal that still shows the permit processing
+      reads as the notification having lied. Cold start needs no separate
+      branch — Capacitor replays the launch action into the listener — but the
+      listener must be registered unconditionally on mount, which is why
+      clearance is read through a ref rather than a dependency.
+      **Unverified on a device.** The listener only registers under
+      `Capacitor.isNativePlatform()`, so nothing here runs in a browser and
+      nothing here is covered by a test. Same caveat as the APK build.
+- [x] **Resume behaviour.** Three signals now: `focus` and `visibilitychange`
+      for the browser, `App.appStateChange` for Android — where the WebView is
+      not reliably told it became visible, and where `useInterval`'s timer does
+      not run at all while the device sleeps. A phone that slept through eight
+      hours of ticks used to wake with an eight-hour-old snapshot and no poll
+      scheduled to correct it.
+- [x] **Send rate discipline.** `native/sendBudget.ts`: at most four
+      deliveries per local calendar day, and the same event never twice. The
+      dedupe key is the *event* (`permit:4`), not the notification slot — D-4
+      and D-5 share slot id 1001 and both deserve to arrive. Cancelling
+      refunds the key, because the schedule is re-derived on every refresh and
+      an officer who opens the app five times while one permit processes must
+      not spend the whole day's budget on it. Nine tests.
+      With two local notification types the cap is not yet binding; it is
+      written now because the thing that makes it binding is FCM, and a budget
+      added after push is a budget added after the first complaint.
 
 **Exit:** a push arrives, you tap it, and the app opens on the thing it was
 about.

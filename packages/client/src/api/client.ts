@@ -20,6 +20,7 @@ import type {
   UpdateOrdersResponse,
 } from '@deepholdings/shared';
 import { resolveBaseUrl, type OverrideStorage } from './baseUrl';
+import { randomId } from './deviceId';
 
 /** Chrome throws on the property itself when storage is blocked, not just on use. */
 function browserStorage(): OverrideStorage | null {
@@ -70,7 +71,10 @@ function writeStored(key: string, value: string): void {
 function deviceId(): string {
   const existing = readStored(DEVICE_KEY);
   if (existing) return existing;
-  const created = crypto.randomUUID();
+  // Not crypto.randomUUID directly: it is secure-context only, and the
+  // documented phone-testing path loads the client over plain http from a LAN
+  // address. See api/deviceId.ts.
+  const created = randomId();
   writeStored(DEVICE_KEY, created);
   return created;
 }

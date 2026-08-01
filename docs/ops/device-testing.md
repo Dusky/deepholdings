@@ -34,6 +34,18 @@ http://<desktop-ip>:5173/?api=http://<desktop-ip>:8787
 ```
 
 …or simply `http://<desktop-ip>:5173` if you build with `VITE_API_URL` set.
+
+
+> **On plain `http://` from a LAN address the page is not a secure context.**
+> That is not a warning about this project's security posture — it changes
+> which browser APIs exist. `crypto.randomUUID` is one of the ones that
+> vanishes, and minting a device id is the first thing the client does, so the
+> symptom is a blank screen and `crypto.randomUUID is not a function` before
+> anything renders. Fixed in `api/deviceId.ts`, which falls back to
+> `crypto.getRandomValues` — that one has never been restricted. If you add
+> code here, anything gated on `window.isSecureContext` will fail on this
+> path and pass everywhere else you test it.
+
 Add it to the home screen for a fullscreen, chrome-free approximation of the
 app.
 

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
   BULK_FILING_MAX_STACKS,
+  DEFAULT_ORDERS,
   MAX_CATCHUP_TICKS,
   HEARTBEAT_SECONDS,
   MAX_DEPTH,
@@ -92,12 +93,7 @@ export async function authenticateDevice(
     const account = await tx.createAccount(deviceId, callsign);
 
     await tx.savePension(account.id, { total: 0, spent: 0, unlocks: [] });
-    await tx.saveOrders(account.id, {
-      targetDepth: 3,
-      retreatPct: 28,
-      lootPriority: 'gear',
-      spendPolicy: 'resupply',
-    });
+    await tx.saveOrders(account.id, { ...DEFAULT_ORDERS });
     const recruit = firstRecruit(account.id);
     await tx.insertCharacter(recruit);
     await tx.appendJournal(onboardingEntries(recruit.character));

@@ -185,6 +185,37 @@ export function maxHpForLevel(level: number): number {
 export const MAX_HIT_FRACTION = 0.35;
 
 /**
+ * The standing orders an officer starts with.
+ *
+ * These were a dead end, and the developer time machine is how that surfaced.
+ * The old defaults — Target Depth 3, Retreat 28% — produced a career in which
+ * **nothing changed between hour six and day twenty-nine**:
+ *
+ * - A permit is only applied for when the recruit *stalls*, and stalling needs
+ *   the target to exceed the permit's limit. Target Depth 3 is exactly what
+ *   Permit D-2 authorises, so after one promotion the recruit never stalled
+ *   again, never applied again, and stayed on Floor 2 for a month.
+ * - Retreat at 28% of maximum, on Floor 2, never kills anybody. No death means
+ *   no pension, and pension is the only currency the prestige ladders take —
+ *   so all nineteen unlocks stayed invisible for the entire run.
+ *
+ * Target Depth is an *aspiration*: `authorisedDepth` clamps it to the recruit's
+ * grade and permit, so the default is the maximum. It means "as deep as I am
+ * allowed", which is the only value that lets the permit ladder run its full
+ * length. Anything lower silently truncates the ladder at that floor.
+ *
+ * Measured over 29 simulated days: permits climb D-2 to D-6, pension reaches
+ * ~8,700, the first unlocks become affordable inside four days, and a recruit
+ * is lost about every six days.
+ */
+export const DEFAULT_ORDERS = {
+  targetDepth: MAX_DEPTH,
+  retreatPct: 28,
+  lootPriority: 'gear',
+  spendPolicy: 'resupply',
+} as const;
+
+/**
  * The usable ends of the Retreat Threshold slider.
  *
  * The control used to run 5–80, and a sweep at Target Depth 6 showed that most

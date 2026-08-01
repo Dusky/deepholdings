@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, test } from 'node:test';
-import { MAX_CATCHUP_TICKS, type StateResponse } from '@deepholdings/shared';
+import { MAX_CATCHUP_TICKS, RETREAT_MAX_PCT, type StateResponse } from '@deepholdings/shared';
 import { MemoryRepository } from '../src/adapters/memory.js';
 import { PostgresRepository } from '../src/adapters/postgres.js';
 import { buildApp } from '../src/app.js';
@@ -94,14 +94,83 @@ for (const adapter of adapters) {
     });
 
     test('chunks stay inside the catch-up window', async () => {
+      // Orders nobody dies under, so this measures chunking rather than
+      // mortality — advancing stops at a death, and under the real defaults a
+      // recruit can easily be lost inside the first chunk.
+      await app.inject({
+        method: 'PUT',
+        url: '/v1/orders',
+        headers: auth(),
+        payload: {
+          orders: {
+            targetDepth: 2,
+            retreatPct: RETREAT_MAX_PCT,
+            lootPriority: 'gear',
+            spendPolicy: 'resupply',
+          },
+        },
+      });
+
       // Two days in one call: four chunks, all simulated rather than summarised.
       const response = await advance(48);
       assert.equal(response.statusCode, 200);
-      const { ticksAdvanced } = response.json();
+      const { ticksAdvanced, died } = response.json();
+      assert.equal(died, false, 'the safe orders should have survived');
+      assert.equal(ticksAdvanced, 48 * 60);
       assert.ok(ticksAdvanced > MAX_CATCHUP_TICKS, 'more than one window was covered');
 
-      // Either it ran the whole span, or it stopped because somebody died.
-      assert.ok(ticksAdvanced === 48 * 60 || response.json().died);
+      const texts = (await state()).journal.map((entry) => entry.text).join('\n');
+      assert.doesNotMatch(texts, /recess/i, 'a chunked span is simulated, not summarised');
+    });
+
+    test('the default orders are not a dead end', async () => {
+      // The old defaults produced a career where nothing changed between hour
+      // six and day twenty-nine: Target Depth 3 is exactly what Permit D-2
+      // authorises, so the recruit never stalled, never applied for a permit
+      // and never descended; and Retreat 28% on Floor 2 never killed anybody,
+      // so pension stayed zero and all nineteen unlocks stayed invisible.
+      //
+      // This asserts the *property*, not the numbers: a player who never opens
+      // Form SO-1 must still see the permit ladder move and a pension appear.
+      const fresh = new MemoryRepository();
+      await fresh.init();
+      const solo = buildApp({ repo: fresh, config: dev });
+      const auth = await solo.inject({
+        method: 'POST',
+        url: '/v1/auth/device',
+        payload: { deviceId: 'default-orders' },
+      });
+      const headers = { authorization: `Bearer ${auth.json().token}` };
+      const read = async () =>
+        (await solo.inject({ method: 'GET', url: '/v1/state', headers })).json() as StateResponse;
+
+      const start = await read();
+      assert.equal(start.ordersFiled, false, 'this officer never files anything');
+      const startTier = start.character.permitTier;
+
+      // A week, claiming pensions the way the overlay would.
+      let banked = 0;
+      for (let day = 0; day < 7; day += 1) {
+        await solo.inject({
+          method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 24 },
+        });
+        const now = await read();
+        if (now.pendingDeath) {
+          banked += now.pendingDeath.pensionAwarded;
+          await solo.inject({ method: 'POST', url: '/v1/pension/claim', headers });
+        }
+      }
+
+      const end = await read();
+      assert.ok(
+        end.character.permitTier > startTier,
+        `permit stuck at D-${end.character.permitTier} after a week on default orders`,
+      );
+      const pension = banked + (await fresh.getPension(start.account.id)).total;
+      assert.ok(pension > 0, 'a week on default orders earned no pension at all');
+
+      await solo.close();
+      await fresh.close();
     });
 
     test('spans it cannot simulate are refused', async () => {

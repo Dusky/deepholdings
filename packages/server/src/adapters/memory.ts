@@ -9,15 +9,11 @@ import type {
   TavernMessage,
   WorldState,
 } from '@deepholdings/shared';
+import { DEFAULT_ORDERS } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
 
-const DEFAULT_ORDERS: StandingOrders = {
-  targetDepth: 3,
-  retreatPct: 28,
-  lootPriority: 'gear',
-  spendPolicy: 'resupply',
-};
+
 
 /**
  * In-memory adapter for tests and offline work. Single-process only: the

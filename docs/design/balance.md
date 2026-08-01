@@ -440,8 +440,47 @@ arriving faster than the ladder can be re-climbed.
 
 Neither of these is a content problem, which is what makes it worth writing
 down: no amount of new fauna or new loot fixes a player who is never asked to
-descend. The fix is in the defaults and in what the game says on day one, and
-it should be settled before anybody is asked to test.
+descend.
+
+### What the defaults are now
+
+Target Depth defaults to **12** and retreat stays at **28%**. Both were chosen
+by measuring the four candidates rather than by argument:
+
+| default | permit ladder | pension | unlocks reachable |
+| --- | --- | --- | --- |
+| depth 3, retreat 28 *(old)* | D-2 forever | 0 forever | never |
+| depth 6, retreat 28 | D-4, then stops | 2,917 then flat | 7 |
+| **depth 12, retreat 28** | **D-2 → D-6** | **779 → 8,688** | **7 by day 8** |
+| depth 12, retreat 35 | D-2 → D-8 | 0 forever | never |
+
+The two failures are independent, which is why only one combination works.
+Target Depth has to be the maximum or the permit ladder truncates at whatever
+it is set to — a permit is applied for only when the target *exceeds* the
+current limit, so any lower value stops the ladder the moment it catches up.
+Retreat has to stay below the hit cap or nothing ever dies and the prestige
+half of the game never appears.
+
+Defaulting Target Depth to the maximum is not reckless: `authorisedDepth`
+clamps it to grade and permit, so it reads as "as deep as I am allowed", which
+is what the aspiration was always documented to mean. The same run on the new
+defaults:
+
+| | +6h | +24h | +48h | +96h | +360h | +696h |
+| --- | --- | --- | --- | --- | --- | --- |
+| permit | D-2 | D-2 | D-3 | D-3 | D-5 | D-5 |
+| pension | 0 | 457 | 1,598 | 2,903 | 6,357 | 8,322 |
+| unlocks affordable | 0 | 0 | 3 | 7 | 7 | 7 |
+| recruits lost | 0 | 1 | 2 | 3 | 5 | 6 |
+
+The defaults also lived in **three** places — both adapters and the sign-up
+path — which is the same shape as the successor bug. They are one exported
+constant now.
+
+One thing this exposes rather than fixes: requisitions stay unaffordable
+across the whole run, because a player who dies every five days never
+accumulates gold. That is the 40% estate-to-pension rate competing with the
+sink it was supposed to feed, which `requisitions.md` already lists as open.
 
 ## Known imperfections
 

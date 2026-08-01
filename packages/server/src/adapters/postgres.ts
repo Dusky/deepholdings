@@ -13,6 +13,7 @@ import type {
   UnlockId,
   WorldState,
 } from '@deepholdings/shared';
+import { DEFAULT_ORDERS } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
 import { pendingMigrations, runMigrations } from '../migrations/runner.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
@@ -21,12 +22,7 @@ const { Pool } = pg;
 
 type Queryable = pg.Pool | pg.PoolClient;
 
-const DEFAULT_ORDERS: StandingOrders = {
-  targetDepth: 3,
-  retreatPct: 28,
-  lootPriority: 'gear',
-  spendPolicy: 'resupply',
-};
+
 
 export class PostgresRepository implements Repository {
   private readonly pool: pg.Pool;

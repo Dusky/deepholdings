@@ -461,6 +461,13 @@ export class PostgresRepository implements Repository {
     return rows.map((row) => row.id as string);
   }
 
+  async markAwayForTesting(accountId: string, seconds: number): Promise<void> {
+    await this.db.query(
+      "UPDATE accounts SET last_seen_at = now() - ($2 || ' seconds')::interval WHERE id = $1",
+      [accountId, seconds],
+    );
+  }
+
   async claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean> {
     // The insert is the dedupe: two workers racing on the same death both try
     // to write the same primary key and exactly one succeeds. Doing it as a

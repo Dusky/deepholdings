@@ -245,6 +245,11 @@ export class MemoryRepository implements Repository {
       .map((account) => account.id);
   }
 
+  async markAwayForTesting(accountId: string, seconds: number): Promise<void> {
+    const account = this.accounts.get(accountId);
+    if (account) account.lastSeenAt = new Date(Date.now() - seconds * 1000);
+  }
+
   async claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean> {
     const day = Date.now() - 24 * 3600 * 1000;
     const sent = this.pushSends.get(accountId) ?? new Map<string, number>();

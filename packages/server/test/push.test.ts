@@ -346,23 +346,11 @@ for (const adapter of adapters) {
 /**
  * Backdates `last_seen_at` past the away window.
  *
- * There is no port method for this and there should not be — nothing in the
- * game moves an account backwards in time. The memory adapter is reachable
- * directly; Postgres needs SQL, which is why this is a helper rather than a
- * line in each test.
+ * This was a cast that reached into each adapter's private fields, which is
+ * how a test breaks the first time an adapter is refactored and for a reason
+ * that has nothing to do with what it was testing. It is a port method now,
+ * used by the dev route as well — the same code path the manual test drives.
  */
 async function makeAway(repo: Repository, accountId: string): Promise<void> {
-  const asAny = repo as unknown as {
-    accounts?: Map<string, { lastSeenAt: Date }>;
-    db?: { query(sql: string, params: unknown[]): Promise<unknown> };
-  };
-  if (asAny.accounts) {
-    const account = asAny.accounts.get(accountId);
-    if (account) account.lastSeenAt = new Date(Date.now() - 3600 * 1000);
-    return;
-  }
-  await asAny.db!.query(
-    "UPDATE accounts SET last_seen_at = now() - interval '1 hour' WHERE id = $1",
-    [accountId],
-  );
+  await repo.markAwayForTesting(accountId, 3600);
 }

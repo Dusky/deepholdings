@@ -130,4 +130,14 @@ export interface Repository {
    * caller's care.
    */
   claimPushSend(accountId: string, eventKey: string, dailyCap: number): Promise<boolean>;
+
+  /**
+   * Backdates `last_seen_at`. Dev tooling and tests only — nothing in the game
+   * moves an account backwards in time.
+   *
+   * It is on the port rather than reached for through a cast because the tests
+   * need it on both adapters, and a helper that pokes at private fields is a
+   * helper that breaks the first time an adapter is refactored.
+   */
+  markAwayForTesting(accountId: string, seconds: number): Promise<void>;
 }

@@ -10,8 +10,12 @@ import {
 import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
+import { makeSender } from './push/sender.js';
+import type { PushSender } from './push/port.js';
+import { sweepOnce } from './push/sweep.js';
 import {
   advanceTime,
+  devMakeAway,
   authenticateDevice,
   bulkSell,
   claimPension,
@@ -34,6 +38,12 @@ import {
 export interface AppDeps {
   repo: Repository;
   config: Config;
+  /**
+   * Push transport. Only the dev sweep route uses it, but it is injected
+   * rather than built here so the server has exactly one — an `FcmSender`
+   * caches its OAuth token, and two instances would mint two.
+   */
+  sender?: PushSender;
 }
 
 const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
@@ -49,8 +59,12 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   internal: 500,
 };
 
-export function buildApp({ repo, config }: AppDeps): FastifyInstance {
+export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyInstance {
   const app = Fastify({ logger: process.env.NODE_ENV !== 'test' });
+  // Built lazily and only when the dev sweep can actually be reached: in
+  // production this route does not exist, and constructing a sender would
+  // parse credentials for nobody.
+  const sender = injected ?? (config.devTools ? makeSender(config, app.log) : null);
   const allow =
     typeof config.corsOrigins === 'function'
       ? config.corsOrigins
@@ -121,6 +135,26 @@ export function buildApp({ repo, config }: AppDeps): FastifyInstance {
       const accountId = await requireAccount(request, reply);
       const { hours } = (request.body ?? {}) as { hours?: number };
       return advanceTime(repo, accountId, Math.round(Number(hours) * 60));
+    });
+
+    // A night's absence: the world clock moves and nobody reads it, leaving
+    // genuinely unresolved ticks and an account outside the away window. Both
+    // are what the sweep needs and neither is otherwise producible by hand —
+    // /v1/dev/advance resolves as it goes, so it leaves nothing outstanding.
+    app.post('/v1/dev/away', async (request, reply) => {
+      const accountId = await requireAccount(request, reply);
+      const { hours } = (request.body ?? {}) as { hours?: number };
+      return devMakeAway(repo, accountId, hours);
+    });
+
+    // Runs the sweep once, on demand, and reports what it did. The sweep is
+    // otherwise on a five-minute timer and silent about accounts it found
+    // nothing wrong with, which makes "is push working" an unanswerable
+    // question at exactly the moment you need to answer it.
+    app.post('/v1/dev/sweep', async (request, reply) => {
+      await requireAccount(request, reply);
+      if (!sender) throw new ServiceError('not_found', 'no push sender configured');
+      return sweepOnce(repo, sender, (error) => app.log.error(error, 'dev sweep'));
     });
   }
 

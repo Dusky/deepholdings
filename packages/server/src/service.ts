@@ -1015,6 +1015,38 @@ export async function unregisterPushToken(
   return { registered: false };
 }
 
+/**
+ * Simulates a night's absence: time passes, and nobody reads it.
+ *
+ * Dev only, and it exists because the death sweep is otherwise close to
+ * untestable by hand. The sweep wants two things at once — an account unread
+ * for fifteen minutes, *and* unresolved ticks containing a death — and there
+ * is no ordinary way to produce the second without producing a read. Every
+ * other path through the server resolves as a side effect of looking:
+ * `/v1/dev/advance` advances the clock and then immediately catches up, so it
+ * leaves nothing outstanding, which is the opposite of what is wanted here.
+ *
+ * So this moves the world clock forward and does *not* read. Both halves are
+ * the real mechanism rather than a special case: `last_seen_at` is genuinely
+ * backdated, the sweep's own filter is untouched, and the ticks waiting
+ * afterwards are ticks that genuinely have not been resolved.
+ *
+ * Capped at the catch-up window. Past `MAX_CATCHUP_TICKS` a replay is
+ * summarised into a recess note instead of simulated, so a longer absence
+ * would test the summariser rather than the sweep.
+ */
+export async function devMakeAway(
+  repo: Repository,
+  accountId: string,
+  hours = 4,
+): Promise<{ away: true; hoursElapsed: number }> {
+  const requested = Number.isFinite(Number(hours)) ? Number(hours) : 4;
+  const ticks = Math.min(MAX_CATCHUP_TICKS, Math.max(1, Math.round(requested * 60)));
+  advanceClock(ticks);
+  await repo.markAwayForTesting(accountId, 3600);
+  return { away: true, hoursElapsed: ticks / 60 };
+}
+
 export async function getBulletin(repo: Repository): Promise<BulletinResponse> {
   const world = await repo.getWorld();
   const deaths = await repo.listDeaths(12);

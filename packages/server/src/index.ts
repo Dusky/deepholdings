@@ -15,13 +15,20 @@ const repo: Repository = config.databaseUrl
 
 await repo.init({ autoMigrate: config.autoMigrate });
 
-const app = buildApp({ repo, config });
+// Built before the app, because the app needs it: the dev sweep route takes
+// the same instance the heartbeat does, so an FcmSender's cached OAuth token
+// is shared rather than minted twice. Boot messages go to console because
+// there is no request logger yet and this happens exactly once.
+const sender = makeSender(config, {
+  info: (message) => console.log(message),
+  warn: (message) => console.warn(message),
+});
+
+const app = buildApp({ repo, config, sender });
 
 if (!config.databaseUrl) {
   app.log.warn('DATABASE_URL not set — using the in-memory adapter. State is lost on restart.');
 }
-
-const sender = makeSender(config, app.log);
 
 // The sweep exists because resolution is lazy: a recruit who dies while the
 // phone is asleep is not dead on the server until somebody reads them. It

@@ -10,6 +10,7 @@ import {
 import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
+import { LIMITS, RateLimiter } from './rateLimit.js';
 import { makeSender } from './push/sender.js';
 import type { PushSender } from './push/port.js';
 import { sweepOnce } from './push/sweep.js';
@@ -96,6 +97,46 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     }
     return accountId;
   };
+
+  /**
+   * Rate limiting, as one hook rather than per route.
+   *
+   * Keyed on the account where there is one and the client address otherwise.
+   * Sign-in has no account yet, and keying every sign-up into one bucket would
+   * let the first player of the day rate-limit the second.
+   *
+   * A request whose token does not verify is left alone entirely, so it gets
+   * 401 from the route rather than 429 from here. Two reasons, and the first
+   * is the one that matters: "you are going too fast" is a confusing thing to
+   * tell someone whose real problem is that they are logged out, and a client
+   * told to back off will back off instead of re-authenticating — which is the
+   * one action that would fix it. The second is that a 401 flood does no work
+   * to defend: `verifyToken` is a signature check with no database access. If
+   * that ever needs bounding it belongs at the network edge, not here.
+   */
+  const limiter = new RateLimiter();
+  app.addHook('onRequest', async (request, reply) => {
+    const route = `${request.method} ${request.routeOptions?.url ?? request.url}`;
+    const limit = LIMITS[route];
+    if (!limit) return;
+
+    const token = bearerToken(request.headers.authorization);
+    const account = token ? verifyToken(token, config.tokenSecret) : null;
+    // Sign-in is the one write with no account to key on, so it keys on the
+    // address. Everything else that fails to authenticate is the route's
+    // business, not the limiter's.
+    if (!account && route !== 'POST /v1/auth/device') return;
+
+    const wait = limiter.take(`${account ?? request.ip}|${route}`, limit);
+    if (wait === null) return;
+
+    // In voice, and with the number, because a client that is told to wait can
+    // wait — and a 429 with no guidance is the reason retry storms exist.
+    await reply
+      .status(429)
+      .header('retry-after', String(wait))
+      .send(errorBody('rate_limited', `Filing too quickly. The clerk will see you in ${wait}s.`));
+  });
 
   app.setErrorHandler(async (error, _request, reply) => {
     if (error instanceof SentReply) return;

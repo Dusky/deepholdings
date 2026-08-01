@@ -542,7 +542,21 @@ Not a milestone; pick these up as they start to hurt.
       files on its first run — M3's notifications were in `package.json` and
       absent from any APK built off this tree.
 - [ ] Idempotency keys on mutations — a retried purchase must not double-charge
-- [ ] Rate limiting on write endpoints
+- [x] Rate limiting on write endpoints. Token bucket, per account and per
+      route, in `src/rateLimit.ts`. A fixed window would let someone spend a
+      whole allowance at one boundary and the next immediately after — twice
+      the intended rate at the worst moment.
+      The tavern is the only limit chosen for a reason rather than a guess:
+      six a minute is faster than anyone types thoughtfully and slower than a
+      flood. The rest are generous, because a limiter that fires during
+      ordinary play teaches players the game is broken.
+      **Reads are never limited** — resolution happens on read, so throttling
+      `/v1/state` would stall the game, and the load check says a read costs
+      about 12ms. A request whose token does not verify is left alone entirely
+      so it gets 401 rather than 429: a client told to back off will back off
+      instead of re-authenticating, which is the one action that would fix it.
+      In-process, so two instances multiply the effective limit. Written down
+      in the module rather than discovered later.
 - [ ] Structured logging and error tracking (Sentry or equivalent)
 - [ ] Heartbeat health metric and an alert when beats stop
 - [x] Load check: `npm run load -w @deepholdings/server`. 500 accounts on

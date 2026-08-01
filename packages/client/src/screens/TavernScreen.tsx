@@ -1,5 +1,5 @@
 import { useCallback, useState, type FormEvent } from 'react';
-import { api } from '../api/client';
+import { api, ApiRequestError } from '../api/client';
 import { useResource } from '../hooks/useResource';
 import styles from './TavernScreen.module.css';
 
@@ -19,9 +19,16 @@ export function TavernScreen() {
     try {
       await api.sendTavernMessage(body);
       await reload();
-    } catch {
+    } catch (cause) {
+      // The server writes its refusals in voice and they say something the
+      // generic line cannot — a rate limit answers with how long to wait, and
+      // "the channel did not answer" is false in that case as well as useless.
+      setSendError(
+        cause instanceof ApiRequestError && cause.code !== 'network'
+          ? cause.message
+          : 'Message not delivered. The channel did not answer.',
+      );
       // Put the text back rather than losing what they typed.
-      setSendError('Message not delivered. The channel did not answer.');
       setDraft(body);
     }
   };

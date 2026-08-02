@@ -92,6 +92,42 @@ export function authorisedDepth(targetDepth: number, permitTier: number, level: 
 }
 
 /**
+ * Grade earned beyond the deepest floor the Authority will ever authorise.
+ *
+ * `authorisedDepth` clamps at `MAX_DEPTH`, so from the moment a recruit passes
+ * Grade 12 the `level` term can never bind again. The ninety-day run measured
+ * the consequence: a median Grade of **46** at day 90, on a stat line where
+ * Grade is the most prominent number, having changed nothing since about day
+ * four. A number that visibly climbs while doing nothing is worse than no
+ * number — it is a progress bar wired to a disconnected motor.
+ *
+ * Seniority is what that surplus becomes. It is deliberately *not* another
+ * source of power: the ninety-day run also showed that the game's problem is
+ * a shortage of new things, and adding survivability to a late-game recruit
+ * would suppress the death loop that produces most of the remaining events.
+ * It feeds case-file quality instead — an axis already hard-capped in
+ * `items.ts`, so it cannot inflate past a known ceiling however long a career
+ * runs.
+ *
+ * In the fiction it is the obvious reading: a senior officer's requisitions
+ * get looked at by somebody more senior too.
+ */
+export function seniority(level: number): number {
+  return Math.max(0, level - MAX_DEPTH);
+}
+
+/**
+ * Grades of case-file quality one full career of surplus seniority is worth.
+ * Small on purpose: the ceiling is Grade V, and seniority should shift the
+ * distribution rather than guarantee the top of it.
+ */
+export const SENIORITY_GRADE_DIVISOR = 14;
+
+export function seniorityGradeBonus(level: number): number {
+  return Math.min(1.5, seniority(level) / SENIORITY_GRADE_DIVISOR);
+}
+
+/**
  * Pension banked on death.
  *
  * It accrues with *service*, which is both what the word means and the only
@@ -168,8 +204,37 @@ export function gradeMismatchMultiplier(depth: number, level: number): number {
   return 1 + Math.max(0, depth - level) * 0.3;
 }
 
+/**
+ * Maximum HP, and the ceiling that keeps the game from ending itself.
+ *
+ * **Capped at the grade that matches the deepest floor.** Danger scales with
+ * *depth*, which stops at `MAX_DEPTH`; this used to scale with *grade*, which
+ * stops at nothing. A ninety-day run measured where that goes:
+ *
+ * ```
+ * days  0-14   deaths 8   pension 67,344
+ * days 14-28   deaths 0   pension      0
+ * days 28-42   deaths 0   pension      0
+ * ```
+ *
+ * The recruit simply stopped dying. Death is the only source of pension,
+ * pension is the only currency the prestige ladders take, so progression
+ * halted permanently on about day fourteen and never resumed. The game was
+ * not out of content — it had locked the player out of the content it had.
+ *
+ * The arithmetic, which is worth writing down because it is the same shape as
+ * the retreat-threshold bug this file already records: the worst possible
+ * single blow is a grievous hit at Floor 12, about 97 damage. A recruit
+ * retreats at `retreatPct` of maximum. At Grade 30 that threshold is 126 — so
+ * from any point above it, nothing in the game can kill them.
+ *
+ * So grade stops buying survivability at the point the Authority will not
+ * authorise a deeper floor anyway. Past that it buys `seniority` instead,
+ * which shifts case-file quality and cannot inflate past a hard cap. A recruit
+ * at Grade 40 is *better* than one at Grade 12; they are not *safer*.
+ */
 export function maxHpForLevel(level: number): number {
-  return STARTING_HP + (level - 1) * 11;
+  return STARTING_HP + (Math.min(level, MAX_DEPTH) - 1) * 11;
 }
 
 /**
@@ -289,30 +354,52 @@ export function clampRetreatPct(pct: number): number {
  * which is the M4 exit criterion — a tester should still have something they
  * are working toward when the two weeks are up.
  */
+/**
+ * The prestige ladders.
+ *
+ * **Tier 2 and 3 costs were re-priced after the ninety-day run**, which found
+ * that the entire nineteen-rung catalogue cost about 2.6 fortnights of
+ * pension — and since income accelerates, a player bought seventeen of the
+ * nineteen by day 19.2 and the game had nothing new left.
+ *
+ * Worse than the total was the *shape*. Pension only arrives in lumps, on
+ * death, and the six tracks were priced in flat bands — so a payout that
+ * crossed one tier threshold crossed all six at once. The measured timeline
+ * was two rungs on day 1.7, then nothing for five and a half days, then
+ * **eight rungs in the same minute**, then eight more empty days, then six
+ * more at once. Nineteen unlocks was never too little content; it was being
+ * paid out in three instalments.
+ *
+ * So the rungs within a tier are now spread far apart as well as raised. The
+ * target is that one payout buys roughly one thing, which turns "everything
+ * unlocked at once" into a sequence of choices about what to unlock first —
+ * and that is scarcity creating decisions, not grind. The events are
+ * identical; only what the player can afford at any moment has changed.
+ */
 export const UNLOCK_CATALOGUE = [
   { id: 'permits1', track: 'permits', tier: 1, label: 'Expedited Permit Processing I', detail: 'Permits clear in 90 minutes instead of 180.', cost: 1200 },
-  { id: 'permits2', track: 'permits', tier: 2, label: 'Expedited Permit Processing II', detail: 'Permits clear in 60 minutes.', cost: 3600 },
-  { id: 'permits3', track: 'permits', tier: 3, label: 'Expedited Permit Processing III', detail: 'Permits clear in 35 minutes.', cost: 11000 },
+  { id: 'permits2', track: 'permits', tier: 2, label: 'Expedited Permit Processing II', detail: 'Permits clear in 60 minutes.', cost: 7000 },
+  { id: 'permits3', track: 'permits', tier: 3, label: 'Expedited Permit Processing III', detail: 'Permits clear in 35 minutes.', cost: 41000 },
 
   { id: 'recruit1', track: 'recruit', tier: 1, label: 'Improved Intake I', detail: 'New recruits start at Grade 2.', cost: 1800 },
-  { id: 'recruit2', track: 'recruit', tier: 2, label: 'Improved Intake II', detail: 'New recruits start at Grade 4.', cost: 5200 },
-  { id: 'recruit3', track: 'recruit', tier: 3, label: 'Improved Intake III', detail: 'New recruits start at Grade 7.', cost: 15000 },
+  { id: 'recruit2', track: 'recruit', tier: 2, label: 'Improved Intake II', detail: 'New recruits start at Grade 4.', cost: 11500 },
+  { id: 'recruit3', track: 'recruit', tier: 3, label: 'Improved Intake III', detail: 'New recruits start at Grade 7.', cost: 62000 },
 
   { id: 'estate1', track: 'estate', tier: 1, label: 'Estate Settlement I', detail: 'Successors inherit 120 gold of effects.', cost: 2200 },
-  { id: 'estate2', track: 'estate', tier: 2, label: 'Estate Settlement II', detail: 'Successors inherit 400 gold of effects.', cost: 6000 },
-  { id: 'estate3', track: 'estate', tier: 3, label: 'Estate Settlement III', detail: 'Successors inherit 1100 gold of effects.', cost: 17000 },
+  { id: 'estate2', track: 'estate', tier: 2, label: 'Estate Settlement II', detail: 'Successors inherit 400 gold of effects.', cost: 13500 },
+  { id: 'estate3', track: 'estate', tier: 3, label: 'Estate Settlement III', detail: 'Successors inherit 1100 gold of effects.', cost: 74000 },
 
   { id: 'stipend1', track: 'stipend', tier: 1, label: 'Hardship Stipend I', detail: '+2 gold per minute, unconditionally.', cost: 1600 },
-  { id: 'stipend2', track: 'stipend', tier: 2, label: 'Hardship Stipend II', detail: '+5 gold per minute.', cost: 4800 },
-  { id: 'stipend3', track: 'stipend', tier: 3, label: 'Hardship Stipend III', detail: '+11 gold per minute.', cost: 14000 },
+  { id: 'stipend2', track: 'stipend', tier: 2, label: 'Hardship Stipend II', detail: '+5 gold per minute.', cost: 9000 },
+  { id: 'stipend3', track: 'stipend', tier: 3, label: 'Hardship Stipend III', detail: '+11 gold per minute.', cost: 52000 },
 
   { id: 'cabinet1', track: 'cabinet', tier: 1, label: 'Filing Cabinet Extension I', detail: 'Four more stacks (16 total).', cost: 1400 },
-  { id: 'cabinet2', track: 'cabinet', tier: 2, label: 'Filing Cabinet Extension II', detail: 'Four more stacks (20 total).', cost: 4200 },
-  { id: 'cabinet3', track: 'cabinet', tier: 3, label: 'Filing Cabinet Extension III', detail: 'Six more stacks (26 total).', cost: 12000 },
+  { id: 'cabinet2', track: 'cabinet', tier: 2, label: 'Filing Cabinet Extension II', detail: 'Four more stacks (20 total).', cost: 8000 },
+  { id: 'cabinet3', track: 'cabinet', tier: 3, label: 'Filing Cabinet Extension III', detail: 'Six more stacks (26 total).', cost: 46000 },
 
   { id: 'service1', track: 'service', tier: 1, label: 'Service Credit I', detail: 'Pensions accrue 20% faster.', cost: 2600 },
-  { id: 'service2', track: 'service', tier: 2, label: 'Service Credit II', detail: 'Pensions accrue 45% faster.', cost: 7500 },
-  { id: 'service3', track: 'service', tier: 3, label: 'Service Credit III', detail: 'Pensions accrue 80% faster.', cost: 21000 },
+  { id: 'service2', track: 'service', tier: 2, label: 'Service Credit II', detail: 'Pensions accrue 45% faster.', cost: 15500 },
+  { id: 'service3', track: 'service', tier: 3, label: 'Service Credit III', detail: 'Pensions accrue 80% faster.', cost: 88000 },
 
   { id: 'phosphor1', track: 'phosphor', tier: 1, label: 'Monitor Swap: Green Phosphor', detail: 'Cosmetic. The Authority does not know why you want this.', cost: 900 },
 ] as const;

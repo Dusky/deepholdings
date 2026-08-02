@@ -6,7 +6,9 @@ import {
   DEFAULT_ORDERS,
   MAX_LOOT_VALUE,
   MAX_SURVIVAL,
+  MAX_DEPTH,
   MAX_VIGOUR_FRACTION,
+  seniority,
   clauseById,
   clauseSlots,
   makeRng,
@@ -20,12 +22,18 @@ import { resolve } from '../src/domain/resolve.js';
 
 const rngAt = (n: number) => makeRng(tickSeed('case-file-test', n));
 
-function roll(seed: number, depth = 8, priority: 'gold' | 'gear' | 'relics' | 'knowledge' = 'gear') {
+function roll(
+  seed: number,
+  depth = 8,
+  priority: 'gold' | 'gear' | 'relics' | 'knowledge' = 'gear',
+  level = 8,
+) {
   return rollCaseFile({
     id: `#${seed}`,
     name: 'Sword, Adequate (+2)',
     priority,
     depth,
+    level,
     baseValue: 40,
     rng: rngAt(seed),
   });
@@ -186,4 +194,28 @@ test('carrying files makes a recruit harder to kill, but not immortal', () => {
     geared.character.maxHp > bare.character.maxHp,
     'vigour did not reach the recruit through the resolver',
   );
+});
+
+test('grade past the depth cap is worth something', () => {
+  // The ninety-day run found Grade climbing to 46 while authorisedDepth had
+  // been capped at 12 since about day four — the most prominent number on the
+  // stat line, wired to nothing. Surplus grade is seniority now, and seniority
+  // shifts case-file quality rather than adding power, because the same run
+  // showed the game needs more *events*, not a harder-to-kill recruit.
+  const junior = Array.from({ length: 300 }, (_, i) => roll(i, 8, 'gear', 8).grade);
+  const senior = Array.from({ length: 300 }, (_, i) => roll(i, 8, 'gear', 40).grade);
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+  assert.ok(
+    mean(senior) > mean(junior),
+    `seniority changed nothing: junior ${mean(junior).toFixed(2)}, senior ${mean(senior).toFixed(2)}`,
+  );
+  // And it is a nudge, not a guarantee — the ceiling is Grade V either way.
+  assert.ok(mean(senior) - mean(junior) < 1.6, 'seniority is doing too much');
+});
+
+test('seniority is zero until the depth cap is passed', () => {
+  assert.equal(seniority(1), 0);
+  assert.equal(seniority(MAX_DEPTH), 0);
+  assert.ok(seniority(MAX_DEPTH + 5) > 0);
 });

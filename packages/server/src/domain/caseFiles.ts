@@ -8,6 +8,7 @@ import {
   clauseSlots,
   rngChance,
   rngInt,
+  seniorityGradeBonus,
   statsOf,
   type CaseFile,
   type Clause,
@@ -40,9 +41,9 @@ export function rollsCaseFile(depth: number, priority: LootPriority, rng: Rng): 
  * is a nudge that makes relics feel like relics without letting a Floor 1
  * gamble produce a Grade V.
  */
-function rollGrade(depth: number, priority: LootPriority, rng: Rng): number {
+function rollGrade(depth: number, priority: LootPriority, level: number, rng: Rng): number {
   const bias = CASE_FILE_BIAS[priority];
-  const base = 1 + depth / 4 + bias.grade;
+  const base = 1 + depth / 4 + bias.grade + seniorityGradeBonus(level);
   // ±1 of the trend, so the same floor produces a spread rather than a value.
   const rolled = Math.round(base + (rng() * 2 - 1));
   return Math.max(1, Math.min(5, rolled));
@@ -58,11 +59,13 @@ export function rollCaseFile(input: {
   name: string;
   priority: LootPriority;
   depth: number;
+  /** The recruit's grade. Surplus above the depth cap becomes seniority. */
+  level: number;
   baseValue: number;
   rng: Rng;
 }): CaseFile {
-  const { id, name, priority, depth, baseValue, rng } = input;
-  const grade = rollGrade(depth, priority, rng);
+  const { id, name, priority, depth, level, baseValue, rng } = input;
+  const grade = rollGrade(depth, priority, level, rng);
   const bias = CASE_FILE_BIAS[priority];
   const slots = clauseSlots(grade);
 

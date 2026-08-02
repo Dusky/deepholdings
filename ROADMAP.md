@@ -648,14 +648,24 @@ Not a milestone; pick these up as they start to hurt.
   fortnight, because the harness has only ever run fourteen days. Nothing in
   any design document says what a player does in month two.
   This is a bigger risk than "is the loop fun", and unlike that one it is
-  measurable without a tester. **Now measured**: `npm run longrun` says the
-  last new thing happens on **day 13.4**, and 76 of 90 days contain nothing
-  the player has not seen. All 8 permits are gone by day 3.2, all 12 floors by
-  day 4.3, all 7 requisitions by day 4.1; the 19 prestige unlocks arrive in
-  three lump sums (2, then 8, then 6) rather than a curve; and Grade climbs to
-  46 while `authorisedDepth` has been capped at 12 since day four, so the
-  Terminal's most prominent number stops meaning anything almost immediately.
-  Full timeline in [`docs/design/balance.md`](docs/design/balance.md).
+  measurable without a tester. **Now measured**: `npm run longrun` said the
+  last new thing happened on **day 13.4**, with 76 of 90 days containing
+  nothing the player had not seen.
+  **Three structural faults found and fixed**, in the order they were found:
+  Grade climbed to 46 while `authorisedDepth` had been capped at 12 since day
+  four (now surplus grade becomes `seniority`, which shifts case-file quality);
+  the 19 unlocks arrived in three lump sums rather than a curve (tier 2 and 3
+  re-priced and spread); and — the one the first two exposed — **the game was
+  ending itself**. `maxHpForLevel` scaled with grade while damage scales with
+  depth, so past Grade ~26 nothing in the game could kill the recruit; death is
+  the only pension source, so progression stopped dead on about day 14 and
+  never resumed. Deaths per fortnight read 8, then 0, then 0.
+  After the cap: last new thing **day 39.2**, 19 of 19 unlocks bought, income
+  flat-to-rising across all six fortnights, empty check-in windows 6.8% → 4.0%.
+  Fifty days still have nothing new in them, but that is now a content gap
+  rather than a system refusing to pay out.
+  Full timeline and arithmetic in
+  [`docs/design/balance.md`](docs/design/balance.md).
 - **Onboarding cliff.** Worth restating as a risk, not just a task: competitors
   lose most churned players inside thirty minutes, to the interface rather than
   the game.

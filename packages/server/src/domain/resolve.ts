@@ -477,6 +477,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
             name: item,
             priority: orders.lootPriority,
             depth: character.depth,
+            level: character.level,
             baseValue: value,
             rng,
           });

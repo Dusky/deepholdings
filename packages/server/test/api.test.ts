@@ -7,6 +7,7 @@ import {
   JOURNAL_PAGE_SIZE,
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
+  UNLOCK_CATALOGUE,
   inheritedLevel,
   type JournalResponse,
   type StateResponse,
@@ -349,7 +350,12 @@ for (const adapter of adapters) {
 
     test('prestige ladders are climbed in order', async () => {
       const account = await accountId(app, token);
-      await repo.savePension(account, { total: 40_000, spent: 0, unlocks: [] });
+      // Derived from the catalogue, not a literal. A hardcoded 40,000 was
+      // enough until tier III was re-priced, and then this failed for a reason
+      // that had nothing to do with what it tests.
+      const ladder = UNLOCK_CATALOGUE.filter((entry) => entry.track === 'permits');
+      const enough = ladder.reduce((total, entry) => total + entry.cost, 0);
+      await repo.savePension(account, { total: enough, spent: 0, unlocks: [] });
 
       // Posting the top rung directly would buy tier III at tier III's price
       // while skipping I and II entirely.

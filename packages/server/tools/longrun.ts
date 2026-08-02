@@ -74,6 +74,7 @@ function playOne(seed: number): {
   requisitions: number;
   deaths: number;
   finalLevel: number;
+  perFortnight: { deaths: number; earned: number }[];
 } {
   const accountId = `long-${seed}`;
   const total = DAYS * 1440;
@@ -99,6 +100,8 @@ function playOne(seed: number): {
   const requisitions: RequisitionId[] = [];
   let pension = 0;
   let deaths = 0;
+  /** Deaths and pension earned per fortnight, to see whether income holds. */
+  const perFortnight: { deaths: number; earned: number }[] = [];
   let deepest = 0;
   let tick = 0;
 
@@ -148,12 +151,17 @@ function playOne(seed: number): {
 
     if (!character.alive) {
       deaths += 1;
-      pension += pensionAward(
+      const window = Math.floor(tick / (14 * 1440));
+      while (perFortnight.length <= window) perFortnight.push({ deaths: 0, earned: 0 });
+      perFortnight[window].deaths += 1;
+      const award = pensionAward(
         tick - character.bornTick,
         deepest,
         character.gold + inventory.reduce((a, i) => a + i.unitValue * i.quantity, 0),
         unlocks,
       );
+      perFortnight[window].earned += award;
+      pension += award;
       n += 1;
       record = succeed({
         id: `${accountId}-${n}`, accountId, previous: character,
@@ -174,6 +182,7 @@ function playOne(seed: number): {
     requisitions: requisitions.length,
     deaths,
     finalLevel: character.level,
+    perFortnight,
   };
 }
 
@@ -198,3 +207,14 @@ console.log(`unlocks bought:      ${med(runs.map((r) => r.unlocks))} of ${UNLOCK
 console.log(`requisitions bought: ${med(runs.map((r) => r.requisitions))} of ${REQUISITION_CATALOGUE.length}`);
 console.log(`deaths:              ${med(runs.map((r) => r.deaths))}`);
 console.log(`final grade:         ${med(runs.map((r) => r.finalLevel))}`);
+
+console.log('\n--- does the income hold up? deaths and pension per fortnight ---');
+const windows = Math.max(...runs.map((r) => r.perFortnight.length));
+for (let w = 0; w < windows; w += 1) {
+  const d = runs.map((r) => r.perFortnight[w]?.deaths ?? 0);
+  const e = runs.map((r) => r.perFortnight[w]?.earned ?? 0);
+  console.log(
+    `  days ${String(w * 14).padStart(2)}-${String((w + 1) * 14).padStart(2)}  ` +
+      `deaths ${med(d).toString().padStart(3)}   pension ${med(e).toString().padStart(7)}`,
+  );
+}

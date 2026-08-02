@@ -820,3 +820,130 @@ late-game grind, so padding the ceiling trades our problem for the one players
 write reviews about. The three faults above are all *structural* — a ladder
 that finishes too early, a reward schedule that clumps, and a stat that stops
 mattering — and none of them is fixed by adding more rungs.
+
+## The game was ending itself, and the exhaustion curve had hidden it
+
+Fixing the three faults above, in order, turned up a fourth that none of them
+described — and that was doing more damage than all three together.
+
+### The grade fix, which went as expected
+
+`seniority(level)` in `tuning.ts` is grade earned past `MAX_DEPTH`, the point
+where `authorisedDepth` stops reading the `level` term. It feeds case-file
+grade at `seniority / 14`, capped at +1.5 grades. Deliberately *not* more
+survivability: the measured problem is a shortage of new things, and making a
+late recruit harder to kill suppresses the death loop that produces most of
+the remaining events. Case-file quality is already hard-capped in `items.ts`,
+so however long a career runs it cannot inflate past a known ceiling.
+
+### The clumping fix, which did almost nothing — and why that was the tell
+
+Tier 2 and 3 unlock costs were raised and spread within each tier: `permits3`
+11,000 → 41,000, `service3` 21,000 → 88,000, and so on down the catalogue.
+The intent was that one payout buys roughly one rung instead of crossing six
+flat bands at once.
+
+The median "last new thing" moved from day 13.4 to day 13.9. Half a day, for a
+four-fold price rise. That is not a re-pricing failing to bite; that is income
+that has *stopped*, so no price can be reached.
+
+### Per-fortnight instrumentation, and the actual fault
+
+`longrun.ts` grew a deaths-and-pension-per-fortnight readout. It answered
+immediately:
+
+```
+days  0-14   deaths 8   pension 67,344
+days 14-28   deaths 0   pension      0
+days 28-42   deaths 0   pension      0
+```
+
+The recruit stopped dying. Death is the only source of pension and pension is
+the only currency the prestige ladders take, so progression halted around day
+fourteen and never resumed for the remaining seventy-six days. The game was
+not out of content. It had locked the player out of the content it had.
+
+The arithmetic is the same shape as the retreat-threshold bug recorded above.
+Damage scales with **depth**, which stops at `MAX_DEPTH = 12`. `maxHpForLevel`
+scaled with **grade**, which stopped at nothing:
+
+```ts
+STARTING_HP + (level - 1) * 11
+```
+
+The worst single blow in the game is a grievous hit at Floor 12, about 97
+damage. A recruit retreats at `retreatPct` of maximum; at Grade 30 that
+threshold is 126. From there nothing in the game can kill them — and at a
+median day-90 grade of 46 they were far past it. Every career converged on an
+immortal recruit farming a floor that could not hurt them.
+
+The fix is one `Math.min`:
+
+```ts
+export function maxHpForLevel(level: number): number {
+  return STARTING_HP + (Math.min(level, MAX_DEPTH) - 1) * 11;
+}
+```
+
+Grade stops buying survivability at the grade that matches the deepest floor
+the Authority will ever authorise. Past that it buys seniority. A Grade 40
+recruit is *better* than a Grade 12 one; they are not *safer*.
+
+### Where the ninety days landed
+
+|  | before | after |
+| --- | --- | --- |
+| last new thing | day 13.4 | **day 39.2** (earliest 37.5, latest 40.2) |
+| unlocks bought | 13 of 19 | **19 of 19** |
+| requisitions | 7 of 7 | 7 of 7 |
+| deaths in 90 days | 8 | 94 |
+| final grade | 46 | 14 |
+
+Deaths per fortnight now hold flat across the whole run — 15, 16, 13, 15, 16,
+16 — and pension per fortnight climbs rather than stopping: 79k, 166k, 246k,
+327k, 337k, 301k. Income is a curve again.
+
+The unlock timeline is the clearest evidence, because it is what the clumping
+fix was actually for:
+
+```
+day  1.7   2 unlocks
+day  4.4   2
+day  4.9   1
+day  8.3   4
+day  9.6   1
+day 10.8   1
+day 14.1   2
+day 17.4   1      <-- from here, one rung every 3 to 6 days
+day 23.2   1
+day 26.3   1
+day 29.8   1
+day 35.8   1
+day 40.2   1
+```
+
+Against the old shape — two, then nothing for five days, then **eight in the
+same minute**, then eight empty days, then six at once. Same nineteen rungs,
+paid as a drip instead of three instalments.
+
+The fortnight probe improved on every axis at the same time: genuine-empty
+check-in windows 6.8% → **4.0%**, the best measured; 7.52 events per career
+day; deaths 11.72 per career with none in 0 of 40; pension banked in 40 of 40.
+The longest silent stretch is one window, half a day.
+
+### What is still true
+
+Fifty of the ninety days still have nothing new in them. Thirty-nine days is
+roughly three times the previous length and it is past the fortnight the M4
+exit criterion cares about, but it is not "months or years", and
+[`research/mobile-incrementals.md`](../research/mobile-incrementals.md) is
+clear that the games we will sit beside sell exactly that. The difference is
+that the remaining gap is now a content question — there is nothing after day
+39 because nothing has been written for it — rather than a system quietly
+refusing to pay out.
+
+The third time in this document that a surprising number turned out to be
+about the instrument and not the world. The 90-day run only found this because
+it was asked for a *per-fortnight* breakdown; the median it had been reporting
+all along averaged an immortal recruit's silence together with the first two
+weeks, and produced a number that looked merely disappointing.

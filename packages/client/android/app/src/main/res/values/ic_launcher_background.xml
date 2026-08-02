@@ -4,7 +4,7 @@
       The bezel. This is the adaptive icon's background layer, so it fills
       whatever shape the launcher masks to — circle, squircle, teardrop — and
       the foreground carries only the screen and the glyph.
-      Same value as --bezel-beige in client/src/styles/tokens.css.
+      Same value as the bezel-beige custom property in client/src/styles/tokens.css.
     -->
     <color name="ic_launcher_background">#D8CDB4</color>
 </resources>

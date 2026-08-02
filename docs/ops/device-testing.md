@@ -73,10 +73,22 @@ on their own.
 
 
 ```bash
-java -version          # 17 or 21
+java -version          # 21 specifically — Gradle 8.14.3 cannot parse its own
+                        # build scripts on a JDK newer than this (fails with
+                        # "Unsupported class file major version"), and 17 is
+                        # too old to compile capacitor-android's bytecode
+                        # target. `pacman -S jdk21-openjdk` if neither of the
+                        # JDKs Android Studio or your distro shipped is 21,
+                        # and point JAVA_HOME at it for the gradlew commands
+                        # below.
 echo $ANDROID_HOME     # e.g. ~/Android/Sdk — install via Android Studio if empty
 adb devices            # your phone, with USB debugging on
 ```
+
+The SDK also needs `build-tools;35.0.0` and an accepted license, which
+`gradlew` will refuse to fetch silently — it fails once with a licence
+error and a `sdkmanager --licenses` pointer. Accepting it is a one-time,
+non-interactive step (`yes | sdkmanager --licenses`, or the docs above).
 
 On the phone: Developer options → USB debugging. Accept the RSA prompt.
 
@@ -123,6 +135,14 @@ device cannot reach your desktop's `localhost`.
 Cleartext HTTP to a LAN address is permitted for **debug builds only**
 (`app/src/debug/`). Release builds keep Android's secure default and need TLS.
 
+That permits the *socket* — a separate gate, the WebView's own mixed-content
+policy, blocks it anyway, because the app loads from `https://localhost` and
+a fetch to `http://<lan-ip>:8787` from a secure origin is mixed content
+regardless of what the network security config allows. `MainActivity.java`
+sets `WebSettings.MIXED_CONTENT_ALWAYS_ALLOW` for debug builds to cover this;
+if requests to the LAN API silently fail with nothing in `adb logcat` beyond
+a "Mixed Content" warning, this is the first thing to check.
+
 ## 3. What to check
 
 **First session** — install fresh (`adb uninstall com.deepholdings.terminal`
@@ -151,15 +171,22 @@ first if you have run it before):
 adb logcat | grep -i -E "capacitor|deepholdings|chromium"
 ```
 
-## 4. Known unknowns
+## 4. Run history
 
-Nobody has run any of this on hardware yet. The likely first failures, in order
-of probability:
+Run for the first time on 2026-08-02, on a Pixel 10 Pro XL over USB/LAN, to
+verify the push wire end to end (`push.md`). `assembleDebug` and
+`installDebug` both worked once three things were fixed — see `push.md`'s
+"What is verified" for the detail:
 
-1. **Gradle/SDK version mismatch** — Capacitor 8 wants a recent Android Gradle
-   Plugin and compile SDK. Android Studio will offer to fix it.
-2. **The phone cannot reach the desktop** — firewall, or the two are on
-   different subnets (guest wifi is a common culprit). `curl http://<ip>:8787/health`
-   from the phone's browser is the fastest check.
-3. **Notifications never arrive** — check the runtime permission was granted,
-   and that quiet hours are not swallowing the delivery.
+- JDK 21 specifically (§0, above).
+- `buildFeatures.buildConfig true` in `app/build.gradle`, and a fixed `--`
+  inside an XML comment in `ic_launcher_background.xml` — both one-time repo
+  fixes, already applied.
+- The WebView mixed-content block (§2, above) — a one-time repo fix, already
+  applied.
+
+The desktop firewall (§1, above) still needs opening per-machine; it isn't a
+repo fix and won't stay fixed across a new desktop or a firewall reset.
+`curl http://<ip>:8787/health` from the phone's browser is still the fastest
+way to tell "firewall" apart from "app bug" — both look identical from the
+phone (nothing arrives, no error), but the browser test rules the app out.

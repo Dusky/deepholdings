@@ -3,6 +3,11 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.deepholdings.terminal"
     compileSdk = rootProject.ext.compileSdkVersion
+    buildFeatures {
+        // AGP 8 stopped generating BuildConfig by default; MainActivity gates
+        // the debug-only mixed-content override on BuildConfig.DEBUG.
+        buildConfig true
+    }
     defaultConfig {
         applicationId "com.deepholdings.terminal"
         minSdkVersion rootProject.ext.minSdkVersion

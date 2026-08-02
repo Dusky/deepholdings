@@ -155,14 +155,58 @@ v1 has no multicast, so it is one request per token. At hundreds of players
 with a push only on death that is a handful of requests per beat; batching is a
 problem to solve when a measurement says it is one.
 
-## What is not verified
+## What is verified
 
-The FCM wire itself. There is no Firebase project in the development
-environment, so `FcmSender` is covered only by a unit test of its credential
-parsing — the token exchange and the send have never run against Google. The
-sweep, the budget, the dedupe, registration and unregistration are all tested
-against both storage adapters.
+Run end to end on 2026-08-02 against a real Firebase project, a debug APK on
+a physical device (Pixel 10 Pro XL) over the LAN, and a Postgres-backed dev
+server with `DEV_TOOLS=true`:
 
-The client half is also unverified on a device: `usePush` registers listeners
-only under `Capacitor.isNativePlatform()`, so nothing in a browser exercises
-it. Same standing caveat as the APK build.
+1. **`npm run push:ping -w @deepholdings/server -- --account <id>`** — a
+   notification landed in the system tray. This confirms the credentials, the
+   JWT-signed OAuth exchange, and the HTTP v1 send all work against Google for
+   real, isolated from whether the sweep can find anything to send.
+2. **A death found by the sweep, unprompted.** With the app backgrounded,
+   `POST /v1/dev/away` followed by `POST /v1/dev/sweep` replayed the account's
+   outstanding ticks, found a death, and a second, distinct notification
+   ("GRIMWALD I, THE UNREMARKABLE did not return...") arrived without the app
+   ever being opened. `push_sends` recorded exactly one
+   `death:<characterId>` row, confirming the dedupe key that stands between
+   this and a duplicate send.
+
+Getting there surfaced three bugs, all now fixed, none of them in the push
+code itself:
+
+- **The native Android project had never built.** `ic_launcher_background.xml`
+  had `--bezel-beige` inside an XML comment — `--` is illegal inside an XML
+  comment and aapt refused to parse it. Fixed by rewording the comment.
+  Building also needs `buildFeatures.buildConfig true` in `app/build.gradle`
+  (AGP 8 stopped generating `BuildConfig` by default, and the fix below reads
+  `BuildConfig.DEBUG`) and a JDK between 21 and the ceiling Gradle 8.14.3
+  itself will run on — 17 is too old to target the `capacitor-android`
+  module's bytecode level, and this machine's JDK 26 is too new for Gradle to
+  parse its own build scripts with (`Unsupported class file major version
+  70`). `device-testing.md` now says so.
+- **The WebView blocked every request to the LAN API as mixed content**,
+  independent of `network_security_config.xml`. That file permits cleartext
+  *sockets* at the OS level, which is a different gate from the WebView's own
+  mixed-content policy: the app loads from `https://localhost`
+  (`capacitor.config.ts`'s `androidScheme`), so Chromium blocked a JS `fetch`
+  to `http://<lan-ip>:8787` as insecure content before a socket ever opened.
+  `push:ping` and the dev-tools sweep don't exercise this path — only the
+  on-device client does — so nothing prior to this session's device run could
+  have caught it. Fixed in `MainActivity.java`: debug builds now set
+  `WebSettings.MIXED_CONTENT_ALWAYS_ALLOW` on the bridge's `WebView`, gated on
+  `BuildConfig.DEBUG` so release keeps the strict default.
+- **The desktop firewall silently dropped inbound LAN traffic on 8787.** Not a
+  code bug, but worth recording here since it looks identical to the other
+  two from the phone's side (nothing arrives, no error): even a plain browser
+  tab on the phone hit `http://<desktop-ip>:8787/health` and hung, while curl
+  from the desktop itself to its own LAN IP returned `200` instantly. `sudo
+  ufw allow 8787/tcp` on the desktop resolved it.
+
+Everything else the design depends on — the sweep's away-window and per-beat
+bounds, the server-side budget, the `push_sends` dedupe, registration and
+unregistration — is exercised by the suite in `push/sweep.ts`'s and
+`push/fcm.ts`'s tests against both storage adapters
+(`TEST_DATABASE_URL=... npm test -w @deepholdings/server`, 192 passing,
+0 skipped).

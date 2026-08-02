@@ -42,10 +42,39 @@
  *
  * The gap on the first line is the whole argument for the Filing Clerk: on day
  * one, **95% of what a recruit earns is sitting in the cabinet** waiting for
- * the officer to go and sell it. The clerk's wage is 1 g/min against roughly
- * 4 g/min of junk they realise, so the first hire pays for itself — which is
- * the right way to teach a mechanic. The whole department costs 6 g/min, which
- * is affordable only well up the stipend track.
+ * the officer to go and sell it.
+ *
+ * ## Why the wage is one gold a minute and not three
+ *
+ * It shipped at 1/2/3 — six a minute for the department — reasoned against the
+ * income curve above and nothing else. Then the harness learned about staff and
+ * said what that actually cost:
+ *
+ *     ninety days, an officer who hires everything as soon as they can
+ *
+ *                        no department      6 g/min       3 g/min
+ *     lifetime pension        ~1,503k          982k        1,263k
+ *     last new thing         day 39.5      day 58.8      day 50.2
+ *
+ * A department that cost **35% of lifetime pension** — and the mechanism is
+ * structural rather than a bad number. `pensionAward` pays out on the estate at
+ * `goldHandled * 0.4`, so **every gold a recurring sink takes is 0.4 gold of
+ * pension it takes with it**, and the loss compounds: less pension buys fewer
+ * Service Credit rungs, which lowers the multiplier on every pension after.
+ *
+ * That is worth knowing about far beyond this file. Requisitions never showed
+ * it because they are bought once; wages are the first cost that keeps
+ * arriving, so they are the first thing to run into it. Any recurring sink
+ * added after this one is a pension tax at the same rate, and has to be priced
+ * knowing that.
+ *
+ * At one a minute each the tax is about 16% and the curve stretches by ten days
+ * rather than nineteen. Still a real cost — which is the point, an automation
+ * you do not feel is not a decision — but no longer a feature that mostly makes
+ * the game slower. Note the direction of that trade before extending the
+ * department: in this genre automation is supposed to *accelerate*, and a post
+ * whose only benefit is convenience will always read as a tax in a simulation
+ * that cannot value the officer's time.
  */
 
 export type StaffRole = 'clerk' | 'officer' | 'archivist';
@@ -112,7 +141,7 @@ export const STAFF_CATALOGUE: readonly StaffSpec[] = [
     title: 'Junior Officer',
     detail: 'Redeems the cheapest rung you can afford, never taking the pension below your reserve.',
     hire: 2400,
-    upkeep: 2,
+    upkeep: 1,
     // A reserve rather than a track preference. The ladders are bought in tier
     // order anyway, so "which one next" is nearly always "the cheapest" — what
     // an officer actually wants to protect is the ability to buy something
@@ -129,7 +158,7 @@ export const STAFF_CATALOGUE: readonly StaffSpec[] = [
     title: 'Archivist',
     detail: 'Files Form 12-C against riders on files at or above the grade you set. Fees are paid as usual.',
     hire: 4800,
-    upkeep: 3,
+    upkeep: 1,
     policyLabel: 'Contest riders from grade',
     policyUnit: '',
     policyMin: 1,

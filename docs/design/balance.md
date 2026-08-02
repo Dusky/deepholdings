@@ -1032,3 +1032,69 @@ gold — the median is a thousand against a Grade IV fee of 360, and the p10 is
 therefore usually means realising the cabinet first, which gives the Ledger a
 reason to exist on the way to the Armoury. Loot funds the paperwork. That is a
 better loop than a fee small enough to ignore.
+
+## Every recurring gold sink is a pension tax, at forty per cent
+
+The Registry shipped with a wage of six gold a minute for the full department,
+priced against the income curve and nothing else, because neither balance
+harness knew staff existed. Both model an officer's visit — realise the
+cabinet, buy what is affordable — and each has its own copy of that loop, which
+is the same duplication that hid the case-file drop rate and the cadence
+probe's missing event class before it. So `longrun` learned about the
+department, behind a `--staff` flag, and the comparison is direct:
+
+```
+ninety days, eight careers, an officer who hires everything as soon as they can
+
+                       no department      6 g/min       3 g/min
+lifetime pension            ~1,503k          982k        1,263k
+last new thing             day 39.5      day 58.8      day 50.2
+hire + wages, total               —         690k          356k
+time unpaid                       —          4.2%          2.6%
+```
+
+**The department cost 35% of lifetime pension.** And the mechanism is
+structural rather than a badly chosen number:
+
+```ts
+return Math.round((service * 0.06 * depthFactor + goldHandled * 0.4) * credit);
+```
+
+Pension pays out partly on the estate the recruit dies holding. So every gold a
+recurring sink takes is **0.4 gold of pension it takes with it** — and the loss
+compounds, because less pension buys fewer Service Credit rungs and that track
+multiplies every pension after it.
+
+Requisitions never surfaced this. They are bought once, seven of them, and the
+dent is a one-off. Wages are the first cost in the game that keeps arriving, so
+they are the first thing to hit the rate.
+
+### What it means for the shape of the thing
+
+The wage is one gold a minute per post now, which puts the tax near 16% and
+stretches the curve by ten days instead of nineteen. That is still a real cost,
+and it should be — an automation the officer cannot feel is not a decision, and
+the whole reason for a recurring sink was that gold had nothing left to want.
+
+But note which way the trade points. In this genre automation *accelerates*;
+here it decelerates, because a post whose only benefit is convenience is pure
+cost to a simulation that cannot value the officer's time. Both of the numbers
+above are "the same content, slower" rather than "more content" — which is
+exactly the late-game grind
+[`research/mobile-incrementals.md`](../research/mobile-incrementals.md) says the
+genre's players write reviews about.
+
+So the next post should carry a genuine edge rather than only a chore: a senior
+clerk who realises at better than depot rates, an archivist whose standing goes
+further. Otherwise the department stays a tax an engaged player is right to
+refuse, and the automation ladder ends up as a ladder nobody climbs.
+
+### And the harness gap itself
+
+Two systems have now shipped that the harnesses could not see. The pattern is
+the same each time: the tools each rebuild the officer's visit, so anything
+added *around* `resolve()` rather than inside it is invisible until someone
+thinks to look. `cadence` still does not model staff — it runs a player who
+buys nothing at all, and hiring is buying, so that is defensible — but the
+duplication is the thing to fix before a third system lands in the same blind
+spot.

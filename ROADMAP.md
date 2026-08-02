@@ -440,9 +440,22 @@ purchasable game was 26 items across two ladders.
 - [x] **The first recurring gold sink.** Requisitions are bought once and there
       are seven of them, so gold accumulated with nothing to want. Wages are the
       first cost that keeps arriving.
-- [ ] **More posts.** Three is a department, not a hierarchy. The chores left
-      are buying requisitions and deciding when to retire — the second of which
-      should never be automated, because it is the prestige decision.
+- [x] **Measured.** `longrun --staff` hires the department and reports what it
+      costs. It found the wage was priced against the income curve and nothing
+      else: at six gold a minute the department cost **35% of lifetime
+      pension**, because `pensionAward` pays on the estate at 0.4 and the loss
+      compounds through Service Credit. One gold a minute per post now, ~16%.
+      **Every recurring sink in this game is a pension tax at that rate** —
+      requisitions never showed it because they are bought once. See
+      [`docs/design/balance.md`](docs/design/balance.md).
+- [ ] **More posts, with an edge.** Three is a department, not a hierarchy. But
+      the next post needs a genuine advantage rather than only a chore removed:
+      the measurement says convenience alone reads as a tax, and automation
+      that decelerates is backwards for the genre. A senior clerk who realises
+      above depot rates, not a fourth chore.
+- [ ] **One officer's visit, in one place.** Two systems have now shipped that
+      the harnesses could not see, both times because each tool rebuilds the
+      visit loop itself. Fix the duplication before a third lands in it.
 
 **Exit:** an officer who has played a fortnight is running a department rather
 than doing the filing. **Met for the three chores above; not for the shape** —

@@ -71,3 +71,35 @@ jobs:
 
       - name: android/ is in sync with package.json
         run: git diff --exit-code -- packages/client/android
+
+      # `cap sync` reconciles the plugin list. It does not compile anything, so
+      # for as long as this job has no SDK the native tree can contain a file
+      # that no tool here ever reads.
+      #
+      # It did. `ic_launcher_background.xml` carried a comment saying "same
+      # value as --bezel-beige in tokens.css", and `--` is not legal inside an
+      # XML comment. Resource merging failed, so the Android project had never
+      # compiled anywhere — through an icon pass, a notifications pass and a CI
+      # job that all reported green. It took building an APK on a real machine
+      # to find it.
+      #
+      # A full Android build here needs an SDK, licences and a JDK pinned to a
+      # version AGP accepts. Parsing every XML in the tree needs none of that
+      # and would have caught this one on the commit that introduced it, which
+      # is most of the value for none of the cost.
+      - name: every android XML is well-formed
+        run: |
+          python3 - <<'EOF'
+          import glob, sys, xml.etree.ElementTree as ET
+          files = sorted(glob.glob('packages/client/android/**/*.xml', recursive=True))
+          bad = []
+          for path in files:
+              try:
+                  ET.parse(path)
+              except ET.ParseError as error:
+                  bad.append(f'{path}: {error}')
+          print(f'{len(files)} XML files checked')
+          if bad:
+              print('\n'.join(bad))
+              sys.exit(1)
+          EOF

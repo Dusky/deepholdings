@@ -6,6 +6,11 @@ dist-ssr
 .vite
 *.log
 
+# Claude Code session state. Per-machine, not per-project — it turned up as an
+# untracked directory on a second machine and would otherwise do so on every
+# machine this is checked out on.
+.claude/
+
 # Firebase. `google-services.json` carries the project's app id and API key;
 # the key is restricted to the package name and signing certificate, so Google
 # considers it safe to commit — but "safe if the restriction is correct" is not

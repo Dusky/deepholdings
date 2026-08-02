@@ -62,7 +62,7 @@ The things every decision gets checked against.
 | M0 — Playable loop, end to end | ✅ Done | yes |
 | M1 — On your phone | **Next** | yes |
 | M2 — The first session | Built; needs a stranger to verify | yes |
-| M3 — It calls you back | | yes |
+| M3 — It calls you back | Push verified on device; deep-link tap not | yes |
 | M4 — It has direction | | yes |
 | M5 — It has depth (crafting) | Items, clauses, Forms 12-C and 19 | *candidate cut* |
 | M6 — An inhabited world | | *candidate cut* |
@@ -99,8 +99,15 @@ CRT shell, server-authoritative resolution, client wired to the API.
 - [x] **Self-host the fonts.** Bundled via `@fontsource/ibm-plex-mono`; boot no
       longer touches the network. VT323 dropped.
 - [x] **Capacitor wrapper.** `android/` generated and committed, config set,
-      hardware back returns to the Terminal. **Native build unverified** — no
-      Android SDK in the dev environment; `./gradlew assembleDebug` is yours.
+      hardware back returns to the Terminal. **Built and run on a physical
+      device.** It did not build the first time, and "unverified" turned out to
+      mean broken: `ic_launcher_background.xml` had a `--` inside an XML
+      comment, which is illegal, so resource merging failed and the project had
+      never compiled anywhere — through an icon pass, a notifications pass and
+      a green CI job. AGP 8 also needs `buildFeatures.buildConfig` before
+      `BuildConfig.DEBUG` exists. CI now parses every XML in the native tree,
+      which would have caught it on the commit that introduced it.
+      Needs JDK 21 specifically; 17 and 26 each fail differently.
 - [x] **App icon and splash screen.** Generated from one definition by
       `packages/client/tools/make-icons.mjs` — 27 files: legacy mipmaps at five
       densities, adaptive foreground at five, both splash orientations, and the
@@ -205,10 +212,15 @@ game nobody is reminded about is an app nobody opens.
       Without credentials the server runs `NullSender` and says so at boot —
       a supported state, not a broken one. See
       [`docs/ops/push.md`](docs/ops/push.md).
-      **The FCM wire itself is unverified**: there is no Firebase project in
-      the dev environment, so only credential parsing is tested. Everything
-      else — sweep, budget, dedupe, registration — is tested against both
-      storage adapters.
+      **Verified end to end on a physical device.** `push:ping` reached the
+      phone, and a death found by the sweep reached it unprompted with the app
+      backgrounded, leaving exactly one `death:<characterId>` row in
+      `push_sends` — so the dedupe path fired for real rather than in a test.
+      The wire was not the hard part in the end: what stood in the way was the
+      WebView refusing the LAN request as mixed content, which
+      `network_security_config.xml` does not cover because it governs cleartext
+      sockets rather than Chromium's own check against the `https://localhost`
+      origin. Overridden for debug builds only, and moot under TLS.
 - [x] **Notification preferences.** Master switch, per-type toggles and quiet
       hours (23:00–08:00), persisted with the other quality-floor settings. A
       delivery landing in quiet hours waits rather than being dropped.
@@ -221,9 +233,10 @@ game nobody is reminded about is an app nobody opens.
       branch — Capacitor replays the launch action into the listener — but the
       listener must be registered unconditionally on mount, which is why
       clearance is read through a ref rather than a dependency.
-      **Unverified on a device.** The listener only registers under
+      **Still unverified on a device.** The listener only registers under
       `Capacitor.isNativePlatform()`, so nothing here runs in a browser and
-      nothing here is covered by a test. Same caveat as the APK build.
+      nothing here is covered by a test. The device run proved a notification
+      *arrives*; nobody has yet tapped one and watched where it lands.
 - [x] **Resume behaviour.** Three signals now: `focus` and `visibilitychange`
       for the browser, `App.appStateChange` for Android — where the WebView is
       not reliably told it became visible, and where `useInterval`'s timer does
@@ -242,7 +255,8 @@ game nobody is reminded about is an app nobody opens.
       added after push is a budget added after the first complaint.
 
 **Exit:** a push arrives, you tap it, and the app opens on the thing it was
-about.
+about. **Half met** — the push arrives, on a real phone, unprompted. The tap
+has not been tried.
 
 ---
 
@@ -592,6 +606,12 @@ Not a milestone; pick these up as they start to hurt.
       `@capacitor/local-notifications` missing from the committed gradle
       files on its first run — M3's notifications were in `package.json` and
       absent from any APK built off this tree.
+      A second gap closed the same way: `cap sync` reconciles the plugin list
+      but compiles nothing, so the tree could hold a resource file no tool in
+      the job ever read. It did — an illegal `--` in an XML comment meant the
+      Android project had never compiled anywhere, and a device build found it
+      rather than CI. Parsing every XML in `packages/client/android` needs no
+      SDK and would have caught it on the commit that introduced it.
 - [ ] Idempotency keys on mutations — a retried purchase must not double-charge
 - [x] Rate limiting on write endpoints. Token bucket, per account and per
       route, in `src/rateLimit.ts`. A fixed window would let someone spend a

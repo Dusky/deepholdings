@@ -170,3 +170,35 @@
     padding: 0 14px;
   }
 }
+
+/* Two controls per clause once a second form exists, side by side rather than
+   stacked: a clause row that is three lines tall turns a drawer of three files
+   into a page nobody scrolls. */
+.actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* The file being given up, while a transfer is in progress. Dimmed rather than
+   hidden — the officer is about to destroy it and should be looking at it. */
+.file[data-donor='true'] {
+  opacity: 0.55;
+}
+
+.carrying {
+  display: block;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+}
+
+/* A destination, during a transfer. Brighter than CONTEST because it is the
+   only thing on the screen that can be done next. */
+.place {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor-bright);
+}

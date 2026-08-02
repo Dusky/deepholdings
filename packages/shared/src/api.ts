@@ -60,6 +60,8 @@ export interface PendingFiling {
   form: FormId;
   caseFileId: string;
   clauseIndex: number;
+  /** Form 19: the clause on its way in, so the drawer can say what is coming. */
+  bringsClauseId?: string;
   /** Honest, like the permit ETA: derived from the resolution tick, not faked. */
   secondsRemaining: number;
 }
@@ -67,8 +69,14 @@ export interface PendingFiling {
 /** POST /v1/armoury/file */
 export interface FileFormRequest {
   form: FormId;
+  /** The file that survives. For 12-C, the only file involved. */
   caseFileId: string;
+  /** The slot on that file: contested by 12-C, overwritten by 19. */
   clauseIndex: number;
+  /** Form 19: the file consumed to supply the clause. */
+  donorCaseFileId?: string;
+  /** Form 19: which of the donor's clauses crosses over. */
+  donorClauseIndex?: number;
 }
 
 export interface FileFormResponse {

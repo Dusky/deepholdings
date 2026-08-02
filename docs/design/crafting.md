@@ -6,19 +6,26 @@ document — *items and clauses first, the form catalogue second*.
 **Shipped:** case files with grades, twenty clauses across endorsements and
 riders, a three-slot drawer that evicts its weakest entry, drop rates biased by
 Loot Priority, hard ceilings on the carried stat block, the **ARMOURY** screen,
-**Union Standing** as a real currency, and **Form 12-C — Arbitration**, with
-the filing rails underneath it: a form is queued with a resolution tick,
-resolves inside the tick loop like everything else, and is seeded on the filing
-so replaying the span cannot change the ruling.
+**Union Standing** as a real currency, and two forms — **12-C, Arbitration**
+and **19, Requisition** — on rails the rest will run on: a form is queued with
+a resolution tick, resolves inside the tick loop like everything else, and is
+seeded on the filing so replaying the span cannot change the ruling.
 
-**Not shipped:** forms 7-A, 3-B, 19, N-1 and 44; provenance; equipment policy
-and the countersignature rules.
+**Not shipped:** forms 7-A, 3-B, N-1 and 44; provenance; equipment policy and
+the countersignature rules.
 
-12-C went first because it is the one that needs nothing new. 7-A needs hidden
-clauses, 44 needs provenance, and 3-B needs vacant slots — which today's rolls
-almost never leave, so shipping it means changing what drops, and changing what
-drops means re-measuring the game. Adding the rest is authoring on rails that
-now exist.
+These two went first because they need nothing new. 7-A needs hidden clauses,
+44 needs provenance, and 3-B needs vacant slots — which today's rolls almost
+never leave, so shipping it means changing what drops, and changing what drops
+means re-measuring the game.
+
+They are also deliberately opposite, which is the argument for building 19
+second rather than a third variation on a reroll. **12-C is a gamble**: cheap
+enough to repeat, may come back worse, may be dismissed outright, priced in the
+scarce currency. **19 is a certainty**: it does exactly what it says, cannot
+fail, asks for no standing at all, and costs an entire case file. A catalogue
+where every entry is a dice roll with a different name is a catalogue with one
+form in it.
 
 Gear crafting is the most-praised system in our closest competitor and the
 biggest structural gap in our design. This is the version of it that is
@@ -69,7 +76,7 @@ Grade II · Provenance: Disputed
 | **7-A — Appraisal** | Reveals hidden clauses on an item | Small gold fee | Minutes |
 | **3-B — Amendment** | Adds a clause to a vacant slot | Gold + Union Standing | ~1 hour |
 | **12-C — Arbitration** ✅ | Rerolls one contested clause | Gold + Union Standing | ~2 hours |
-| **19 — Requisition** | Merges two items; the survivor inherits one clause, the other is *filed* | Gold, both items | ~4 hours |
+| **19 — Requisition** ✅ | Merges two items; the survivor inherits one clause, the other is *filed* | Gold, both items | ~4 hours |
 | **N-1 — Notarisation** | Locks a clause so future arbitration cannot alter it | Expensive | ~1 hour |
 | **44 — Provenance Settlement** | Resolves Disputed → Clear, protecting it from audit, at the cost of one clause | Gold | ~6 hours |
 
@@ -97,6 +104,26 @@ version:
 3. **A form whose clause has moved does not rule on whatever is at that index
    now.** It says so and retains the fee. Quietly rerolling a different clause
    than the one contested is the worst behaviour available here.
+
+**Form 19, as shipped**, is 60 gold per grade of the *surviving* file, four
+hours, no standing, and cannot be dismissed. The donor is consumed at filing
+rather than at resolution — not for the wagering reason 12-C's fee is taken
+early, but because a donor that survived the four hours could be requisitioned
+into two files at once and yield two clauses for one file.
+
+The transferred clause obeys the two rules a roll obeys: never a duplicate on
+the receiving file, never above the grade that can carry it. Both are checked
+at filing *and* again at resolution, because four hours happen in between. A
+transfer that ignored them would make Form 19 the way to build a file no drop
+could ever produce, which is the failure mode that ends crafting systems.
+
+In the ARMOURY it is a **carry**, not a wizard. Form 19 needs four choices —
+which file survives, which is consumed, which clause crosses, which slot it
+lands in — and four pickers on a phone is how a system nobody uses gets built.
+Tap TRANSFER on the clause you want and every slot that could legally receive
+it turns into a target; the donor dims, because the officer is about to destroy
+it and should be looking at it. Two taps, and the illegal combinations are
+never offered rather than refused after the fact.
 
 ## Currencies
 

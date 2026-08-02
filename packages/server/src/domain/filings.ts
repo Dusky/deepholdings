@@ -14,6 +14,11 @@ import {
 /**
  * Resolving a filed form.
  *
+ * Two forms, dispatched by `concludeFiling`. They share the rails — the queue,
+ * the resolution tick, the seed — and nothing else: 12-C is a gamble that can
+ * come back worse or not at all, and 19 is a certainty bought with a whole
+ * case file.
+ *
  * ## Seeding
  *
  * Not on `(character, tick)` like everything else in the resolver, but on the
@@ -49,12 +54,19 @@ function candidates(file: CaseFile, replacing: Clause): Clause[] {
   );
 }
 
-export interface ArbitrationOutcome {
-  /** The file after the ruling. The same object when nothing changed. */
-  file: CaseFile;
+export interface FilingOutcome {
+  /** The drawer after the ruling. */
+  files: CaseFile[];
   /** What the Terminal says happened. */
   text: string;
   changed: boolean;
+}
+
+/** Dispatch. Every form resolves through here, in the tick loop. */
+export function concludeFiling(filing: Filing, files: readonly CaseFile[]): FilingOutcome {
+  return filing.form === '19'
+    ? concludeRequisition(filing, files)
+    : concludeArbitration(filing, files);
 }
 
 /**
@@ -71,21 +83,17 @@ export interface ArbitrationOutcome {
  *    possible behaviour here.
  *  - **Amended.** The clause is replaced from the eligible pool.
  */
-export function concludeArbitration(
-  filing: Filing,
-  files: readonly CaseFile[],
-): ArbitrationOutcome & { files: CaseFile[] } {
+export function concludeArbitration(filing: Filing, files: readonly CaseFile[]): FilingOutcome {
   const spec = formSpec(filing.form);
   const index = files.findIndex((f) => f.id === filing.caseFileId);
   const file = index === -1 ? null : files[index];
   const was = clauseById(filing.wasClauseId);
 
-  const unchanged = (text: string) => ({ files: [...files], file: file!, text, changed: false });
+  const unchanged = (text: string) => ({ files: [...files], text, changed: false });
 
   if (!spec || !file || !was) {
     return {
       files: [...files],
-      file: file as CaseFile,
       changed: false,
       text: `Arbitration on case ${filing.caseFileId} concluded. The file was not produced. No ruling was recorded.`,
     };
@@ -121,8 +129,66 @@ export function concludeArbitration(
 
   return {
     files: next,
-    file: amended,
     changed: true,
     text: `Arbitration concluded on case ${file.id}. Clause amended: "${was.text}" → "${now.text}".`,
+  };
+}
+
+/**
+ * Form 19, concluded.
+ *
+ * No dice at all — the outcome was decided when the officer filed it, and the
+ * donor file was taken then too. That asymmetry with 12-C is the design: a
+ * form that costs an entire case file must not also be able to waste it.
+ *
+ * The only ways this does nothing are the ways every filing can do nothing:
+ * the surviving file left the drawer, or the slot it named no longer holds
+ * what it held. Both say so. The donor is not coming back either way, which
+ * the line is careful to state rather than leaving the officer to work out
+ * from a drawer that is one file lighter.
+ */
+export function concludeRequisition(filing: Filing, files: readonly CaseFile[]): FilingOutcome {
+  const index = files.findIndex((f) => f.id === filing.caseFileId);
+  const file = index === -1 ? null : files[index];
+  const brings = filing.bringsClauseId ? clauseById(filing.bringsClauseId) : undefined;
+  const was = clauseById(filing.wasClauseId);
+  const donor = filing.donorName ?? 'the requisitioned file';
+
+  if (!file || !brings || !was) {
+    return {
+      files: [...files],
+      changed: false,
+      text: `Requisition on case ${filing.caseFileId} concluded. The surviving file was not produced. ${donor} is not recoverable.`,
+    };
+  }
+
+  if (file.clauseIds[filing.clauseIndex] !== filing.wasClauseId) {
+    return {
+      files: [...files],
+      changed: false,
+      text: `Requisition on case ${file.id} concluded. "${was.text}" was no longer in that slot, and the transfer was refused. ${donor} is not recoverable.`,
+    };
+  }
+
+  // A clause cannot appear twice on one file. Checked at filing, and again
+  // here because two hours of resolution can happen in between.
+  if (file.clauseIds.some((id, at) => id === brings.id && at !== filing.clauseIndex)) {
+    return {
+      files: [...files],
+      changed: false,
+      text: `Requisition on case ${file.id} concluded. "${brings.text}" is already endorsed on it, and cannot be endorsed twice. ${donor} is not recoverable.`,
+    };
+  }
+
+  const clauseIds = [...file.clauseIds];
+  clauseIds[filing.clauseIndex] = brings.id;
+  const merged: CaseFile = { ...file, clauseIds };
+  const next = [...files];
+  next[index] = merged;
+
+  return {
+    files: next,
+    changed: true,
+    text: `Requisition concluded on case ${file.id}. "${brings.text}" transferred from ${donor}; "${was.text}" struck out.`,
   };
 }

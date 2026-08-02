@@ -24,6 +24,8 @@ import {
   type BulletinResponse,
   type Character,
   type ClaimPensionResponse,
+  type CaseFile,
+  type Clause,
   type DeathRecord,
   type FileFormRequest,
   type FileFormResponse,
@@ -394,6 +396,7 @@ function pendingFilings(record: CharacterRecord, now: Date): PendingFiling[] {
     form: filing.form,
     caseFileId: filing.caseFileId,
     clauseIndex: filing.clauseIndex,
+    bringsClauseId: filing.bringsClauseId,
     secondsRemaining: Math.max(
       0,
       Math.round((filing.resolvesTick * TICK_SECS * 1000 - now.getTime()) / 1000),
@@ -402,13 +405,19 @@ function pendingFilings(record: CharacterRecord, now: Date): PendingFiling[] {
 }
 
 /**
- * Form 12-C, filed.
+ * Filing a form.
  *
- * The fee is taken here and never returned. That is the design's risk made
+ * Everything the form costs is taken here and never returned — the fee for
+ * 12-C, and for 19 the entire donor case file. That is the design's risk made
  * literal: "Case dismissed. Fee retained." only means anything if the fee left
  * the account when the form went in, rather than being refunded on a bad
- * ruling — a wager settled in the player's favour when they lose is not a
+ * ruling. A wager settled in the player's favour when they lose is not a
  * wager.
+ *
+ * Form 19 cannot be dismissed, so nothing is lost to chance there — but the
+ * donor still goes at filing rather than at resolution, for a different
+ * reason: if it survived the four hours, the same file could be requisitioned
+ * into two others at once and the officer would get two clauses for one file.
  */
 export async function fileForm(
   repo: Repository,
@@ -436,14 +445,44 @@ export async function fileForm(
     const wasClauseId = file.clauseIds[request.clauseIndex];
     if (!wasClauseId) throw new ServiceError('invalid_request', 'no clause at that index');
 
-    // One form per clause. Two arbitrations racing the same clause would see
-    // the second resolve against a clause the first had already replaced, and
-    // the honest outcome there is a refusal rather than a wasted fee.
+    // One form per clause. Two forms racing the same slot would see the second
+    // resolve against a clause the first had already replaced, and the honest
+    // outcome there is a refusal rather than a wasted fee.
     const contested = (record.filings ?? []).some(
       (filing) =>
         filing.caseFileId === file.id && filing.clauseIndex === request.clauseIndex,
     );
     if (contested) throw new ServiceError('invalid_request', 'that clause is already before the panel');
+
+    let donor: CaseFile | undefined;
+    let brings: Clause | undefined;
+    if (spec.id === '19') {
+      donor = record.caseFiles.find((candidate) => candidate.id === request.donorCaseFileId);
+      if (!donor) throw new ServiceError('not_found', 'no such case file to requisition');
+      if (donor.id === file.id) {
+        throw new ServiceError('invalid_request', 'a file cannot be requisitioned into itself');
+      }
+      brings = clauseById(donor.clauseIds[Number(request.donorClauseIndex)]);
+      if (!brings) throw new ServiceError('invalid_request', 'no clause at that index on the donor');
+
+      // A clause may not appear twice on one file, and may not sit above the
+      // grade of the file carrying it — the same two rules a roll obeys. A
+      // transfer that ignored them would make Form 19 the way to build a file
+      // no drop could ever produce.
+      if (file.clauseIds.some((id, at) => id === brings!.id && at !== request.clauseIndex)) {
+        throw new ServiceError('invalid_request', 'that clause is already on the surviving file');
+      }
+      if (brings.minGrade > file.grade) {
+        throw new ServiceError('invalid_request', 'the surviving file is not of a grade to carry it');
+      }
+      // The donor is about to be destroyed, so any form still processing
+      // against it would resolve against nothing. Refuse rather than quietly
+      // stranding a fee the officer already paid.
+      const donorBusy = (record.filings ?? []).some((filing) => filing.caseFileId === donor!.id);
+      if (donorBusy) {
+        throw new ServiceError('invalid_request', 'that file is already before the panel');
+      }
+    }
 
     const gold = formGoldCost(spec, file.grade);
     if (record.character.gold < gold) throw new ServiceError('insufficient_gold', 'not enough gold');
@@ -460,6 +499,7 @@ export async function fileForm(
       filedTick,
       resolvesTick: filedTick + spec.ticks,
       wasClauseId,
+      ...(brings ? { bringsClauseId: brings.id, donorName: `case ${donor!.id}` } : {}),
     };
 
     const character: Character = {
@@ -468,16 +508,23 @@ export async function fileForm(
       standing: record.character.standing - spec.standing,
     };
     const filings = [...(record.filings ?? []), filing];
-    await tx.saveCharacter({ ...record, character, filings });
+    const caseFiles = donor
+      ? record.caseFiles.filter((candidate) => candidate.id !== donor!.id)
+      : record.caseFiles;
+    await tx.saveCharacter({ ...record, character, caseFiles, filings });
 
     const clause = clauseById(wasClauseId);
+    const hours = Math.round(spec.ticks / 60);
     await tx.appendJournal([
       entry_(
         character,
-        `Form ${spec.id} filed against case ${file.id}, contesting "${clause?.text ?? wasClauseId}". ` +
-          `Fee ${gold} gold, Union Standing ${spec.standing}. Estimated processing: ${
-            Math.round(spec.ticks / 60)
-          } hours.`,
+        spec.id === '19'
+          ? `Form 19 filed. Case ${donor!.id} requisitioned into case ${file.id}: ` +
+            `"${brings!.text}" to replace "${clause?.text ?? wasClauseId}". ` +
+            `Fee ${gold} gold. ${donor!.name} has been struck from the register. ` +
+            `Estimated processing: ${hours} hours.`
+          : `Form ${spec.id} filed against case ${file.id}, contesting "${clause?.text ?? wasClauseId}". ` +
+            `Fee ${gold} gold, Union Standing ${spec.standing}. Estimated processing: ${hours} hours.`,
       ),
     ]);
 
@@ -487,6 +534,7 @@ export async function fileForm(
         form: filing.form,
         caseFileId: filing.caseFileId,
         clauseIndex: filing.clauseIndex,
+        bringsClauseId: filing.bringsClauseId,
         secondsRemaining: spec.ticks * TICK_SECS,
       },
       goldCharged: gold,

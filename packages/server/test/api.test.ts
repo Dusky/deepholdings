@@ -856,6 +856,113 @@ for (const adapter of adapters) {
       assert.equal(refused.statusCode, 404);
     });
 
+    test('Form 19 consumes the donor at filing and transfers on resolution', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.caseFiles = [
+        {
+          id: '#7000-A', name: 'Shield, Dented', category: 'gear', grade: 4,
+          unitValue: 120, clauseIds: ['e-certified', 'r-contested'],
+        },
+        {
+          id: '#7001-B', name: 'Amulet, Provenance Unknown', category: 'relics', grade: 4,
+          unitValue: 300, clauseIds: ['e-commissioned', 'r-cursed'],
+        },
+      ];
+      record.filings = [];
+      record.character.gold = 9000;
+      record.character.standing = 12;
+      await repo.saveCharacter(record);
+
+      const filed = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: {
+          form: '19', caseFileId: '#7000-A', clauseIndex: 1,
+          donorCaseFileId: '#7001-B', donorClauseIndex: 0,
+        },
+      });
+      assert.equal(filed.statusCode, 200);
+      // No standing at all: the cost is the file.
+      assert.equal(filed.json().standingCharged, 0);
+
+      const after = (await app.inject({ method: 'GET', url: '/v1/state', headers: auth() }))
+        .json() as StateResponse;
+      assert.equal(after.character.standing, 12, 'a requisition must not touch standing');
+      assert.equal(after.caseFiles.length, 1, 'the donor should be gone at filing, not at ruling');
+      assert.equal(after.caseFiles[0].id, '#7000-A');
+      assert.equal(after.filings[0].bringsClauseId, 'e-commissioned');
+    });
+
+    test('a requisition is refused when the clause is already on the survivor', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.caseFiles = [
+        {
+          id: '#8000-A', name: 'Shield, Dented', category: 'gear', grade: 4,
+          unitValue: 120, clauseIds: ['e-certified', 'r-cursed'],
+        },
+        {
+          id: '#8001-B', name: 'Amulet, Provenance Unknown', category: 'relics', grade: 4,
+          unitValue: 300, clauseIds: ['r-cursed', 'e-hazard'],
+        },
+      ];
+      record.filings = [];
+      record.character.gold = 9000;
+      await repo.saveCharacter(record);
+
+      const dup = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: {
+          form: '19', caseFileId: '#8000-A', clauseIndex: 0,
+          donorCaseFileId: '#8001-B', donorClauseIndex: 0,
+        },
+      });
+      assert.equal(dup.statusCode, 400);
+      assert.match(dup.json().error.message, /already on the surviving file/);
+
+      // And the donor is still there — a refused form costs nothing.
+      const after = (await app.inject({ method: 'GET', url: '/v1/state', headers: auth() }))
+        .json() as StateResponse;
+      assert.equal(after.caseFiles.length, 2);
+    });
+
+    test('a clause may not be transferred above the grade that can carry it', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.caseFiles = [
+        {
+          id: '#9000-A', name: 'Boots, Serviceable', category: 'gear', grade: 1,
+          unitValue: 40, clauseIds: ['e-certified'],
+        },
+        {
+          id: '#9001-B', name: 'Amulet, Provenance Unknown', category: 'relics', grade: 4,
+          unitValue: 300, clauseIds: ['e-founder'],
+        },
+      ];
+      record.filings = [];
+      record.character.gold = 9000;
+      await repo.saveCharacter(record);
+
+      const overGrade = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: {
+          form: '19', caseFileId: '#9000-A', clauseIndex: 0,
+          donorCaseFileId: '#9001-B', donorClauseIndex: 0,
+        },
+      });
+      assert.equal(overGrade.statusCode, 400);
+      assert.match(overGrade.json().error.message, /not of a grade to carry it/);
+    });
+
   });
 }
 

@@ -42,7 +42,7 @@ import {
   type StandingOrders,
   type UnlockId,
 } from '@deepholdings/shared';
-import { concludeArbitration } from './arbitration.js';
+import { concludeFiling } from './filings.js';
 import { file as fileCaseFile, rollCaseFile, rollsCaseFile } from './caseFiles.js';
 import { applyLevelUps, permitLimit } from './character.js';
 import {
@@ -337,7 +337,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     while (nextFiling < filings.length && filings[nextFiling].resolvesTick <= tick) {
       const filing = filings[nextFiling];
       nextFiling += 1;
-      const outcome = concludeArbitration(filing, caseFiles);
+      const outcome = concludeFiling(filing, caseFiles);
       caseFiles = outcome.files;
       if (outcome.changed) {
         stats = carried();

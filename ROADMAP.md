@@ -64,7 +64,7 @@ The things every decision gets checked against.
 | M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | | yes |
 | M4 — It has direction | | yes |
-| M5 — It has depth (crafting) | Items, clauses and Form 12-C shipped | *candidate cut* |
+| M5 — It has depth (crafting) | Items, clauses, Forms 12-C and 19 | *candidate cut* |
 | M6 — An inhabited world | | *candidate cut* |
 | M7 — Able to take money | | yes |
 | M8 — Store-ready | | yes |
@@ -411,8 +411,14 @@ Being taken in the staged order the last item asks for. Half of it is in.
       the filing so a replayed span cannot change the ruling. The case can be
       dismissed and the fee retained, which is the risk the whole form exists
       to carry.
-- [ ] **The rest of the form catalogue** — 7-A, 3-B, 19, N-1 and 44. Each
-      needs something that does not exist yet (hidden clauses, vacant slots,
+- [x] **Form 19 — Requisition.** Carries one clause from one file onto another
+      and strikes the first from the register. Four hours, no standing, cannot
+      be dismissed — deliberately the opposite of 12-C, because a catalogue
+      where every entry is a dice roll with a different name is a catalogue
+      with one form in it. In the drawer it is a two-tap carry, and illegal
+      destinations are never offered rather than refused afterwards.
+- [ ] **The rest of the form catalogue** — 7-A, 3-B, N-1 and 44. Each needs
+      something that does not exist yet (hidden clauses, vacant slots,
       provenance), and each of those changes what drops, which means
       re-measuring. Authoring on rails that now exist.
 - [ ] **~40 clauses.** Our competitor has 100+ after years. A shallow pool
@@ -422,8 +428,9 @@ Being taken in the staged order the last item asks for. Half of it is in.
 - [ ] **Provenance and Union Standing**, which the forms spend.
 
 **Exit:** a player can show you an item they built and explain why it is theirs.
-**Partly met** — a player can now say "I contested that clause twice and this
-is what came back". They cannot yet add one, merge two files, or lock a roll.
+**Substantially met** — a player can now say "I contested that clause twice,
+then fed a Grade IV relic into it to keep the one endorsement I wanted". They
+cannot yet fill a vacant slot, lock a roll, or settle a provenance.
 
 ---
 

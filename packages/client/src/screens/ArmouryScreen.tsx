@@ -55,26 +55,69 @@ function wait(seconds: number): string {
   return `${Math.round(minutes / 60)} hours`;
 }
 
+/**
+ * The clause an officer has picked up but not yet placed.
+ *
+ * Form 19 needs four choices — which file survives, which is consumed, which
+ * of its clauses crosses, and which slot it lands in — and asking for four
+ * taps through four pickers on a phone is how a system nobody uses gets built.
+ *
+ * So it is a carry: tap TRANSFER on the clause you want, and every slot that
+ * could legally receive it turns into a target. Two taps, and the illegal
+ * combinations are never offered rather than being refused after the fact.
+ */
+interface Carried {
+  donor: CaseFile;
+  clause: Clause;
+  clauseIndex: number;
+}
+
 interface CaseFileEntryProps {
   file: CaseFile;
   filings: readonly PendingFiling[];
   gold: number;
   standing: number;
   busy: boolean;
+  /** Null unless a transfer is in progress. */
+  carrying: Carried | null;
+  canTransfer: boolean;
   onContest: (file: CaseFile, clauseIndex: number) => void;
+  onCarry: (carried: Carried) => void;
+  onPlace: (survivor: CaseFile, clauseIndex: number) => void;
 }
 
-function CaseFileEntry({ file, filings, gold, standing, busy, onContest }: CaseFileEntryProps) {
+function CaseFileEntry({
+  file, filings, gold, standing, busy, carrying, canTransfer, onContest, onCarry, onPlace,
+}: CaseFileEntryProps) {
   const clauses = file.clauseIds.map(clauseById).filter((c): c is Clause => Boolean(c));
   // Grade buys slots; a file may carry fewer clauses than its grade allows.
   // Showing the gap is the whole argument for Form 3-B when it lands.
   const vacant = Math.max(0, clauseSlots(file.grade) - clauses.length);
   const spec = formSpec('12-C')!;
+  const merge = formSpec('19')!;
   const fee = formGoldCost(spec, file.grade);
+  const mergeFee = formGoldCost(merge, file.grade);
   const affordable = gold >= fee && standing >= spec.standing;
+  // A file with anything before the panel cannot be given up: Form 19 destroys
+  // the donor at filing, and a form resolving against a file that no longer
+  // exists is a fee already paid for nothing. This is the *only* restriction
+  // the drawer adds beyond the server's, and it mirrors one the server also
+  // enforces — an earlier version disabled CONTEST on the same condition too,
+  // which was tighter than the rules for no reason a player could see.
+  const busyFile = filings.some((filing) => filing.caseFileId === file.id);
+
+  /** Whether this file's slot could legally receive what is being carried. */
+  const receives = (index: number) =>
+    carrying !== null &&
+    carrying.donor.id !== file.id &&
+    // The same two rules a roll obeys: no duplicates, nothing above the grade
+    // of the file carrying it.
+    carrying.clause.minGrade <= file.grade &&
+    !file.clauseIds.some((id, at) => id === carrying.clause.id && at !== index) &&
+    gold >= mergeFee;
 
   return (
-    <div className={styles.file}>
+    <div className={styles.file} data-donor={carrying?.donor.id === file.id}>
       <div className={styles.fileHead}>
         <span className="text-bright">{file.name}</span>
         <span className="text-dim">{file.id}</span>
@@ -93,21 +136,46 @@ function CaseFileEntry({ file, filings, gold, standing, busy, onContest }: CaseF
             <span className={styles.clauseEffect}>{effectsOf(clause).join(', ')}</span>
             {processing ? (
               <span className={`text-dim ${styles.contestState}`}>
-                Form 12-C before the panel — {wait(processing.secondsRemaining)}
+                Form {processing.form} before the panel — {wait(processing.secondsRemaining)}
               </span>
+            ) : carrying ? (
+              receives(index) ? (
+                <button
+                  type="button"
+                  className={`${styles.contest} ${styles.place}`}
+                  disabled={busy}
+                  onClick={() => onPlace(file, index)}
+                  title={`Form 19 — ${mergeFee} gold, and case ${carrying.donor.id} is consumed`}
+                >
+                  REPLACE THIS — {mergeFee}g
+                </button>
+              ) : null
             ) : (
-              // Disabled rather than hidden when it cannot be afforded: the
-              // price is the decision, and a control that vanishes teaches
-              // nothing about why.
-              <button
-                type="button"
-                className={styles.contest}
-                disabled={busy || !affordable}
-                onClick={() => onContest(file, index)}
-                title={`Form 12-C — ${fee} gold and ${spec.standing} Union Standing`}
-              >
-                CONTEST — {fee}g, {spec.standing} standing
-              </button>
+              <span className={styles.actions}>
+                {/* Disabled rather than hidden when it cannot be afforded: the
+                    price is the decision, and a control that vanishes teaches
+                    nothing about why. */}
+                <button
+                  type="button"
+                  className={styles.contest}
+                  disabled={busy || !affordable}
+                  onClick={() => onContest(file, index)}
+                  title={`Form 12-C — ${fee} gold and ${spec.standing} Union Standing`}
+                >
+                  CONTEST — {fee}g, {spec.standing} standing
+                </button>
+                {canTransfer && (
+                  <button
+                    type="button"
+                    className={styles.contest}
+                    disabled={busy || busyFile}
+                    onClick={() => onCarry({ donor: file, clause, clauseIndex: index })}
+                    title="Form 19 — carry this clause onto another file, consuming this one"
+                  >
+                    TRANSFER
+                  </button>
+                )}
+              </span>
             )}
           </div>
         );
@@ -125,6 +193,8 @@ export function ArmouryScreen() {
   const { state, refresh } = useServer();
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const [carrying, setCarrying] = useState<Carried | null>(null);
 
   const contest = useCallback(
     async (file: CaseFile, clauseIndex: number) => {
@@ -145,6 +215,35 @@ export function ArmouryScreen() {
       }
     },
     [refresh],
+  );
+
+  const place = useCallback(
+    async (survivor: CaseFile, clauseIndex: number) => {
+      if (!carrying) return;
+      setBusy(true);
+      setNotice(null);
+      try {
+        const result = await api.fileForm({
+          form: '19',
+          caseFileId: survivor.id,
+          clauseIndex,
+          donorCaseFileId: carrying.donor.id,
+          donorClauseIndex: carrying.clauseIndex,
+        });
+        setNotice(
+          `Form 19 filed. Case ${carrying.donor.id} struck from the register; ` +
+            `"${carrying.clause.text}" crosses to case ${survivor.id} in ` +
+            `${wait(result.filing.secondsRemaining)}.`,
+        );
+        setCarrying(null);
+        await refresh();
+      } catch {
+        setNotice('The clerk declined the requisition. Both files are where they were.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [carrying, refresh],
   );
 
   if (!state) return null;
@@ -220,6 +319,16 @@ export function ArmouryScreen() {
                 {state.character.gold}g · {state.character.standing} Union Standing
               </span>
             </div>
+            {carrying && (
+              <div className={`text-dim ${styles.carrying}`}>
+                Carrying <span className="text-bright">&ldquo;{carrying.clause.text}&rdquo;</span>{' '}
+                from case {carrying.donor.id}. Choose the clause it replaces — that
+                file is consumed.{' '}
+                <button type="button" className={styles.contest} onClick={() => setCarrying(null)}>
+                  CANCEL
+                </button>
+              </div>
+            )}
             {files.map((file) => (
               <CaseFileEntry
                 key={file.id}
@@ -228,7 +337,11 @@ export function ArmouryScreen() {
                 gold={state.character.gold}
                 standing={state.character.standing}
                 busy={busy}
+                carrying={carrying}
+                canTransfer={files.length > 1}
                 onContest={contest}
+                onCarry={setCarrying}
+                onPlace={place}
               />
             ))}
             {notice && <div className={`text-dim ${styles.hint}`}>{notice}</div>}
@@ -302,21 +415,27 @@ export function ArmouryScreen() {
           </>
         )}
 
-        <div className={`text-head ${columns.headLater}`}>ARBITRATION</div>
+        <div className={`text-head ${columns.headLater}`}>FORMS</div>
         <div className={`text-dim ${styles.hint}`}>
-          <span className="text-body">Form 12-C</span> contests one clause. The
-          panel sits two hours later and rules: the clause is replaced, or the
-          case is dismissed and the fee retained. The replacement is drawn from
-          what a file of that grade may carry, so it may be worse than what it
-          replaced. Contesting is a decision, not an upgrade.
+          <span className="text-body">12-C, Arbitration.</span> Contests one
+          clause. The panel sits two hours later and rules: the clause is
+          replaced, or the case is dismissed and the fee retained. The
+          replacement is drawn from what a file of that grade may carry, so it
+          may be worse than what it replaced. A wager, not an upgrade.
         </div>
         <div className={`text-dim ${styles.hint}`}>
-          Fees are paid in gold and Union Standing. Standing is earned at a
-          grade review and is not inherited — a successor starts at nothing,
-          however senior the officer.
+          <span className="text-body">19, Requisition.</span> Carries one clause
+          from one file onto another and strikes the first from the register.
+          Four hours, and it cannot be dismissed — the cost is the file, and a
+          form that expensive does not also gamble.
         </div>
         <div className={`text-dim ${styles.hint}`}>
-          Forms 3-B, 19, N-1 and 44 — amendment, merger, notarisation and
+          Union Standing is earned at a grade review and is not inherited — a
+          successor starts at nothing, however senior the officer. Form 19 asks
+          for none of it.
+        </div>
+        <div className={`text-dim ${styles.hint}`}>
+          Forms 7-A, 3-B, N-1 and 44 — appraisal, amendment, notarisation and
           provenance settlement — are not yet released to your desk.
         </div>
       </div>

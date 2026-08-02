@@ -248,6 +248,9 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
       form: body.form,
       caseFileId: body.caseFileId,
       clauseIndex: Number(body.clauseIndex),
+      donorCaseFileId: body.donorCaseFileId,
+      donorClauseIndex:
+        body.donorClauseIndex === undefined ? undefined : Number(body.donorClauseIndex),
     });
   });
 

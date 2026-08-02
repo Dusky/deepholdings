@@ -986,3 +986,49 @@ variance. The ninety-day curve is likewise unchanged: last new thing day 39.5,
 So this is not a re-balance. It is the early game finally matching what the
 document said it was, and it was found by writing a screen that had to explain
 itself to a player.
+
+## Pricing a form: the currency that binds is not the one you expect
+
+Form 12-C costs gold and Union Standing. Both numbers were guesses, so both
+were measured — 24 careers × 14 days, sampling every moment a case file was
+actually in the drawer, because that is the only moment the price matters.
+
+```
+5,218 moments with a case file in hand
+
+gold on hand      p10   153   median  1,054   p90  6,546
+gold + cabinet    p10 3,477   median 11,916   p90 38,099
+union standing    p10     0   median      2   p90      7
+
+fee at the best grade held: median 360
+affordable on gold alone:    84.1%
+affordable after selling up: 100%
+has the standing:            45.3%
+could file right now:        38.6%
+```
+
+**Gold was fine and standing was the wall**, which is the opposite of the
+guess. The reason is worth keeping because it is a whole class of mistake: the
+rate was set at one standing per grade on the reasoning that a career ends
+around Grade 13, so a career banks about twelve, so an arbitration costing
+three buys four contested clauses in a working life.
+
+That ignored succession. A successor inherits most of the predecessor's grade —
+`inheritedLevel` exists precisely to do that — so a career does not climb from
+1 to 13. It climbs from about 10 to 13, banks three, and cannot afford a single
+form. The arithmetic was right about a game where every recruit starts at Grade
+1, and that game stopped existing when death stopped being a wipe.
+
+At two per grade the same probe reads: standing median 4, **61.9%** of moments
+have enough, **53.7%** could file immediately. About half the time the control
+is live; the rest of the time the officer sells the cabinet or waits for a
+promotion. That is the shape wanted — a scarcity that produces a decision about
+*which* clause, rather than a button that is dark often enough to read as
+broken.
+
+The gold half is left alone deliberately. A live recruit holds little loose
+gold — the median is a thousand against a Grade IV fee of 360, and the p10 is
+153 — because gold is constantly spent on resupply. Paying for arbitration
+therefore usually means realising the cabinet first, which gives the Ledger a
+reason to exist on the way to the Armoury. Loot funds the paperwork. That is a
+better loop than a fee small enough to ignore.

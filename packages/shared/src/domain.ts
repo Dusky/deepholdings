@@ -91,6 +91,15 @@ export interface Character {
   permitTier: number;
   gold: number;
   supplies: number;
+  /**
+   * Union Standing. Earned at a grade review, spent filing forms.
+   *
+   * The log copy has been awarding this since the prototype — *"Union Standing
+   * +1 for prompt filing"* — against no number at all. This is the number.
+   * Per-recruit, like the case files the forms operate on: a successor
+   * inherits the office, not the reputation.
+   */
+  standing: number;
   alive: boolean;
   /** Resolution watermark — everything before this is already journalled. */
   lastResolvedTick: number;

@@ -33,13 +33,16 @@ import {
   caseFileTitle,
   clauseLine,
   statsOf,
+  STANDING_PER_GRADE,
   type CaseFile,
   type Character,
+  type Filing,
   type InventoryItem,
   type LootPriority,
   type StandingOrders,
   type UnlockId,
 } from '@deepholdings/shared';
+import { concludeArbitration } from './arbitration.js';
 import { file as fileCaseFile, rollCaseFile, rollsCaseFile } from './caseFiles.js';
 import { applyLevelUps, permitLimit } from './character.js';
 import {
@@ -85,6 +88,8 @@ export interface ResolveCounters {
   stalledTicks: number;
   /** Case files opened in this span. */
   caseFilesFound: number;
+  /** Forms that concluded in this span, ruled either way. */
+  filingsConcluded: number;
 }
 
 export interface ResolveResult {
@@ -92,6 +97,8 @@ export interface ResolveResult {
   inventory: InventoryItem[];
   /** Case files the recruit is carrying, after this span. */
   caseFiles: CaseFile[];
+  /** Forms still processing, after this span. */
+  filings: Filing[];
   counters: ResolveCounters;
   journal: PendingJournalEntry[];
   death: DeathOutcome | null;
@@ -107,6 +114,8 @@ export interface ResolveOptions {
   inventory: InventoryItem[];
   /** Case files carried in. Their clauses feed the stat block below. */
   caseFiles?: readonly CaseFile[];
+  /** Forms filed and not yet due. Resolved in the loop, at their tick. */
+  filings?: readonly Filing[];
   orders: StandingOrders;
   unlocks: readonly UnlockId[];
   /** Absolute tick index for "now". */
@@ -230,6 +239,19 @@ export function resolve(options: ResolveOptions): ResolveResult {
   let stats = carried();
 
   /**
+   * Forms in processing, soonest first.
+   *
+   * Sorted once and walked with a pointer rather than filtered every tick: the
+   * list is tiny, but this loop runs up to MAX_CATCHUP_TICKS times per read
+   * and a per-tick scan over a list that is almost always empty is exactly the
+   * kind of cost that is invisible until a month-long catch-up.
+   */
+  let filings: Filing[] = [...(options.filings ?? [])]
+    .map((f) => ({ ...f }))
+    .sort((a, b) => a.resolvesTick - b.resolvesTick || a.id.localeCompare(b.id));
+  let nextFiling = 0;
+
+  /**
    * Keeps `maxHp` equal to level plus carried vigour, and hp inside it.
    *
    * `maxHp` is nine different reads in the loop below — the retreat threshold,
@@ -260,11 +282,13 @@ export function resolve(options: ResolveOptions): ResolveResult {
     permitsApproved: 0,
     stalledTicks: 0,
     caseFilesFound: 0,
+    filingsConcluded: 0,
   };
   const finish = (): ResolveResult => {
     counters.goldAfter = character.gold;
     return {
-      character, inventory, caseFiles, counters, journal, death, permitAppliedTick, ticksResolved,
+      character, inventory, caseFiles, filings, counters, journal, death, permitAppliedTick,
+      ticksResolved,
     };
   };
 
@@ -300,6 +324,32 @@ export function resolve(options: ResolveOptions): ResolveResult {
     // extra value and re-rolled that tick's combat — the balance table shifted
     // by a third the first time the journal copy was expanded.
     const prose = makeRng(tickSeed(character.id, tick, 'prose'));
+
+    /**
+     * Forms due this minute, ruled before anything else happens in it.
+     *
+     * Before, because an amended clause changes the stat block, and a recruit
+     * who is fighting at this tick should fight with the ruling that has
+     * already been handed down. The alternative — resolve the encounter, then
+     * apply the paperwork — means the Terminal shows a clause taking effect
+     * one minute after the log says it was granted.
+     */
+    while (nextFiling < filings.length && filings[nextFiling].resolvesTick <= tick) {
+      const filing = filings[nextFiling];
+      nextFiling += 1;
+      const outcome = concludeArbitration(filing, caseFiles);
+      caseFiles = outcome.files;
+      if (outcome.changed) {
+        stats = carried();
+        syncVitals();
+      }
+      counters.filingsConcluded += 1;
+      log(tick, outcome.text);
+    }
+    if (nextFiling > 0) {
+      filings = filings.slice(nextFiling);
+      nextFiling = 0;
+    }
 
     if (stipendPerTick > 0) character.gold += stipendPerTick;
 
@@ -534,7 +584,12 @@ export function resolve(options: ResolveOptions): ResolveResult {
       }
       counters.levelsGained += levels;
       if (levels > 0) {
-        log(tick, `Grade review passed. Now Grade ${character.level}. Union Standing +${levels}.`);
+        // The copy said "Union Standing +1" for months against no number at
+        // all. It is a currency now, and the line is unchanged — the mechanic
+        // was made to match the writing rather than the other way round.
+        const earned = levels * STANDING_PER_GRADE;
+        character.standing += earned;
+        log(tick, `Grade review passed. Now Grade ${character.level}. Union Standing +${earned}.`);
       }
     } else if (rngChance(rng, 0.04)) {
       character.gold += rngInt(rng, 1, 4 + character.depth);

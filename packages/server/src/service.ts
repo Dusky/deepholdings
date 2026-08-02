@@ -9,6 +9,9 @@ import {
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
   clampRetreatPct,
+  clauseById,
+  formGoldCost,
+  formSpec,
   UNLOCK_CATALOGUE,
   JOURNAL_PAGE_SIZE,
   journalLines,
@@ -22,6 +25,9 @@ import {
   type Character,
   type ClaimPensionResponse,
   type DeathRecord,
+  type FileFormRequest,
+  type FileFormResponse,
+  type Filing,
   type AdvanceTimeResponse,
   type InventoryItem,
   type JournalEntry,
@@ -32,6 +38,7 @@ import {
   type LedgerStack,
   type LootPriority,
   type Office,
+  type PendingFiling,
   type PurchaseRequisitionResponse,
   type RequisitionId,
   type StandingOrders,
@@ -64,6 +71,7 @@ export class ServiceError extends Error {
       | 'invalid_request'
       | 'insufficient_pension'
       | 'insufficient_gold'
+      | 'insufficient_standing'
       | 'not_authorised'
       | 'already_owned'
       | 'character_dead',
@@ -149,7 +157,7 @@ function onboardingEntries(character: Character) {
 function replacementEntry(character: Character) {
   return entry(
     character,
-    `Replacement recruit assigned: ${character.name}. Permit D-${character.permitTier} issued. Effects of the deceased remain in Arbitration.`,
+    `Replacement recruit assigned: ${character.name}. Permit D-${character.permitTier} issued. Effects of the deceased were not recovered.`,
   );
 }
 
@@ -211,6 +219,7 @@ export async function loadState(
         toTick: tickOf(now),
         permitAppliedTick: record.permitAppliedTick,
         caseFiles: record.caseFiles,
+        filings: record.filings,
       });
 
       if (result.journal.length > 0) {
@@ -229,6 +238,7 @@ export async function loadState(
         permitAppliedTick: result.permitAppliedTick,
         inventory: result.inventory,
         caseFiles: result.caseFiles,
+        filings: result.filings,
       };
 
       if (result.ticksResolved > 0) {
@@ -285,6 +295,7 @@ export async function loadState(
       digest,
       ordersFiled: await tx.hasFiledOrders(accountId),
       caseFiles: current.caseFiles ?? [],
+      filings: pendingFilings(current, now),
       pendingPermit: pendingPermitOf(current, pension.unlocks, now),
       retirement: retirementOffer(current, pension.unlocks),
       character: current.character,
@@ -367,6 +378,124 @@ function pendingPermitOf(
   };
 }
 
+/**
+ * Forms in processing, with an honest wait.
+ *
+ * Same rule as the permit ETA: the number comes from the resolution tick the
+ * filing already carries, not from a timer the client is asked to believe in.
+ * A filing whose tick has passed but whose ruling has not been replayed yet
+ * reports zero rather than a negative — it resolves on the next read, which is
+ * usually the same request that produced this.
+ */
+function pendingFilings(record: CharacterRecord, now: Date): PendingFiling[] {
+  if (!record.character.alive) return [];
+  return (record.filings ?? []).map((filing) => ({
+    id: filing.id,
+    form: filing.form,
+    caseFileId: filing.caseFileId,
+    clauseIndex: filing.clauseIndex,
+    secondsRemaining: Math.max(
+      0,
+      Math.round((filing.resolvesTick * TICK_SECS * 1000 - now.getTime()) / 1000),
+    ),
+  }));
+}
+
+/**
+ * Form 12-C, filed.
+ *
+ * The fee is taken here and never returned. That is the design's risk made
+ * literal: "Case dismissed. Fee retained." only means anything if the fee left
+ * the account when the form went in, rather than being refunded on a bad
+ * ruling — a wager settled in the player's favour when they lose is not a
+ * wager.
+ */
+export async function fileForm(
+  repo: Repository,
+  accountId: string,
+  request: FileFormRequest,
+): Promise<FileFormResponse> {
+  const spec = formSpec(request.form);
+  if (!spec) throw new ServiceError('invalid_request', 'unknown form');
+  if (typeof request.caseFileId !== 'string' || !Number.isInteger(request.clauseIndex)) {
+    throw new ServiceError('invalid_request', 'form requires a case file and a clause');
+  }
+
+  return repo.transaction(async (tx) => {
+    // Resolve first, like every other mutation: a form filed against a clause
+    // that this minute's catch-up already amended must fail here rather than
+    // being queued against a file that no longer looks like that.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+    if (!record.character.alive) throw new ServiceError('character_dead', 'no living recruit');
+
+    const file = record.caseFiles.find((candidate) => candidate.id === request.caseFileId);
+    if (!file) throw new ServiceError('not_found', 'no such case file');
+
+    const wasClauseId = file.clauseIds[request.clauseIndex];
+    if (!wasClauseId) throw new ServiceError('invalid_request', 'no clause at that index');
+
+    // One form per clause. Two arbitrations racing the same clause would see
+    // the second resolve against a clause the first had already replaced, and
+    // the honest outcome there is a refusal rather than a wasted fee.
+    const contested = (record.filings ?? []).some(
+      (filing) =>
+        filing.caseFileId === file.id && filing.clauseIndex === request.clauseIndex,
+    );
+    if (contested) throw new ServiceError('invalid_request', 'that clause is already before the panel');
+
+    const gold = formGoldCost(spec, file.grade);
+    if (record.character.gold < gold) throw new ServiceError('insufficient_gold', 'not enough gold');
+    if (record.character.standing < spec.standing) {
+      throw new ServiceError('insufficient_standing', 'not enough Union Standing');
+    }
+
+    const filedTick = record.character.lastResolvedTick;
+    const filing: Filing = {
+      id: randomUUID(),
+      form: spec.id,
+      caseFileId: file.id,
+      clauseIndex: request.clauseIndex,
+      filedTick,
+      resolvesTick: filedTick + spec.ticks,
+      wasClauseId,
+    };
+
+    const character: Character = {
+      ...record.character,
+      gold: record.character.gold - gold,
+      standing: record.character.standing - spec.standing,
+    };
+    const filings = [...(record.filings ?? []), filing];
+    await tx.saveCharacter({ ...record, character, filings });
+
+    const clause = clauseById(wasClauseId);
+    await tx.appendJournal([
+      entry_(
+        character,
+        `Form ${spec.id} filed against case ${file.id}, contesting "${clause?.text ?? wasClauseId}". ` +
+          `Fee ${gold} gold, Union Standing ${spec.standing}. Estimated processing: ${
+            Math.round(spec.ticks / 60)
+          } hours.`,
+      ),
+    ]);
+
+    return {
+      filing: {
+        id: filing.id,
+        form: filing.form,
+        caseFileId: filing.caseFileId,
+        clauseIndex: filing.clauseIndex,
+        secondsRemaining: spec.ticks * TICK_SECS,
+      },
+      goldCharged: gold,
+      standingCharged: spec.standing,
+      character,
+    };
+  });
+}
+
 export async function updateOrders(
   repo: Repository,
   accountId: string,
@@ -421,6 +550,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     toTick: tickOf(worldNow()),
     permitAppliedTick: record.permitAppliedTick,
     caseFiles: record.caseFiles,
+    filings: record.filings,
   });
 
   if (result.ticksResolved === 0) return record;
@@ -441,6 +571,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     permitAppliedTick: result.permitAppliedTick,
     inventory: result.inventory,
     caseFiles: result.caseFiles,
+    filings: result.filings,
   };
   await tx.saveCharacter(updated);
 

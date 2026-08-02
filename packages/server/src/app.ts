@@ -4,6 +4,7 @@ import {
   API_VERSION,
   type ApiError,
   type BulkSellRequest,
+  type FileFormRequest,
   type RequisitionId,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -21,6 +22,7 @@ import {
   bulkSell,
   claimPension,
   retireRecruit,
+  fileForm,
   getBulletin,
   getJournalPage,
   getLedger,
@@ -53,6 +55,7 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   invalid_request: 400,
   insufficient_pension: 409,
   insufficient_gold: 409,
+  insufficient_standing: 409,
   not_authorised: 403,
   already_owned: 409,
   character_dead: 409,
@@ -231,6 +234,21 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     const { id } = (request.body ?? {}) as { id?: RequisitionId };
     if (!id) throw new ServiceError('invalid_request', 'id required');
     return purchaseRequisition(repo, accountId, id);
+  });
+
+  // Filing a form. Costs gold and Union Standing, both taken here, and the
+  // ruling lands in the tick loop hours later like everything else.
+  app.post('/v1/armoury/file', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const body = (request.body ?? {}) as Partial<FileFormRequest>;
+    if (!body.form || typeof body.caseFileId !== 'string') {
+      throw new ServiceError('invalid_request', 'form and caseFileId required');
+    }
+    return fileForm(repo, accountId, {
+      form: body.form,
+      caseFileId: body.caseFileId,
+      clauseIndex: Number(body.clauseIndex),
+    });
   });
 
   app.post('/v1/pension/unlocks', async (request, reply) => {

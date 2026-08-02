@@ -14,6 +14,7 @@ import {
   xpForLevel,
   type CaseFile,
   type Character,
+  type Filing,
   type InventoryItem,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -82,6 +83,7 @@ export function succeed(input: Succession): {
   inventory: InventoryItem[];
   permitAppliedTick: null;
   caseFiles: CaseFile[];
+  filings: Filing[];
 } {
   const { previous } = input;
   return {
@@ -105,6 +107,13 @@ export function succeed(input: Succession): {
      * down with them.
      */
     caseFiles: [],
+    /**
+     * And none of the paperwork about them. A form in processing names a case
+     * file by number; with the file gone there is nothing for it to resolve
+     * against, and a filing that outlived its subject would be a fee already
+     * paid against an outcome that can never arrive.
+     */
+    filings: [],
   };
 }
 
@@ -136,6 +145,8 @@ function newRecruit(
     permitTier: inheritedPermitTier(previousPermitTier),
     gold: STARTING_GOLD + settlement,
     supplies: STARTING_SUPPLIES,
+    // Reputation is not inherited. The office is; the standing is earned.
+    standing: 0,
     alive: true,
     lastResolvedTick: atTick,
     bornTick: atTick,

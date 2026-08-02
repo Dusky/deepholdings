@@ -1,13 +1,18 @@
+import { useCallback, useState } from 'react';
 import {
   CASE_FILE_SLOTS,
   carriedEffect,
   clauseById,
   clauseSlots,
+  formGoldCost,
+  formSpec,
   maxHpForLevel,
   romanGrade,
   type CaseFile,
   type Clause,
+  type PendingFiling,
 } from '@deepholdings/shared';
+import { api } from '../api/client';
 import { useServer } from '../state/serverContext';
 import columns from './columns.module.css';
 import styles from './ArmouryScreen.module.css';
@@ -42,11 +47,31 @@ function effectsOf(clause: Clause): string[] {
   return parts;
 }
 
-function CaseFileEntry({ file }: { file: CaseFile }) {
+/** "2 hours", "18 minutes". Vague on purpose, like the permit clock. */
+function wait(seconds: number): string {
+  if (seconds <= 60) return 'imminent';
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 90) return `${minutes} minutes`;
+  return `${Math.round(minutes / 60)} hours`;
+}
+
+interface CaseFileEntryProps {
+  file: CaseFile;
+  filings: readonly PendingFiling[];
+  gold: number;
+  standing: number;
+  busy: boolean;
+  onContest: (file: CaseFile, clauseIndex: number) => void;
+}
+
+function CaseFileEntry({ file, filings, gold, standing, busy, onContest }: CaseFileEntryProps) {
   const clauses = file.clauseIds.map(clauseById).filter((c): c is Clause => Boolean(c));
   // Grade buys slots; a file may carry fewer clauses than its grade allows.
   // Showing the gap is the whole argument for Form 3-B when it lands.
   const vacant = Math.max(0, clauseSlots(file.grade) - clauses.length);
+  const spec = formSpec('12-C')!;
+  const fee = formGoldCost(spec, file.grade);
+  const affordable = gold >= fee && standing >= spec.standing;
 
   return (
     <div className={styles.file}>
@@ -57,13 +82,36 @@ function CaseFileEntry({ file }: { file: CaseFile }) {
       <div className={`text-dim ${styles.fileMeta}`}>
         Grade {romanGrade(file.grade)} · {file.category} · book value {file.unitValue}g
       </div>
-      {clauses.map((clause) => (
-        <div key={clause.id} className={styles.clause} data-kind={clause.kind}>
-          <span className={`text-dim ${styles.clauseKind}`}>{KIND_LABEL[clause.kind]}</span>
-          <span className="text-body">{clause.text}</span>
-          <span className={styles.clauseEffect}>{effectsOf(clause).join(', ')}</span>
-        </div>
-      ))}
+      {clauses.map((clause, index) => {
+        const processing = filings.find(
+          (filing) => filing.caseFileId === file.id && filing.clauseIndex === index,
+        );
+        return (
+          <div key={clause.id} className={styles.clause} data-kind={clause.kind}>
+            <span className={`text-dim ${styles.clauseKind}`}>{KIND_LABEL[clause.kind]}</span>
+            <span className="text-body">{clause.text}</span>
+            <span className={styles.clauseEffect}>{effectsOf(clause).join(', ')}</span>
+            {processing ? (
+              <span className={`text-dim ${styles.contestState}`}>
+                Form 12-C before the panel — {wait(processing.secondsRemaining)}
+              </span>
+            ) : (
+              // Disabled rather than hidden when it cannot be afforded: the
+              // price is the decision, and a control that vanishes teaches
+              // nothing about why.
+              <button
+                type="button"
+                className={styles.contest}
+                disabled={busy || !affordable}
+                onClick={() => onContest(file, index)}
+                title={`Form 12-C — ${fee} gold and ${spec.standing} Union Standing`}
+              >
+                CONTEST — {fee}g, {spec.standing} standing
+              </button>
+            )}
+          </div>
+        );
+      })}
       {Array.from({ length: vacant }, (_, i) => (
         <div key={`vacant-${i}`} className={`text-dim ${styles.vacant}`}>
           [ vacant clause ]
@@ -74,10 +122,35 @@ function CaseFileEntry({ file }: { file: CaseFile }) {
 }
 
 export function ArmouryScreen() {
-  const { state } = useServer();
+  const { state, refresh } = useServer();
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const contest = useCallback(
+    async (file: CaseFile, clauseIndex: number) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        const result = await api.fileForm({ form: '12-C', caseFileId: file.id, clauseIndex });
+        setNotice(
+          `Form 12-C filed against case ${file.id}. ${result.goldCharged} gold and ` +
+            `${result.standingCharged} standing paid. The panel sits in ` +
+            `${wait(result.filing.secondsRemaining)}.`,
+        );
+        await refresh();
+      } catch {
+        setNotice('The clerk declined the form and did not say why. Nothing was charged.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [refresh],
+  );
+
   if (!state) return null;
 
   const files = state.caseFiles ?? [];
+  const filings = state.filings ?? [];
   // The ceiling is a share of the recruit's own maximum *before* clauses —
   // character.maxHp already has the carried vigour folded into it, so reading
   // it back would move the ceiling every time a file changed it.
@@ -142,11 +215,23 @@ export function ArmouryScreen() {
           <>
             <div className={`text-dim ${styles.hint}`}>
               Carried by {state.character.name}. Case files do not survive the
-              recruit who found them.
+              recruit who found them — and neither does the standing.{' '}
+              <span className="text-body">
+                {state.character.gold}g · {state.character.standing} Union Standing
+              </span>
             </div>
             {files.map((file) => (
-              <CaseFileEntry key={file.id} file={file} />
+              <CaseFileEntry
+                key={file.id}
+                file={file}
+                filings={filings}
+                gold={state.character.gold}
+                standing={state.character.standing}
+                busy={busy}
+                onContest={contest}
+              />
             ))}
+            {notice && <div className={`text-dim ${styles.hint}`}>{notice}</div>}
             {files.length === CASE_FILE_SLOTS && (
               <div className={`text-dim ${styles.hint}`}>
                 Drawer full. The next file worth more than the weakest one here
@@ -219,9 +304,20 @@ export function ArmouryScreen() {
 
         <div className={`text-head ${columns.headLater}`}>ARBITRATION</div>
         <div className={`text-dim ${styles.hint}`}>
-          Forms 3-B, 12-C and 19 — amendment, arbitration and merger — are not
-          yet released to your desk. Until they are, a case file is what it was
-          found as.
+          <span className="text-body">Form 12-C</span> contests one clause. The
+          panel sits two hours later and rules: the clause is replaced, or the
+          case is dismissed and the fee retained. The replacement is drawn from
+          what a file of that grade may carry, so it may be worse than what it
+          replaced. Contesting is a decision, not an upgrade.
+        </div>
+        <div className={`text-dim ${styles.hint}`}>
+          Fees are paid in gold and Union Standing. Standing is earned at a
+          grade review and is not inherited — a successor starts at nothing,
+          however senior the officer.
+        </div>
+        <div className={`text-dim ${styles.hint}`}>
+          Forms 3-B, 19, N-1 and 44 — amendment, merger, notarisation and
+          provenance settlement — are not yet released to your desk.
         </div>
       </div>
     </div>

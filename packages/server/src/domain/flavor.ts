@@ -251,7 +251,11 @@ export function combatNote(rng: Rng): string {
     // The Authority's voice, at about one line in five — and only where a
     // clerk would genuinely have written something down.
     () => `Filed ${formRef(rng)} (${rngPick(rng, FORM_TITLES)}) afterwards, standing up, in the dark.`,
-    () => `Referred to Arbitration, case ${caseRef(rng)}. It did not attend.`,
+    // Was "Referred to Arbitration, case #NNNN-C. It did not attend." — good
+    // line, wrong now. Arbitration is Form 12-C, and a case number is a file
+    // in the drawer, so an officer reading this went looking for #NNNN-C and
+    // found nothing. Flavour may not spend vocabulary the mechanics need.
+    () => `Referred upward. The referral was returned ${rngInt(rng, 2, 5)} days later, unopened.`,
     () => 'Logged as routine. Nothing about it was routine.',
     () => `Recorded in the annual return, line ${rngInt(rng, 11, 89)}, where it will stay.`,
   ];
@@ -273,7 +277,7 @@ export function lootNote(rng: Rng): string {
     () => 'The recruit has stopped looking at it.',
     () => 'Appraised on sight by someone unqualified to appraise it.',
     () => 'Catalogued. The catalogue is not searchable.',
-    () => `Flagged for Arbitration, case ${caseRef(rng)}.`,
+    () => 'Flagged for assessment by someone who has not been in since March.',
     () => 'Title unclear. Retained pending clarification that will not arrive.',
   ];
   return rngPick(rng, notes)();
@@ -380,7 +384,9 @@ const KIND_PATTERNS: readonly (readonly [JournalKind, RegExp])[] = [
   ['alert', /not eating|Form 9 \(Industrial Injury\)|Grievous/],
   [
     'authority',
-    /Permit D-|Grade review|Union Standing|Form [A-Z0-9]|Form \d|Arbitration|Clearance amended|Service review|Form R-1|Form SO-1|Case file opened|Replacement recruit|Timesheet|per diem|recess|Class C/i,
+    // "Case #4417-C dismissed. Fee retained." is a ruling, not a routine line,
+    // and matched nothing here until the panel started sitting.
+    /Permit D-|Grade review|Union Standing|Form [A-Z0-9]|Form \d|Arbitration|Fee retained|Clearance amended|Service review|Form R-1|Form SO-1|Case file opened|Replacement recruit|Timesheet|per diem|recess|Class C/i,
   ],
   ['loot', /^Acquired:|^Case \S+ opened|^Drawer full|Sold \d|Resupplied|Deposited/],
   ['combat', /^Encountered:/],

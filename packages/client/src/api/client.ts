@@ -10,6 +10,8 @@ import type {
   LedgerResponse,
   PurchaseRequisitionResponse,
   PurchaseUnlockResponse,
+  FileFormRequest,
+  FileFormResponse,
   RequisitionId,
   SellItemResponse,
   SendTavernMessageResponse,
@@ -185,6 +187,11 @@ export class ApiClient {
 
   purchaseUnlock(id: UnlockId): Promise<PurchaseUnlockResponse> {
     return this.request('POST', '/v1/pension/unlocks', { id });
+  }
+
+  /** Form 12-C. The fee leaves the purse here, whatever the panel rules. */
+  fileForm(request: FileFormRequest): Promise<FileFormResponse> {
+    return this.request('POST', '/v1/armoury/file', request);
   }
 
   claimPension(): Promise<ClaimPensionResponse> {

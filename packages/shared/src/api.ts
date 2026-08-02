@@ -6,6 +6,7 @@
  * no endpoint that returns stale character state.
  */
 import type { CaseFile } from './items.js';
+import type { FormId } from './forms.js';
 import type {
   Account,
   Character,
@@ -37,6 +38,7 @@ export interface ApiError {
       | 'invalid_request'
       | 'insufficient_pension'
       | 'insufficient_gold'
+      | 'insufficient_standing'
       | 'not_authorised'
       | 'already_owned'
       | 'character_dead'
@@ -50,6 +52,30 @@ export interface ApiError {
  *  sign-in before anything is ever purchased. */
 export interface DeviceAuthRequest {
   deviceId: string;
+}
+
+/** A filed form, as the client needs it. */
+export interface PendingFiling {
+  id: string;
+  form: FormId;
+  caseFileId: string;
+  clauseIndex: number;
+  /** Honest, like the permit ETA: derived from the resolution tick, not faked. */
+  secondsRemaining: number;
+}
+
+/** POST /v1/armoury/file */
+export interface FileFormRequest {
+  form: FormId;
+  caseFileId: string;
+  clauseIndex: number;
+}
+
+export interface FileFormResponse {
+  filing: PendingFiling;
+  goldCharged: number;
+  standingCharged: number;
+  character: Character;
 }
 
 export interface DeviceAuthResponse {
@@ -70,6 +96,14 @@ export interface StateResponse {
   office: Office;
   /** Case files the recruit is carrying. Lost when they are. */
   caseFiles: CaseFile[];
+  /**
+   * Forms filed and still processing, with the wait already computed.
+   *
+   * Sent whole rather than as a count: the ARMOURY has to mark which clause of
+   * which file is before the panel, because a player who files a form and sees
+   * no trace of it will file it again.
+   */
+  filings: PendingFiling[];
   world: WorldState;
   /** Newest journal entries, oldest first. */
   journal: JournalEntry[];

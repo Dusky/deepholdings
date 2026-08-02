@@ -2,6 +2,7 @@ import type {
   Account,
   CaseFile,
   Character,
+  Filing,
   DeathRecord,
   InventoryItem,
   JournalEntry,
@@ -19,6 +20,9 @@ export interface CharacterRecord {
   inventory: InventoryItem[];
   /** Case files the recruit is carrying. Lost with them, by design. */
   caseFiles: CaseFile[];
+  /** Forms filed and still processing. Lost with the recruit for the same
+   *  reason: a form is about a case file, and the file went down with them. */
+  filings: Filing[];
 }
 
 export interface NewJournalEntry {

@@ -61,6 +61,9 @@ export const LIMITS: Record<string, RateLimit> = {
   'POST /v1/ledger/sell-bulk': { burst: 10, perMinute: 30 },
   'POST /v1/office/requisitions': { burst: 10, perMinute: 20 },
   'POST /v1/pension/unlocks': { burst: 10, perMinute: 20 },
+  // Every filing spends gold and standing, so the natural limit is the purse.
+  // This is here to stop a loop, not to pace an officer.
+  'POST /v1/armoury/file': { burst: 10, perMinute: 20 },
   'POST /v1/pension/claim': { burst: 10, perMinute: 20 },
   'POST /v1/recruit/retire': { burst: 5, perMinute: 10 },
   'POST /v1/push/register': { burst: 5, perMinute: 10 },

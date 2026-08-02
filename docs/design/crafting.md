@@ -5,13 +5,20 @@ document — *items and clauses first, the form catalogue second*.
 
 **Shipped:** case files with grades, twenty clauses across endorsements and
 riders, a three-slot drawer that evicts its weakest entry, drop rates biased by
-Loot Priority, hard ceilings on the carried stat block, and the **ARMOURY**
-screen — the drawer, each file's clauses and what they do, and the combined
-effect against its ceilings.
+Loot Priority, hard ceilings on the carried stat block, the **ARMOURY** screen,
+**Union Standing** as a real currency, and **Form 12-C — Arbitration**, with
+the filing rails underneath it: a form is queued with a resolution tick,
+resolves inside the tick loop like everything else, and is seeded on the filing
+so replaying the span cannot change the ruling.
 
-**Not shipped:** every form in the table below, provenance, Union Standing as a
-currency, equipment policy, and the countersignature rules. A case file is
-currently what it was found as.
+**Not shipped:** forms 7-A, 3-B, 19, N-1 and 44; provenance; equipment policy
+and the countersignature rules.
+
+12-C went first because it is the one that needs nothing new. 7-A needs hidden
+clauses, 44 needs provenance, and 3-B needs vacant slots — which today's rolls
+almost never leave, so shipping it means changing what drops, and changing what
+drops means re-measuring the game. Adding the rest is authoring on rails that
+now exist.
 
 Gear crafting is the most-praised system in our closest competitor and the
 biggest structural gap in our design. This is the version of it that is
@@ -61,7 +68,7 @@ Grade II · Provenance: Disputed
 | --- | --- | --- | --- |
 | **7-A — Appraisal** | Reveals hidden clauses on an item | Small gold fee | Minutes |
 | **3-B — Amendment** | Adds a clause to a vacant slot | Gold + Union Standing | ~1 hour |
-| **12-C — Arbitration** | Rerolls one contested clause | Gold + Union Standing | ~2 hours |
+| **12-C — Arbitration** ✅ | Rerolls one contested clause | Gold + Union Standing | ~2 hours |
 | **19 — Requisition** | Merges two items; the survivor inherits one clause, the other is *filed* | Gold, both items | ~4 hours |
 | **N-1 — Notarisation** | Locks a clause so future arbitration cannot alter it | Expensive | ~1 hour |
 | **44 — Provenance Settlement** | Resolves Disputed → Clear, protecting it from audit, at the cost of one clause | Gold | ~6 hours |
@@ -69,6 +76,27 @@ Grade II · Provenance: Disputed
 Arbitration can fail: **"Case dismissed. Fee retained."** The fee is spent, the
 clause is unchanged. This is the risk that makes a good roll feel earned, and
 it is funnier than a progress bar that always succeeds.
+
+**As shipped**, 12-C is priced at 90 gold per grade of the target file plus 3
+Union Standing, sits for two hours, and is dismissed 30% of the time. It draws
+its replacement from clauses of the *same kind* at or below the file's grade —
+a rider that could come back as an endorsement would make every drawback a
+formality. The pricing was measured rather than guessed; see
+[`balance.md`](./balance.md), which records why the standing rate had to
+double.
+
+Three rules the implementation holds to, each of which had an obvious wrong
+version:
+
+1. **A ruling is seeded on the filing**, not on `(character, tick)` like every
+   other roll. Two forms due in the same minute would otherwise share a seed
+   and the second would be the first's shadow.
+2. **Arbitration draws from its own stream**, like prose. If it drew from the
+   simulation stream, doing paperwork would silently change what is waiting on
+   Floor 9.
+3. **A form whose clause has moved does not rule on whatever is at that index
+   now.** It says so and retains the fee. Quietly rerolling a different clause
+   than the one contested is the worst behaviour available here.
 
 ## Currencies
 

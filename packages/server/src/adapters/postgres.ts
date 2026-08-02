@@ -4,6 +4,7 @@ import type {
   Account,
   CaseFile,
   DeathRecord,
+  Filing,
   InventoryItem,
   JournalEntry,
   Office,
@@ -165,13 +166,15 @@ export class PostgresRepository implements Repository {
       `INSERT INTO characters
          (id, account_id, name, recruit_num, level, xp, hp, max_hp, depth, permit_tier,
           gold, supplies, alive, last_resolved_tick, permit_applied_tick, inventory, born_tick,
-          case_files)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18::jsonb)`,
+          case_files, filings, standing)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18::jsonb,
+               $19::jsonb,$20)`,
       [
         c.id, c.accountId, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth,
         c.permitTier, c.gold, c.supplies, c.alive, c.lastResolvedTick,
         record.permitAppliedTick, JSON.stringify(record.inventory), c.bornTick,
-        JSON.stringify(record.caseFiles ?? []),
+        JSON.stringify(record.caseFiles ?? []), JSON.stringify(record.filings ?? []),
+        c.standing ?? 0,
       ],
     );
   }
@@ -183,13 +186,14 @@ export class PostgresRepository implements Repository {
          name = $2, recruit_num = $3, level = $4, xp = $5, hp = $6, max_hp = $7, depth = $8,
          permit_tier = $9, gold = $10, supplies = $11, alive = $12, last_resolved_tick = $13,
          permit_applied_tick = $14, inventory = $15::jsonb, born_tick = $16,
-         case_files = $17::jsonb,
+         case_files = $17::jsonb, filings = $18::jsonb, standing = $19,
          died_at = CASE WHEN $12 THEN died_at ELSE COALESCE(died_at, now()) END
        WHERE id = $1`,
       [
         c.id, c.name, c.recruitNum, c.level, c.xp, c.hp, c.maxHp, c.depth, c.permitTier,
         c.gold, c.supplies, c.alive, c.lastResolvedTick, record.permitAppliedTick,
         JSON.stringify(record.inventory), c.bornTick, JSON.stringify(record.caseFiles ?? []),
+        JSON.stringify(record.filings ?? []), c.standing ?? 0,
       ],
     );
   }
@@ -539,6 +543,7 @@ function toCharacterRecord(row: Record<string, unknown>): CharacterRecord {
       permitTier: row.permit_tier as number,
       gold: row.gold as number,
       supplies: row.supplies as number,
+      standing: Number(row.standing ?? 0),
       alive: row.alive as boolean,
       lastResolvedTick: Number(row.last_resolved_tick),
       bornTick: Number(row.born_tick ?? row.last_resolved_tick),
@@ -547,5 +552,6 @@ function toCharacterRecord(row: Record<string, unknown>): CharacterRecord {
       row.permit_applied_tick === null ? null : Number(row.permit_applied_tick),
     inventory: (row.inventory ?? []) as InventoryItem[],
     caseFiles: (row.case_files ?? []) as CaseFile[],
+    filings: (row.filings ?? []) as Filing[],
   };
 }

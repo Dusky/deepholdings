@@ -8,7 +8,10 @@ import {
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
   UNLOCK_CATALOGUE,
+  formGoldCost,
+  formSpec,
   inheritedLevel,
+  type FileFormResponse,
   type JournalResponse,
   type StateResponse,
 } from '@deepholdings/shared';
@@ -776,6 +779,81 @@ for (const adapter of adapters) {
       });
       assert.equal(claim.statusCode, 200);
       assert.equal(claim.json().character.alive, true);
+    });
+
+    test('filing Form 12-C charges the fee and queues the ruling', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.caseFiles = [
+        {
+          id: '#4417-C', name: 'Sword, Adequate (+2)', category: 'gear', grade: 4,
+          unitValue: 200, clauseIds: ['e-certified', 'r-contested'],
+        },
+      ];
+      record.character.gold = 5000;
+      record.character.standing = 10;
+      await repo.saveCharacter(record);
+
+      const spec = formSpec('12-C')!;
+      const filed = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: { form: '12-C', caseFileId: '#4417-C', clauseIndex: 1 },
+      });
+      assert.equal(filed.statusCode, 200);
+      const body = filed.json() as FileFormResponse;
+      assert.equal(body.goldCharged, formGoldCost(spec, 4));
+      assert.equal(body.standingCharged, spec.standing);
+      assert.equal(body.character.standing, 10 - spec.standing);
+      assert.ok(body.filing.secondsRemaining > 0);
+
+      // And the state response carries it, because a player who cannot see
+      // the form they filed will file it again.
+      const state = (await app.inject({ method: 'GET', url: '/v1/state', headers: auth() }))
+        .json() as StateResponse;
+      assert.equal(state.filings.length, 1);
+      assert.equal(state.filings[0].caseFileId, '#4417-C');
+      assert.equal(state.character.gold, 5000 - formGoldCost(spec, 4));
+    });
+
+    test('the same clause cannot be contested twice at once', async () => {
+      const second = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: { form: '12-C', caseFileId: '#4417-C', clauseIndex: 1 },
+      });
+      assert.equal(second.statusCode, 400);
+      assert.match(second.json().error.message, /already before the panel/);
+    });
+
+    test('a form is refused without the standing to file it', async () => {
+      const account = await accountId(app, token);
+      const record = await repo.getActiveCharacterForUpdate(account);
+      assert.ok(record);
+      record.character.standing = 0;
+      await repo.saveCharacter(record);
+
+      const refused = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: { form: '12-C', caseFileId: '#4417-C', clauseIndex: 0 },
+      });
+      assert.equal(refused.statusCode, 409);
+      assert.equal(refused.json().error.code, 'insufficient_standing');
+    });
+
+    test('a form against a case file that is not on hand is refused', async () => {
+      const refused = await app.inject({
+        method: 'POST',
+        url: '/v1/armoury/file',
+        headers: auth(),
+        payload: { form: '12-C', caseFileId: '#0000-Z', clauseIndex: 0 },
+      });
+      assert.equal(refused.statusCode, 404);
     });
 
   });

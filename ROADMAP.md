@@ -64,7 +64,7 @@ The things every decision gets checked against.
 | M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | | yes |
 | M4 — It has direction | | yes |
-| M5 — It has depth (crafting) | Items and clauses shipped; forms not | *candidate cut* |
+| M5 — It has depth (crafting) | Items, clauses and Form 12-C shipped | *candidate cut* |
 | M6 — An inhabited world | | *candidate cut* |
 | M7 — Able to take money | | yes |
 | M8 — Store-ready | | yes |
@@ -403,9 +403,18 @@ Being taken in the staged order the last item asks for. Half of it is in.
       player who adds up their clauses and gets a different number has found a
       bug as far as they know.
 - [x] **20 clauses** — 11 endorsements, 9 riders. Half the target pool.
-- [ ] **The form catalogue** — 7-A, 3-B, 12-C, 19, N-1 and 44. This is the
-      half that makes a case file *yours* rather than found, and it is the half
-      the exit criterion is about.
+- [x] **Union Standing** as a real currency. It had been in the log copy since
+      the prototype against no stored number; it is earned at a grade review
+      and spent filing forms, and it is not inherited.
+- [x] **Form 12-C — Arbitration**, and the filing rails under it: forms queue
+      with a resolution tick, resolve inside the tick loop, and are seeded on
+      the filing so a replayed span cannot change the ruling. The case can be
+      dismissed and the fee retained, which is the risk the whole form exists
+      to carry.
+- [ ] **The rest of the form catalogue** — 7-A, 3-B, 19, N-1 and 44. Each
+      needs something that does not exist yet (hidden clauses, vacant slots,
+      provenance), and each of those changes what drops, which means
+      re-measuring. Authoring on rails that now exist.
 - [ ] **~40 clauses.** Our competitor has 100+ after years. A shallow pool
       shipped beats a deep pool planned.
 - [ ] **Equipment policy** as a fifth standing order, with countersigned slots
@@ -413,7 +422,8 @@ Being taken in the staged order the last item asks for. Half of it is in.
 - [ ] **Provenance and Union Standing**, which the forms spend.
 
 **Exit:** a player can show you an item they built and explain why it is theirs.
-**Not met yet** — a player can currently show you an item they *found*.
+**Partly met** — a player can now say "I contested that clause twice and this
+is what came back". They cannot yet add one, merge two files, or lock a roll.
 
 ---
 

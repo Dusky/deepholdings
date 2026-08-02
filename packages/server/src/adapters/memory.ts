@@ -5,6 +5,7 @@ import type {
   JournalEntry,
   Office,
   Pension,
+  Registry,
   StandingOrders,
   TavernMessage,
   WorldState,
@@ -22,6 +23,7 @@ import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
  */
 export class MemoryRepository implements Repository {
   private accounts = new Map<string, Account & { deviceId: string; lastSeenAt: Date }>();
+  private registries = new Map<string, Registry>();
   private characters = new Map<string, CharacterRecord & { diedAt: Date | null }>();
   private orders = new Map<string, StandingOrders>();
   private filedOrders = new Set<string>();
@@ -168,6 +170,14 @@ export class MemoryRepository implements Repository {
 
   async saveOffice(accountId: string, office: Office): Promise<void> {
     this.offices.set(accountId, { ...office, requisitions: [...office.requisitions] });
+  }
+
+  async getRegistry(accountId: string): Promise<Registry> {
+    return clone(this.registries.get(accountId) ?? { staff: [], spent: 0, unpaid: false });
+  }
+
+  async saveRegistry(accountId: string, registry: Registry): Promise<void> {
+    this.registries.set(accountId, clone(registry));
   }
 
   async recordDeath(accountId: string, record: DeathRecord): Promise<void> {

@@ -12,7 +12,9 @@ import type {
   PurchaseUnlockResponse,
   FileFormRequest,
   FileFormResponse,
+  RegistryResponse,
   RequisitionId,
+  StaffRole,
   SellItemResponse,
   SendTavernMessageResponse,
   StandingOrders,
@@ -192,6 +194,15 @@ export class ApiClient {
   /** Form 12-C. The fee leaves the purse here, whatever the panel rules. */
   fileForm(request: FileFormRequest): Promise<FileFormResponse> {
     return this.request('POST', '/v1/armoury/file', request);
+  }
+
+  hireStaff(role: StaffRole): Promise<RegistryResponse> {
+    return this.request('POST', '/v1/registry/hire', { role });
+  }
+
+  /** Amending a standing instruction. Free — it is a form, not a purchase. */
+  setStaffPolicy(role: StaffRole, policy: number): Promise<RegistryResponse> {
+    return this.request('PUT', '/v1/registry/policy', { role, policy });
   }
 
   claimPension(): Promise<ClaimPensionResponse> {

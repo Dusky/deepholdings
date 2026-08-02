@@ -64,6 +64,9 @@ export const LIMITS: Record<string, RateLimit> = {
   // Every filing spends gold and standing, so the natural limit is the purse.
   // This is here to stop a loop, not to pace an officer.
   'POST /v1/armoury/file': { burst: 10, perMinute: 20 },
+  'POST /v1/registry/hire': { burst: 5, perMinute: 10 },
+  // Policies are sliders, so a drag is a burst of writes by design.
+  'PUT /v1/registry/policy': { burst: 20, perMinute: 60 },
   'POST /v1/pension/claim': { burst: 10, perMinute: 20 },
   'POST /v1/recruit/retire': { burst: 5, perMinute: 10 },
   'POST /v1/push/register': { burst: 5, perMinute: 10 },

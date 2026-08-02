@@ -5,6 +5,8 @@ import {
   type ApiError,
   type BulkSellRequest,
   type FileFormRequest,
+  type HireStaffRequest,
+  type StaffPolicyRequest,
   type RequisitionId,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -24,6 +26,8 @@ import {
   retireRecruit,
   fileForm,
   getBulletin,
+  hireStaff,
+  setStaffPolicy,
   getJournalPage,
   getLedger,
   getTavern,
@@ -252,6 +256,21 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
       donorClauseIndex:
         body.donorClauseIndex === undefined ? undefined : Number(body.donorClauseIndex),
     });
+  });
+
+  // The registry: hiring costs gold, amending a standing instruction is free.
+  app.post('/v1/registry/hire', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { role } = (request.body ?? {}) as Partial<HireStaffRequest>;
+    if (!role) throw new ServiceError('invalid_request', 'role required');
+    return hireStaff(repo, accountId, role);
+  });
+
+  app.put('/v1/registry/policy', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { role, policy } = (request.body ?? {}) as Partial<StaffPolicyRequest>;
+    if (!role) throw new ServiceError('invalid_request', 'role required');
+    return setStaffPolicy(repo, accountId, role, Number(policy));
   });
 
   app.post('/v1/pension/unlocks', async (request, reply) => {

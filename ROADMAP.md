@@ -39,8 +39,17 @@ The things every decision gets checked against.
 6. **Reveal the machine slowly.** Everything-unlocked-at-once is the genre's
    most common fatal mistake — it reads as overwhelming on day one and hollow
    at hour one hundred. Clearance is our in-fiction unlock mechanism.
-7. **Numbers stay human.** Gold in the hundreds, permits in tiers, pensions in
-   round numbers. Never ship scientific notation.
+7. **Numbers stay human — in the early game.** Gold in the hundreds, permits
+   in tiers, pensions in round numbers. Never ship scientific notation.
+   **Softened, deliberately, and this is the record of it.** The original rule
+   applied everywhere and was a flat rejection of the thing the category
+   winner's store page leads with — see
+   [`docs/research/mobile-incrementals.md`](docs/research/mobile-incrementals.md),
+   which said to hold it as a bet rather than a principle. The bet is now
+   split: the first hours stay human, because that is where the tone lands and
+   where players are lost; the late layers may carry bigger numbers, so a
+   long-run player still gets a climb. Scientific notation is still out — that
+   is a different line, and it is the one that actually costs the voice.
 
 ### Success metrics (targets to beat, not predictions)
 
@@ -64,6 +73,7 @@ The things every decision gets checked against.
 | M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | Push verified on device; deep-link tap not | yes |
 | M4 — It has direction | | yes |
+| M4.5 — It has a department | Registry shipped: 3 posts, wages, policies | yes |
 | M5 — It has depth (crafting) | Items, clauses, Forms 12-C and 19 | *candidate cut* |
 | M6 — An inhabited world | | *candidate cut* |
 | M7 — Able to take money | | yes |
@@ -405,6 +415,38 @@ always knows what they are working toward.
       harness that drives the resolver directly.
 
 **Exit:** a tester plays for two weeks and can explain their strategy to you.
+
+---
+
+## M4.5 — It has a department
+
+Not a numbered milestone in the original plan, and it came out of one question:
+*what do players actually do?*
+
+The answer was uncomfortable. Deep Holdings inverted the genre's automation
+ladder and then never built one — the *recruit* has been automated since the
+first minute, which is the premise and is right, but the *officer's* work was
+manual forever, and neither catalogue contained a single thing that reduced it.
+Selling, redeeming, filing: by hand, every session, indefinitely. The whole
+purchasable game was 26 items across two ladders.
+
+- [x] **The Registry.** Three posts, hired with gold and kept with a wage every
+      minute: a Filing Clerk who liquidates stacks under a figure you set, a
+      Junior Officer who redeems the cheapest rung above a reserve you set, and
+      an Archivist who contests riders on files from a grade you set.
+- [x] **Policies, not switches.** Every hire takes a standing instruction.
+      Automation that removes the decision removes the game; this moves the
+      decision up a level instead.
+- [x] **The first recurring gold sink.** Requisitions are bought once and there
+      are seven of them, so gold accumulated with nothing to want. Wages are the
+      first cost that keeps arriving.
+- [ ] **More posts.** Three is a department, not a hierarchy. The chores left
+      are buying requisitions and deciding when to retire — the second of which
+      should never be automated, because it is the prestige decision.
+
+**Exit:** an officer who has played a fortnight is running a department rather
+than doing the filing. **Met for the three chores above; not for the shape** —
+one tier of staff is a ladder with one rung.
 
 ---
 

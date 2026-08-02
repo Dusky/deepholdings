@@ -7,6 +7,7 @@
  */
 import type { CaseFile } from './items.js';
 import type { FormId } from './forms.js';
+import type { Registry, StaffRole } from './staff.js';
 import type {
   Account,
   Character,
@@ -66,6 +67,23 @@ export interface PendingFiling {
   secondsRemaining: number;
 }
 
+/** POST /v1/registry/hire */
+export interface HireStaffRequest {
+  role: StaffRole;
+}
+
+/** PUT /v1/registry/policy */
+export interface StaffPolicyRequest {
+  role: StaffRole;
+  policy: number;
+}
+
+export interface RegistryResponse {
+  registry: Registry;
+  /** The purse after the charge, so the client need not refetch to show it. */
+  gold: number;
+}
+
 /** POST /v1/armoury/file */
 export interface FileFormRequest {
   form: FormId;
@@ -104,6 +122,15 @@ export interface StateResponse {
   office: Office;
   /** Case files the recruit is carrying. Lost when they are. */
   caseFiles: CaseFile[];
+  /**
+   * The department, and what it is costing.
+   *
+   * On the state response rather than only the Ledger because the payroll flag
+   * changes what the officer is looking at everywhere: staff who have downed
+   * tools are the explanation for a cabinet that stopped emptying itself, and
+   * finding that out requires visiting the screen that is no longer working.
+   */
+  registry: Registry;
   /**
    * Forms filed and still processing, with the wait already computed.
    *

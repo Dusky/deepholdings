@@ -9,6 +9,7 @@ import type {
   JournalEntry,
   Office,
   Pension,
+  Registry,
   RequisitionId,
   StandingOrders,
   TavernMessage,
@@ -321,6 +322,29 @@ export class PostgresRepository implements Repository {
       spent: rows[0].spent,
       requisitions: (rows[0].requisitions ?? []) as RequisitionId[],
     };
+  }
+
+  async getRegistry(accountId: string): Promise<Registry> {
+    const { rows } = await this.db.query(
+      'SELECT staff, spent, unpaid FROM registries WHERE account_id = $1',
+      [accountId],
+    );
+    if (!rows[0]) return { staff: [], spent: 0, unpaid: false };
+    return {
+      staff: (rows[0].staff ?? []) as Registry['staff'],
+      spent: rows[0].spent,
+      unpaid: rows[0].unpaid,
+    };
+  }
+
+  async saveRegistry(accountId: string, registry: Registry): Promise<void> {
+    await this.db.query(
+      `INSERT INTO registries (account_id, staff, spent, unpaid)
+       VALUES ($1, $2::jsonb, $3, $4)
+       ON CONFLICT (account_id) DO UPDATE SET
+         staff = EXCLUDED.staff, spent = EXCLUDED.spent, unpaid = EXCLUDED.unpaid`,
+      [accountId, JSON.stringify(registry.staff), registry.spent, registry.unpaid],
+    );
   }
 
   async saveOffice(accountId: string, office: Office): Promise<void> {

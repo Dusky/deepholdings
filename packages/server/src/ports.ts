@@ -8,6 +8,7 @@ import type {
   JournalEntry,
   Office,
   Pension,
+  Registry,
   StandingOrders,
   TavernMessage,
   WorldState,
@@ -95,6 +96,8 @@ export interface Repository {
   savePension(accountId: string, pension: Pension): Promise<void>;
 
   getOffice(accountId: string): Promise<Office>;
+  getRegistry(accountId: string): Promise<Registry>;
+  saveRegistry(accountId: string, registry: Registry): Promise<void>;
   saveOffice(accountId: string, office: Office): Promise<void>;
 
   recordDeath(accountId: string, record: DeathRecord): Promise<void>;

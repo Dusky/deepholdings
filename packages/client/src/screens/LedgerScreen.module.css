@@ -192,3 +192,21 @@
     min-height: 44px;
   }
 }
+
+/* A post is a hire button with its standing instruction underneath, so the two
+   read as one thing rather than as a purchase and an unrelated slider. */
+.post {
+  margin-bottom: 4px;
+}
+
+.policy {
+  display: block;
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: calc(10px * var(--font-scale));
+}
+
+.policy label {
+  display: block;
+  margin-bottom: 4px;
+}

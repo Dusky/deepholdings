@@ -8,8 +8,11 @@ import {
   HOARD_SALE_BONUS,
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
+  clampPolicy,
   clampRetreatPct,
   clauseById,
+  isHired,
+  staffSpec,
   formGoldCost,
   formSpec,
   UNLOCK_CATALOGUE,
@@ -40,7 +43,11 @@ import {
   type LedgerStack,
   type LootPriority,
   type Office,
+  type Pension,
   type PendingFiling,
+  type Registry,
+  type RegistryResponse,
+  type StaffRole,
   type PurchaseRequisitionResponse,
   type RequisitionId,
   type StandingOrders,
@@ -63,6 +70,7 @@ import { succeed } from './domain/character.js';
 import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
 import { journalKind } from './domain/flavor.js';
 import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
+import { runStaff } from './domain/staff.js';
 import { advanceClock, now as worldNow } from './clock.js';
 import type { CharacterRecord, Repository } from './ports.js';
 
@@ -198,7 +206,7 @@ export async function loadState(
     // but reinstall. The branch below that surfaces a death "recorded on an
     // earlier request" has never been reachable.
     const existing = record ?? (await tx.getLatestCharacter(accountId));
-    const pension = await tx.getPension(accountId);
+    let pension = await tx.getPension(accountId);
     const office = await tx.getOffice(accountId);
     const orders = await tx.getOrders(accountId);
     const world = await tx.getWorld();
@@ -235,13 +243,21 @@ export async function loadState(
         );
       }
 
-      current = {
-        character: result.character,
-        permitAppliedTick: result.permitAppliedTick,
-        inventory: result.inventory,
-        caseFiles: result.caseFiles,
-        filings: result.filings,
-      };
+      const worked = await applyStaff(
+        tx,
+        accountId,
+        {
+          character: result.character,
+          permitAppliedTick: result.permitAppliedTick,
+          inventory: result.inventory,
+          caseFiles: result.caseFiles,
+          filings: result.filings,
+        },
+        pension,
+        result.ticksResolved,
+      );
+      current = worked.record;
+      pension = worked.pension;
 
       if (result.ticksResolved > 0) {
         await tx.saveCharacter(current);
@@ -298,6 +314,7 @@ export async function loadState(
       ordersFiled: await tx.hasFiledOrders(accountId),
       caseFiles: current.caseFiles ?? [],
       filings: pendingFilings(current, now),
+      registry: await tx.getRegistry(accountId),
       pendingPermit: pendingPermitOf(current, pension.unlocks, now),
       retirement: retirementOffer(current, pension.unlocks),
       character: current.character,
@@ -544,6 +561,79 @@ export async function fileForm(
   });
 }
 
+/**
+ * Hiring.
+ *
+ * The cost is gold and it is not refundable, like every other thing the office
+ * buys. There is deliberately no way to dismiss staff: the interesting decision
+ * is whether you can carry the wage, and an undo turns that into a free trial.
+ * A department that has outgrown its income downs tools until it is paid, which
+ * is a state the officer can read and recover from.
+ */
+export async function hireStaff(
+  repo: Repository,
+  accountId: string,
+  role: StaffRole,
+): Promise<RegistryResponse> {
+  const spec = staffSpec(role);
+  if (!spec) throw new ServiceError('invalid_request', 'no such post');
+
+  return repo.transaction(async (tx) => {
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+
+    const registry = await tx.getRegistry(accountId);
+    if (isHired(registry, role)) throw new ServiceError('already_owned', 'the post is filled');
+    if (record.character.gold < spec.hire) {
+      throw new ServiceError('insufficient_gold', 'not enough gold');
+    }
+
+    const character = { ...record.character, gold: record.character.gold - spec.hire };
+    const updated: Registry = {
+      staff: [...registry.staff, { role, policy: spec.policyDefault }],
+      spent: registry.spent + spec.hire,
+      unpaid: registry.unpaid,
+    };
+    await tx.saveCharacter({ ...record, character });
+    await tx.saveRegistry(accountId, updated);
+    await tx.appendJournal([
+      entry_(
+        character,
+        `${spec.title} appointed to the registry. ${spec.hire} gold, and ${spec.upkeep} gold a minute thereafter.`,
+      ),
+    ]);
+
+    return { registry: updated, gold: character.gold };
+  });
+}
+
+/** Amending a standing instruction. Free — it is a form, not a purchase. */
+export async function setStaffPolicy(
+  repo: Repository,
+  accountId: string,
+  role: StaffRole,
+  policy: number,
+): Promise<RegistryResponse> {
+  const spec = staffSpec(role);
+  if (!spec) throw new ServiceError('invalid_request', 'no such post');
+
+  return repo.transaction(async (tx) => {
+    const registry = await tx.getRegistry(accountId);
+    if (!isHired(registry, role)) throw new ServiceError('not_found', 'the post is vacant');
+
+    const updated: Registry = {
+      ...registry,
+      staff: registry.staff.map((member) =>
+        member.role === role ? { ...member, policy: clampPolicy(role, policy) } : member,
+      ),
+    };
+    await tx.saveRegistry(accountId, updated);
+    const record = await tx.getActiveCharacterForUpdate(accountId);
+    return { registry: updated, gold: record?.character.gold ?? 0 };
+  });
+}
+
 export async function updateOrders(
   repo: Repository,
   accountId: string,
@@ -583,6 +673,79 @@ function validateOrders(orders: StandingOrders): StandingOrders {
   };
 }
 
+/**
+ * The department works the span that was just resolved.
+ *
+ * After resolution rather than inside it, because the Junior Officer spends
+ * pension and the Filing Clerk reads the cabinet — see `domain/staff.ts`.
+ *
+ * One function for both read paths on purpose. `loadState` and
+ * `loadStateInside` each resolve independently — `loadState` needs the digest
+ * and the clearance diff, which the write path has no use for — and staff
+ * bolted onto one of them would have been a department that worked when you
+ * sold something and not when you opened the app, or the reverse. Whichever
+ * half was missed, the symptom would have been "sometimes my clerk does
+ * nothing", which is close to unreportable.
+ *
+ * Returns the record *and* the pension, both unchanged when nothing happened.
+ * The pension has to come back because the Junior Officer spends it: a caller
+ * that kept the copy it read before resolution would answer the request with a
+ * balance the officer had already been charged against, and the redemption
+ * would appear to un-happen until the next refresh.
+ */
+async function applyStaff(
+  tx: Repository,
+  accountId: string,
+  record: CharacterRecord,
+  pension: Pension,
+  ticksResolved: number,
+): Promise<{ record: CharacterRecord; pension: Pension }> {
+  if (ticksResolved <= 0) return { record, pension };
+  const registry = await tx.getRegistry(accountId);
+  if (registry.staff.length === 0) return { record, pension };
+
+  const worked = runStaff({
+    character: record.character,
+    inventory: record.inventory,
+    caseFiles: record.caseFiles,
+    filings: record.filings,
+    pension,
+    registry,
+    ticksResolved,
+    newId: randomUUID,
+  });
+  if (!worked.changed) return { record, pension };
+
+  await tx.saveRegistry(accountId, worked.registry);
+  // Compared by content rather than identity: `runStaff` copies the pension
+  // whether or not the officer bought anything, so a reference check would
+  // write it on every read forever.
+  if (worked.pension.total !== pension.total || worked.pension.spent !== pension.spent) {
+    await tx.savePension(accountId, worked.pension);
+  }
+  if (worked.notes.length > 0) {
+    await tx.appendJournal(
+      worked.notes.map((text, i) => ({
+        characterId: worked.character.id,
+        tick: worked.character.lastResolvedTick,
+        at: new Date(Date.now() + i),
+        text,
+      })),
+    );
+  }
+
+  return {
+    record: {
+      ...record,
+      character: worked.character,
+      inventory: worked.inventory,
+      caseFiles: worked.caseFiles,
+      filings: worked.filings,
+    },
+    pension: worked.pension,
+  };
+}
+
 /** Resolution step reused by writes that must not act on stale state. */
 async function loadStateInside(tx: Repository, accountId: string): Promise<CharacterRecord | null> {
   const record = await tx.getActiveCharacterForUpdate(accountId);
@@ -614,13 +777,16 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     );
   }
 
-  const updated: CharacterRecord = {
+  let updated: CharacterRecord = {
     character: result.character,
     permitAppliedTick: result.permitAppliedTick,
     inventory: result.inventory,
     caseFiles: result.caseFiles,
     filings: result.filings,
   };
+
+  updated = (await applyStaff(tx, accountId, updated, pension, result.ticksResolved)).record;
+
   await tx.saveCharacter(updated);
 
   if (result.death) {
@@ -666,7 +832,7 @@ function quote(
 export async function getLedger(repo: Repository, accountId: string): Promise<LedgerResponse> {
   return repo.transaction(async (tx) => {
     const record = await tx.getActiveCharacterForUpdate(accountId);
-    const pension = await tx.getPension(accountId);
+    let pension = await tx.getPension(accountId);
     const office = await tx.getOffice(accountId);
     const world = await tx.getWorld();
     const orders = await tx.getOrders(accountId);

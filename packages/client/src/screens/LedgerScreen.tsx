@@ -1,11 +1,22 @@
 import { useCallback, useState } from 'react';
-import { HEARTBEAT_SECONDS, type RequisitionId, type UnlockId } from '@deepholdings/shared';
+import {
+  HEARTBEAT_SECONDS,
+  STAFF_CATALOGUE,
+  isHired,
+  payrollPerTick,
+  policyOf,
+  type Registry,
+  type RequisitionId,
+  type StaffRole,
+  type UnlockId,
+} from '@deepholdings/shared';
 import { api } from '../api/client';
 import { useResource } from '../hooks/useResource';
 import { useServerClock } from '../hooks/useServerClock';
 import { secondsUntil } from '../lib/activity';
 import { formatCountdown } from '../lib/format';
 import { useServer } from '../state/serverContext';
+import { Slider } from '../components/ui/Slider';
 import { CabinetColumn, type BulkSelector } from './CabinetColumn';
 import columns from './columns.module.css';
 import styles from './LedgerScreen.module.css';
@@ -33,6 +44,123 @@ function MarketClock() {
       <span className="text-body">{seconds <= 0 ? 'due now' : `in ${formatCountdown(seconds)}`}</span>
       .
     </>
+  );
+}
+
+/**
+ * The Registry: hire, and tell them what to do.
+ *
+ * On the Ledger rather than a seventh tab. Staff are a gold sink like the
+ * requisitions two columns over, and the tab strip already wraps to two rows on
+ * a phone — a screen this closely related is not worth a third.
+ *
+ * Every post shows its wage before you hire it and its standing instruction
+ * after, because the wage is the decision and the instruction is the game. A
+ * hire that were only a switch would be automation that removes the choice;
+ * these move the choice up a level instead.
+ */
+function RegistryColumn({
+  registry,
+  gold,
+  onChanged,
+}: {
+  registry: Registry;
+  gold: number;
+  onChanged: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState<StaffRole | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  // Held locally while dragging so the slider does not fight the server round
+  // trip; the filed value is whatever it lands on.
+  const [draft, setDraft] = useState<Partial<Record<StaffRole, number>>>({});
+
+  const hire = async (role: StaffRole) => {
+    setBusy(role);
+    setNotice(null);
+    try {
+      await api.hireStaff(role);
+      await onChanged();
+    } catch {
+      setNotice('The appointment was not approved. Nothing was charged.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const file = async (role: StaffRole, policy: number) => {
+    setDraft((current) => ({ ...current, [role]: policy }));
+    try {
+      await api.setStaffPolicy(role, policy);
+      await onChanged();
+    } catch {
+      setNotice('The amendment was returned unstamped.');
+    }
+  };
+
+  const payroll = payrollPerTick(registry);
+
+  return (
+    <div className={columns.column}>
+      <div className={`text-head ${columns.head}`}>
+        REGISTRY{payroll > 0 ? ` — ${payroll}g/min` : ''}
+      </div>
+      <div className={`text-dim ${styles.hint}`}>
+        Staff take work off your desk and a wage off your purse, every minute,
+        for as long as they are on the books.
+      </div>
+      {registry.unpaid && (
+        <div className={`text-dim ${styles.hint}`} data-kind="alert">
+          <span className="text-bright">The registry has stopped work.</span> The
+          payroll could not be met; it resumes when there is gold to meet it.
+        </div>
+      )}
+      {STAFF_CATALOGUE.map((spec) => {
+        const hired = isHired(registry, spec.role);
+        const policy = draft[spec.role] ?? policyOf(registry, spec.role) ?? spec.policyDefault;
+        return (
+          <div key={spec.role} className={styles.post}>
+            <button
+              type="button"
+              className={styles.unlock}
+              data-state={hired ? 'owned' : gold >= spec.hire ? 'affordable' : 'locked'}
+              disabled={hired || gold < spec.hire || busy !== null}
+              onClick={() => void hire(spec.role)}
+            >
+              <span className={styles.unlockHead}>
+                <span className={hired ? 'text-bright' : 'text-body'}>{spec.title}</span>
+                <span className={hired ? 'text-bright' : 'text-dim'}>
+                  {hired ? 'ON THE BOOKS' : busy === spec.role ? '...' : `${spec.hire}g`}
+                </span>
+              </span>
+              <span className={`text-dim ${styles.unlockDetail}`}>
+                {spec.detail} {spec.upkeep}g per minute.
+              </span>
+            </button>
+            {hired && (
+              <div className={styles.policy}>
+                <label className="text-dim" htmlFor={`policy-${spec.role}`}>
+                  {spec.policyLabel}{' '}
+                  <span className="text-bright">
+                    {policy}
+                    {spec.policyUnit ? ` ${spec.policyUnit}` : ''}
+                  </span>
+                </label>
+                <Slider
+                  id={`policy-${spec.role}`}
+                  min={spec.policyMin}
+                  max={spec.policyMax}
+                  step={spec.policyStep}
+                  value={policy}
+                  valueText={`${spec.policyLabel} ${policy}`}
+                  onChange={(value) => void file(spec.role, value)}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {notice && <div className={`text-dim ${styles.hint}`}>{notice}</div>}
+    </div>
   );
 }
 
@@ -242,6 +370,14 @@ export function LedgerScreen() {
         )}
         {retireNotice && <div className="text-dim">{retireNotice}</div>}
       </div>
+
+      <RegistryColumn
+        registry={state?.registry ?? { staff: [], spent: 0, unpaid: false }}
+        gold={state?.character.gold ?? 0}
+        onChanged={async () => {
+          await Promise.all([reload(), refresh()]);
+        }}
+      />
 
     </div>
   );

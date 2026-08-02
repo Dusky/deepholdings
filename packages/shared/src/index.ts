@@ -1,6 +1,7 @@
 export * from './domain.js';
 export * from './items.js';
 export * from './forms.js';
+export * from './staff.js';
 export * from './api.js';
 export * from './rng.js';
 export * from './tuning.js';

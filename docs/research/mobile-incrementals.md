@@ -52,8 +52,9 @@ The second comparison is worse and is not a matter of taste:
 
 | | CIFI / ISEPS | Deep Holdings |
 | --- | --- | --- |
-| upgrades | "thousands" | 19 prestige unlocks + 7 requisitions |
+| upgrades | "thousands" | 19 prestige unlocks + 7 requisitions + 3 posts |
 | prestige layers | multiple, stacked | one (pension → unlocks) |
+| automation ladder | the spine of the genre | 3 posts, one tier (was: none) |
 | stated longevity | "months or years" | untested; the content runs out well before that |
 | depth ceiling | effectively unbounded | Floor 12, Permit D-8, and then nothing |
 

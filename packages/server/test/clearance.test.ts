@@ -38,20 +38,23 @@ test('the tavern arrives at grade four', () => {
   assert.ok(clearanceFor(recruit({ level: 4 }), NO_PENSION).includes('tavern'));
 });
 
+test('the armoury arrives with the third permit', () => {
+  assert.equal(clearanceFor(recruit({ permitTier: 2 }), NO_PENSION).includes('armoury'), false);
+  assert.ok(clearanceFor(recruit({ permitTier: 3 }), NO_PENSION).includes('armoury'));
+});
+
 test('clearance survives death, even though level and permit do not', () => {
+  const ALL = ['armoury', 'bulletin', 'ledger', 'orders', 'tavern', 'terminal'];
+
   // Everything unlocked on the first recruit...
   const veteran = recruit({ level: 6, permitTier: 3 });
   const earned = clearanceFor(veteran, { total: 900, spent: 0, unlocks: [] });
-  assert.deepEqual(earned.sort(), ['bulletin', 'ledger', 'orders', 'tavern', 'terminal']);
+  assert.deepEqual(earned.sort(), ALL);
 
   // ...and the replacement starts back at level 1 with permit D-1.
   const successor = recruit({ recruitNum: 2, level: 1, permitTier: 1 });
   const kept = clearanceFor(successor, { total: 900, spent: 0, unlocks: [] });
-  assert.deepEqual(
-    kept.sort(),
-    ['bulletin', 'ledger', 'orders', 'tavern', 'terminal'],
-    'a screen must never be taken away by a funeral',
-  );
+  assert.deepEqual(kept.sort(), ALL, 'a screen must never be taken away by a funeral');
 });
 
 test('a spent pension still counts as having had one', () => {

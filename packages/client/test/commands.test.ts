@@ -21,7 +21,7 @@ function context(overrides: Partial<CommandContext> = {}) {
   const visited: string[] = [];
   const ctx: CommandContext = {
     navigate: (screen) => visited.push(screen),
-    clearance: ['terminal', 'orders', 'ledger', 'bulletin', 'tavern'],
+    clearance: ['terminal', 'orders', 'ledger', 'bulletin', 'tavern', 'armoury'],
     devTools: false,
     advance: async (hours) => `advanced ${hours}`,
     refresh: async () => {},
@@ -111,6 +111,21 @@ test('navigation reports a screen the officer is not cleared for', () => {
 
   const allowed = String(run('status', context().ctx));
   assert.match(allowed, /Terminal/);
+});
+
+test('every screen is reachable by typing its name', () => {
+  // A tab and a command are the two halves of navigation, and a screen that
+  // has one but not the other is the kind of gap nothing else would catch.
+  for (const screen of ['terminal', 'orders', 'ledger', 'bulletin', 'tavern', 'armoury']) {
+    const { ctx, visited } = context();
+    run(screen, ctx);
+    assert.deepEqual(visited, [screen], `typing ${screen} should open it`);
+  }
+
+  // The drawer is spelled both ways on purpose.
+  const { ctx, visited } = context();
+  run('armory', ctx);
+  assert.deepEqual(visited, ['armoury']);
 });
 
 test('orders can be amended one field at a time', async () => {

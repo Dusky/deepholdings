@@ -217,8 +217,17 @@ export function resolve(options: ResolveOptions): ResolveResult {
    * Held in a variable rather than derived at each use so the cost is paid
    * once per acquisition instead of once per tick — this runs inside the tick
    * loop, and the loop runs up to MAX_CATCHUP_TICKS times per read.
+   *
+   * **The base passed is the recruit's own maximum before clauses**, which is
+   * what `statsOf` documents its vigour ceiling as a share of. The first
+   * version omitted it and took the default, so every recruit shared a Grade
+   * 12 recruit's ceiling: at Grade 2 that is +19 on a 72-point maximum, a 26%
+   * swing from a system whose whole justification is a 12% one. Carried
+   * effect is now worth the same *proportion* at every grade, which is the
+   * only version the ARMOURY screen can state honestly.
    */
-  let stats = statsOf(caseFiles);
+  const carried = () => statsOf(caseFiles, maxHpForLevel(character.level));
+  let stats = carried();
 
   /**
    * Keeps `maxHp` equal to level plus carried vigour, and hp inside it.
@@ -483,7 +492,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
           });
           const filed = fileCaseFile(caseFiles, rolled);
           caseFiles = filed.files;
-          stats = statsOf(caseFiles);
+          stats = carried();
           syncVitals();
           counters.caseFilesFound += 1;
 
@@ -516,7 +525,13 @@ export function resolve(options: ResolveOptions): ResolveResult {
       const levels = applyLevelUps(character);
       // applyLevelUps recomputes maxHp from level alone, so carried vigour has
       // to be folded back in immediately or a promotion silently strips it.
-      if (levels > 0) syncVitals();
+      // The stat block is recomputed as well and not merely re-applied: the
+      // vigour ceiling is a share of the recruit's own maximum, so a promotion
+      // raises it, and files that were being clipped start paying out.
+      if (levels > 0) {
+        stats = carried();
+        syncVitals();
+      }
       counters.levelsGained += levels;
       if (levels > 0) {
         log(tick, `Grade review passed. Now Grade ${character.level}. Union Standing +${levels}.`);

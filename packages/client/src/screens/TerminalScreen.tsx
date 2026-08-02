@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
-import { caseFileTitle, clauseLine, journalLines } from '@deepholdings/shared';
+import { caseFileTitle, journalLines } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
@@ -70,6 +70,7 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
 
   if (!state) return null;
   const { character, orders } = state;
+  const clearance = state.clearance ?? [];
 
   return (
     <>
@@ -120,14 +121,16 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
         <ProgressBar value={tickProgress(serverNow)} label="Time to next resolution" />
       </div>
 
+      {/* One line, not the drawer. This used to print every file with every
+          clause name run together and no numbers, which was the only view of
+          the game's one system with decisions in it. The Armoury is that view
+          now; the Terminal says what is carried and where to read it. */}
       {state.caseFiles && state.caseFiles.length > 0 && (
         <div className={`text-dim ${styles.ladder}`}>
-          {state.caseFiles.map((f) => (
-            <div key={f.id}>
-              {f.id} · {caseFileTitle(f)}
-              {clauseLine(f) ? ` — ${clauseLine(f)}` : ''}
-            </div>
-          ))}
+          {state.caseFiles.length === 1
+            ? `1 case file on hand — ${caseFileTitle(state.caseFiles[0])}.`
+            : `${state.caseFiles.length} case files on hand.`}{' '}
+          {clearance.includes('armoury') ? 'Filed in the Armoury.' : ''}
         </div>
       )}
 

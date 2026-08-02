@@ -48,7 +48,7 @@ export interface Office {
 }
 
 /** The screens of the terminal. Which ones a player has is server-decided. */
-export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin';
+export type ScreenId = 'terminal' | 'tavern' | 'orders' | 'ledger' | 'bulletin' | 'armoury';
 
 /**
  * What happened while the player was away. Counted by the resolver as it runs,

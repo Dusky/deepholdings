@@ -24,6 +24,7 @@ const TABS: readonly { id: ScreenId; label: string }[] = [
   { id: 'orders', label: 'Orders' },
   { id: 'ledger', label: 'Ledger' },
   { id: 'bulletin', label: 'Bulletin' },
+  { id: 'armoury', label: 'Armoury' },
 ];
 
 interface TabRowProps {

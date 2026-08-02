@@ -947,3 +947,42 @@ about the instrument and not the world. The 90-day run only found this because
 it was asked for a *per-fortnight* breakdown; the median it had been reporting
 all along averaged an immortal recruit's silence together with the first two
 weeks, and produced a number that looked merely disappointing.
+
+## The vigour ceiling was a flat number pretending to be a share
+
+Found while building the ARMOURY screen, which has to state the ceilings out
+loud and therefore had to answer "ceiling of what?".
+
+`statsOf(files, baseMaxHp)` caps carried vigour at `MAX_VIGOUR_FRACTION` of the
+recruit's own maximum, and its own comment says why: a case file should be
+worth the same *proportion* to a Grade 2 and a Grade 20 rather than being
+decisive early and irrelevant late. The parameter existed. The resolver never
+passed it, so every recruit shared the 161-point default — a Grade 12 recruit's
+maximum.
+
+At Grade 2 a recruit has 72 maximum HP, so the ceiling was +19 on 72: a **26%**
+swing from a system whose entire justification is a 12% one. The early game was
+running with roughly double the intended gear effect, at exactly the grades
+where the recruit is most fragile and the ceiling matters most.
+
+Two call sites and one addition:
+
+```ts
+const carried = () => statsOf(caseFiles, maxHpForLevel(character.level));
+```
+
+The addition is that a promotion now recomputes the block rather than only
+re-applying it. The ceiling is a share of the recruit's own base maximum, so
+levelling up raises it, and files that were being clipped start paying out —
+which is the behaviour the proportional rule was for in the first place.
+
+Balance impact at fortnight scale is nil, which is expected: by Grade 12 the
+computed base and the old default are the same number. Cadence after the fix
+reads 7.43 events per career-day, 4.3% genuine-empty windows, 11.50 deaths and
+58,422 pension against 7.52 / 4.0% / 11.72 / 59,319 before — inside run-to-run
+variance. The ninety-day curve is likewise unchanged: last new thing day 39.5,
+19 of 19 unlocks, income holding across all six fortnights.
+
+So this is not a re-balance. It is the early game finally matching what the
+document said it was, and it was found by writing a screen that had to explain
+itself to a player.

@@ -1,0 +1,129 @@
+.hint {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.empty {
+  display: block;
+  max-width: 44ch;
+}
+
+/* A file is a block, not a row: it has a head, a meta line and up to four
+   clauses, and the clauses are the part worth reading. */
+.file {
+  padding: 7px 0 9px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.fileHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.fileMeta {
+  display: block;
+  margin-top: 1px;
+  font-size: calc(10px * var(--font-scale));
+}
+
+/* Kind, text, effect. The effect column is right-aligned so a stack of
+   clauses can be scanned down its numbers rather than read line by line. */
+/* `auto` rather than a fixed width: the kind column holds one of two words,
+   and a guessed em width sized for "Rider" put "Endorsement" straight through
+   the clause text beside it. Let the content set it. */
+.clause {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: calc(10.5px * var(--font-scale));
+}
+
+.clauseKind {
+  font-size: calc(9.5px * var(--font-scale));
+  letter-spacing: 0.06em;
+}
+
+.clauseEffect {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Endorsements read as gains, riders as costs — the same semantic-colour rule
+   the journal uses, rather than a second palette invented for this screen. */
+.clause[data-kind='endorsement'] .clauseEffect {
+  color: var(--log-loot);
+}
+
+.clause[data-kind='rider'] .clauseEffect {
+  color: var(--log-combat);
+}
+
+.vacant {
+  display: block;
+  margin-top: 4px;
+  font-size: calc(10.5px * var(--font-scale));
+  opacity: 0.7;
+}
+
+/* Three columns normally; the filed figure appears only when a ceiling is
+   actually taking something off it. */
+.effectRow {
+  display: grid;
+  grid-template-columns: 1fr 4.5em 7em;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.effectRow[data-filed='true'] {
+  grid-template-columns: 1fr 4.5em 4.5em 7em;
+}
+
+.effectRow > span:not(:first-child) {
+  text-align: right;
+}
+
+.effectHead {
+  border-bottom-color: var(--phosphor-dim);
+  font-size: calc(9.5px * var(--font-scale));
+  letter-spacing: 0.06em;
+}
+
+/* Struck through, because "filed 34, applied 19" is only legible if the 34 is
+   visibly not the number in play. */
+.effectRow[data-filed='true'][data-clipped='true'] > span:nth-child(2) {
+  text-decoration: line-through;
+}
+
+/* Narrow phones: the four-column effect table is the first thing to break, and
+   the ceiling is the column a player needs least often. */
+@media (max-width: 420px) {
+  .effectRow {
+    grid-template-columns: 1fr 4.5em 5.5em;
+  }
+
+  /* Four value columns will not fit a phone. When a ceiling is actively taking
+     something off a figure, "filed vs applied" is the pair that explains the
+     surprise, and the ceiling itself is spelled out in the note below. */
+  .effectRow[data-filed='true'] {
+    grid-template-columns: 1fr 4em 4em;
+  }
+
+  .effectRow[data-filed='true'] > span:last-child {
+    display: none;
+  }
+
+  /* Kind moves to its own line rather than being dropped: colour alone
+     distinguishes an endorsement from a rider, and the two are one step apart
+     on the palette. A player learning which is which needs the word. */
+  .clause {
+    grid-template-columns: 1fr auto;
+  }
+
+  .clauseKind {
+    grid-column: 1 / -1;
+    margin-bottom: -2px;
+  }
+}

@@ -1,3 +1,4 @@
+import { ArmouryScreen } from '../screens/ArmouryScreen';
 import { BulletinScreen } from '../screens/BulletinScreen';
 import { LedgerScreen } from '../screens/LedgerScreen';
 import { OrdersScreen } from '../screens/OrdersScreen';
@@ -14,8 +15,8 @@ interface ConsoleProps {
 }
 
 /**
- * The booted terminal: tabs, the active screen, and the command bar. All five
- * screens share one mounted shell — there are no routes. Which screen is
+ * The booted terminal: tabs, the active screen, and the command bar. Every
+ * screen shares one mounted shell — there are no routes. Which screen is
  * showing lives in ScreenContext so the Android back button can reach it.
  */
 export function Console({ revealSkipped }: ConsoleProps) {
@@ -35,6 +36,7 @@ export function Console({ revealSkipped }: ConsoleProps) {
         {activeScreen === 'orders' && <OrdersScreen />}
         {activeScreen === 'ledger' && <LedgerScreen />}
         {activeScreen === 'bulletin' && <BulletinScreen />}
+        {activeScreen === 'armoury' && <ArmouryScreen />}
       </div>
       <CommandBar onNavigate={goTo} />
     </div>

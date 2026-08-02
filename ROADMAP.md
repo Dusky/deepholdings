@@ -64,7 +64,7 @@ The things every decision gets checked against.
 | M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | | yes |
 | M4 — It has direction | | yes |
-| M5 — It has depth (crafting) | | *candidate cut* |
+| M5 — It has depth (crafting) | Items and clauses shipped; forms not | *candidate cut* |
 | M6 — An inhabited world | | *candidate cut* |
 | M7 — Able to take money | | yes |
 | M8 — Store-ready | | yes |
@@ -391,20 +391,29 @@ always knows what they are working toward.
 **Goal:** items that feel like yours. The largest single addition on the
 roadmap, designed in full at [`docs/design/crafting.md`](docs/design/crafting.md).
 
-- [ ] **Requisition & Arbitration** — gear with affixes, where the crafting
-      system is the bureaucracy: items are case files, crafting actions are
-      forms, and forms take real time to process. Also does most of the "make
-      the four knobs matter" work, since Loot Priority decides which clause
-      pools drop.
-- [ ] **ARMOURY screen**, gated behind clearance like the other late screens.
+Being taken in the staged order the last item asks for. Half of it is in.
+
+- [x] **Case files** — items with a grade, a case number, clauses, and a
+      three-slot drawer that evicts its weakest entry rather than refusing a
+      find. Drop rates are biased by Loot Priority, so that knob now decides
+      what the recruit brings back and not merely how much.
+- [x] **ARMOURY screen**, gated on permit D-3 or a second recruit. Shows the
+      drawer, every clause and what it does, and the combined effect against
+      its ceilings — including the figure the ceiling took off, because a
+      player who adds up their clauses and gets a different number has found a
+      bug as far as they know.
+- [x] **20 clauses** — 11 endorsements, 9 riders. Half the target pool.
+- [ ] **The form catalogue** — 7-A, 3-B, 12-C, 19, N-1 and 44. This is the
+      half that makes a case file *yours* rather than found, and it is the half
+      the exit criterion is about.
+- [ ] **~40 clauses.** Our competitor has 100+ after years. A shallow pool
+      shipped beats a deep pool planned.
 - [ ] **Equipment policy** as a fifth standing order, with countersigned slots
       that automatic equipping may never override.
-- [ ] **~40 clauses to start.** Our competitor has 100+ after years. A shallow
-      pool shipped beats a deep pool planned.
-- [ ] **Staging plan.** If this milestone slips, ship items and clauses first
-      and the full form catalogue second. Do not cut it to nothing.
+- [ ] **Provenance and Union Standing**, which the forms spend.
 
 **Exit:** a player can show you an item they built and explain why it is theirs.
+**Not met yet** — a player can currently show you an item they *found*.
 
 ---
 

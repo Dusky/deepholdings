@@ -48,6 +48,7 @@ const SCREEN_LABEL: Record<ScreenId, string> = {
   ledger: 'Ledger',
   bulletin: 'Regional Bulletin',
   tavern: 'Tavern Channel',
+  armoury: 'Armoury',
 };
 
 function go(name: string, screen: ScreenId, aliases: string[]): CommandSpec {
@@ -88,6 +89,7 @@ export const COMMANDS: readonly CommandSpec[] = [
   go('ledger', 'ledger', ['market', 'cabinet']),
   go('bulletin', 'bulletin', ['news']),
   go('tavern', 'tavern', ['chat']),
+  go('armoury', 'armoury', ['armory', 'files', 'drawer']),
 
   {
     name: 'depth',

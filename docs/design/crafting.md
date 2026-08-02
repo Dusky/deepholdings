@@ -1,6 +1,17 @@
 # Design: Requisition & Arbitration (gear and affixes)
 
-**Status:** designed, not scheduled. Target M3.
+**Status:** partly shipped, following the staging plan at the foot of this
+document — *items and clauses first, the form catalogue second*.
+
+**Shipped:** case files with grades, twenty clauses across endorsements and
+riders, a three-slot drawer that evicts its weakest entry, drop rates biased by
+Loot Priority, hard ceilings on the carried stat block, and the **ARMOURY**
+screen — the drawer, each file's clauses and what they do, and the combined
+effect against its ceilings.
+
+**Not shipped:** every form in the table below, provenance, Union Standing as a
+currency, equipment policy, and the countersignature rules. A case file is
+currently what it was found as.
 
 Gear crafting is the most-praised system in our closest competitor and the
 biggest structural gap in our design. This is the version of it that is
@@ -92,8 +103,18 @@ This is the part that makes it worth building rather than bolting on.
 
 A sixth screen — **ARMOURY** — gated behind clearance, per the progressive
 disclosure rule. Not handed to a new officer; issued once they have a case file
-worth arguing about. Filing status shows in the Terminal log like everything
-else:
+worth arguing about.
+
+**Shipped, with one change forced by the clearance rules.** "Once they have a
+case file" is not a condition clearance can use: every grant must be monotone
+across death, and case files die with the recruit, so a drawer-based gate would
+take the screen away at the first funeral. Measured instead — across forty
+default careers the first case file lands at a median of day 0.55, by permit
+tier D-2 twice, D-3 thirteen times, D-4 seven and a tail beyond. The gate is
+therefore **permit D-3 or a second recruit**, which puts the drawer on the desk
+before the first thing goes in it in 31 careers of 33.
+
+Filing status shows in the Terminal log like everything else:
 
 ```
 14:22  Form 12-C filed against Case #4417-C. Estimated processing: 2 hours.

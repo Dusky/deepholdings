@@ -155,6 +155,47 @@ export function statsOf(files: readonly CaseFile[], baseMaxHp = 161): StatBlock 
   return total;
 }
 
+/**
+ * What the files add up to, before and after the ceilings.
+ *
+ * The ARMOURY screen needs both halves. A player looking at four clauses that
+ * read `+15 vigour` and a stat line that moved by nineteen will conclude the
+ * game is broken, and they will be closer to right than a screen that quietly
+ * shows only the capped figure — the clauses really did roll that high, and
+ * the ceiling really did take the rest. Saying so turns a bug report into a
+ * decision about what to carry.
+ */
+export interface CarriedEffect {
+  /** Straight sum of every clause on every file. */
+  raw: StatBlock;
+  /** What resolution actually uses. */
+  effective: StatBlock;
+  /** The ceilings, in the same units as the fields they bound. */
+  caps: StatBlock;
+}
+
+export function carriedEffect(files: readonly CaseFile[], baseMaxHp = 161): CarriedEffect {
+  const raw = { ...NO_STATS };
+  for (const file of files) {
+    for (const id of file.clauseIds) {
+      const clause = clauseById(id);
+      if (!clause) continue;
+      raw.vigour += clause.vigour ?? 0;
+      raw.survival += clause.survival ?? 0;
+      raw.lootValue += clause.lootValue ?? 0;
+    }
+  }
+  return {
+    raw,
+    effective: statsOf(files, baseMaxHp),
+    caps: {
+      vigour: Math.round(baseMaxHp * MAX_VIGOUR_FRACTION),
+      survival: MAX_SURVIVAL,
+      lootValue: MAX_LOOT_VALUE,
+    },
+  };
+}
+
 /** How many clauses a grade carries. A table, because it is five numbers. */
 const SLOTS_BY_GRADE = [1, 1, 2, 3, 4] as const;
 

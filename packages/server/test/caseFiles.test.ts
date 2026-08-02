@@ -8,6 +8,8 @@ import {
   MAX_SURVIVAL,
   MAX_DEPTH,
   MAX_VIGOUR_FRACTION,
+  carriedEffect,
+  maxHpForLevel,
   seniority,
   clauseById,
   clauseSlots,
@@ -218,4 +220,65 @@ test('seniority is zero until the depth cap is passed', () => {
   assert.equal(seniority(1), 0);
   assert.equal(seniority(MAX_DEPTH), 0);
   assert.ok(seniority(MAX_DEPTH + 5) > 0);
+});
+
+test('the vigour ceiling follows the recruit, through the resolver', () => {
+  // The regression this exists for: `statsOf` documents its vigour ceiling as
+  // a share of the recruit's own maximum, and takes a `baseMaxHp` parameter
+  // saying so — but the resolver called it without one and every recruit got
+  // the 161-point default. At Grade 2 that is +19 on a 72-point maximum: a 26%
+  // swing from a system whose entire justification is a 12% one.
+  //
+  // Asserted through `resolve` rather than against `statsOf`, because
+  // `statsOf` was right the whole time. The bug was the call.
+  const kitted: CaseFile[] = [
+    { id: '#1', name: 'x', category: 'gear', grade: 5, unitValue: 1, clauseIds: ['e-founder', 'e-commissioned'] },
+    { id: '#2', name: 'y', category: 'gear', grade: 5, unitValue: 1, clauseIds: ['r-seized', 'r-unresolved'] },
+  ];
+  const at = (level: number) => {
+    const start = succeed({
+      id: 'c', accountId: 'acct', previous: null, depthReached: 0, unlocks: [], atTick: 0,
+    }).character;
+    const bare = resolve({
+      character: { ...start, level }, inventory: [], orders: DEFAULT_ORDERS,
+      unlocks: [], toTick: 1, permitAppliedTick: null, caseFiles: [],
+    });
+    const geared = resolve({
+      character: { ...start, level }, inventory: [], orders: DEFAULT_ORDERS,
+      unlocks: [], toTick: 1, permitAppliedTick: null, caseFiles: kitted,
+    });
+    return geared.character.maxHp - bare.character.maxHp;
+  };
+
+  // Those four clauses sum to +60 vigour, well past any ceiling, so both
+  // recruits are clipped and the gap between them is the ceiling itself.
+  const junior = at(2);
+  const veteran = at(MAX_DEPTH);
+  assert.ok(junior < veteran, `ceiling did not scale: Grade 2 got ${junior}, Grade ${MAX_DEPTH} got ${veteran}`);
+
+  // And each is the documented share of that recruit's own base maximum.
+  assert.equal(junior, Math.round(maxHpForLevel(2) * MAX_VIGOUR_FRACTION));
+  assert.equal(veteran, Math.round(maxHpForLevel(MAX_DEPTH) * MAX_VIGOUR_FRACTION));
+});
+
+test('carried effect reports what was filed as well as what applies', () => {
+  // The ARMOURY screen shows both. A player who adds up their clauses and gets
+  // a different number than their stat line has found a bug, as far as they
+  // know — so the screen has to be able to say "you filed 60, the ceiling took
+  // the rest", and that means the shared helper has to return both.
+  const stacked: CaseFile[] = [
+    { id: '#1', name: 'x', category: 'gear', grade: 5, unitValue: 1, clauseIds: ['e-founder', 'e-commissioned'] },
+    { id: '#2', name: 'y', category: 'gear', grade: 5, unitValue: 1, clauseIds: ['r-seized', 'r-unresolved'] },
+  ];
+  const effect = carriedEffect(stacked, maxHpForLevel(4));
+
+  assert.equal(effect.raw.vigour, 60, 'raw is the straight sum of the clauses');
+  assert.equal(effect.caps.vigour, Math.round(maxHpForLevel(4) * MAX_VIGOUR_FRACTION));
+  assert.equal(effect.effective.vigour, effect.caps.vigour, 'this much vigour must clip');
+  assert.ok(effect.raw.vigour > effect.effective.vigour, 'the screen has something to explain');
+
+  // An empty drawer reports zeroes rather than a ceiling reached.
+  const nothing = carriedEffect([], maxHpForLevel(4));
+  assert.deepEqual(nothing.raw, nothing.effective);
+  assert.equal(nothing.effective.vigour, 0);
 });

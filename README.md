@@ -5,7 +5,7 @@ incremental/MUD game. The player is a case officer: you file standing orders for
 an autonomous adventurer, read the incident log, trade on a market, and talk in
 the tavern channel — all through a terminal running on a beige 1983 desktop PC.
 
-The shell talks to the server: all five screens render resolved, server-owned
+The shell talks to the server: every screen renders resolved, server-owned
 state. Log lines, resources, market, pension and death all come from the API —
 the client no longer simulates anything.
 
@@ -161,10 +161,10 @@ packages/client/src/
   hooks/       interval, boot sequence, persisted settings
   components/  hardware shell: desk, bezel, screen, tabs, command bar, overlays
   components/ui/  reusable controls: chip, slider, progress bar, action button
-  screens/     the five screens
+  screens/     the six screens
 ```
 
-The five screens are not routes. One always-mounted shell switches on
+The screens are not routes. One always-mounted shell switches on
 `activeScreen`, driven by both the tab row and the command bar.
 
 ## Design tokens

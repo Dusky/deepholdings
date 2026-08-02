@@ -105,16 +105,43 @@ It is more likely that **the game is a fortnight long and does not know it.**
 That is a content problem with a known fix, and it is measurable — unlike
 "is it fun", which still needs the stranger M2 has been waiting for.
 
+## The genre's actual complaint, and why it cuts against the fix
+
+Player sentiment for these two specific games could not be read (see below).
+What a broader search of incremental-game discussion does show, consistently,
+is that the dominant complaint in the category is **late-game grind and
+burnout** — content locked behind repetition, players quitting before the
+later tiers, "the late game grind is the worst part".
+
+That is the *opposite* failure from the one this document identifies for Deep
+Holdings, and the two are in tension. The obvious fix for "the game is a
+fortnight long" is more content; the genre's most common way to lose a player
+is content that is technically there and tedious to reach. Padding the ceiling
+with a longer grind would trade our problem for theirs, and theirs is the one
+players write reviews about.
+
+Whatever answers month two has to be *new*, not slower.
+
 ## Caveats
 
-Stated plainly because this document will be cited later:
+Stated plainly because this document will be cited later, and with the dead
+ends recorded so nobody spends the attempts again:
 
-- Install counts and the award streak come from search results and store
-  listings, not from a primary source I could open. The two community review
-  pages (incrementaldb) returned HTTP 403 to automated fetching, so **no
-  player-review sentiment was read directly** — unlike `idle-hacking.md`,
-  which quotes actual reviews.
-- ISEPS install numbers are not published anywhere I could reach.
+- **No player sentiment for either game was read directly.** Unlike
+  `idle-hacking.md`, which quotes actual reviews, nothing here is sourced from
+  a player. Four routes were tried and all failed: reddit.com is not
+  accessible to our web tooling at all (both search-by-domain and direct
+  fetch), Google Play's listing pages are JavaScript-rendered so an automated
+  fetch returns only the navigation shell, and both incrementaldb review pages
+  return HTTP 403.
+- **Neither game has a dedicated subreddit.** Their community lives on
+  r/incremental_games, which is also the source of the award — so the single
+  place the sentiment exists is the single place unreachable from here. If
+  this gap is worth closing, it needs a person to read and paste, or a browser
+  session.
+- Install counts and the award streak come from store listings and search
+  results, not a primary source opened directly.
+- ISEPS install numbers are not published anywhere reachable.
 - No rating figures were verified for either game.
 - Nobody here has played either title. This is a read of positioning and
   store copy, not of the games.

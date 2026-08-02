@@ -93,9 +93,17 @@ CRT shell, server-authoritative resolution, client wired to the API.
 **Goal:** install an APK and play it for a week against a hosted server.
 
 - [x] **Portrait pass.** Portrait below 720px goes full-bleed — desk and bezel
-      drop to a slim beige strip, the screen takes the viewport, tabs scroll
-      with the resource read-out pinned, touch targets ≥44px on coarse
-      pointers, safe-area insets throughout. Landscape and up are unchanged.
+      drop to a slim beige strip, the screen takes the viewport, touch targets
+      ≥44px on coarse pointers, safe-area insets throughout. Landscape and up
+      are unchanged.
+      **Revised after playing it on a phone.** Two rules did not survive
+      contact: tabs scrolled horizontally with the read-out pinned right, which
+      at 360 CSS px left two of six screens behind a swipe with no affordance;
+      and the command bar collapsed to a corner button that read as every
+      screen's primary action while being the one control with no purpose on a
+      phone. Tabs wrap now, the read-out has its own line, and there is no
+      command bar in portrait. `npm run viewports -w @deepholdings/client` is
+      the check that would have caught both.
 - [x] **Self-host the fonts.** Bundled via `@fontsource/ibm-plex-mono`; boot no
       longer touches the network. VT323 dropped.
 - [x] **Capacitor wrapper.** `android/` generated and committed, config set,

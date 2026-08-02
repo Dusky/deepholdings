@@ -1,6 +1,5 @@
 /* The dock stacks what the command line says back above the line itself:
-   a response, then completions, then the input. All three are hidden while
-   the bar is collapsed on a phone. */
+   a response, then completions, then the input. */
 .dock {
   display: flex;
   flex-direction: column;
@@ -57,8 +56,8 @@
 }
 
 .prompt {
-  /* Only interactive in the collapsed compact state; decoration otherwise. */
-  pointer-events: none;
+  /* Decoration. The prompt glyph was a button while the bar collapsed on a
+     phone; it never does now, so it is a span. */
   color: var(--phosphor-bright);
   font-family: var(--font-mono);
   font-size: var(--text-body);
@@ -82,49 +81,7 @@
   color: var(--phosphor-dim);
 }
 
-@media (max-width: 720px) and (orientation: portrait) {
-  .response,
-  .suggestions {
-    padding-left: calc(var(--safe-left) + 16px);
-    padding-right: calc(var(--safe-right) + 16px);
-  }
+/* No compact block: the bar is not rendered in portrait at all (see Console),
+   so the collapsed `>` button and everything that positioned it are gone
+   rather than merely hidden. */
 
-  /* A phone has less to spare, and the input must stay reachable. */
-  .response {
-    max-height: 9.5em;
-  }
-
-  .bar {
-    padding: 10px calc(var(--safe-right) + 16px) calc(var(--safe-bottom) + 10px)
-      calc(var(--safe-left) + 16px);
-  }
-
-  /* Collapsed: the prompt becomes a tap target in the corner and the row stops
-     reserving width for an input nobody has asked for yet. */
-  .bar[data-collapsed='true'] {
-    justify-content: flex-end;
-    border-top-color: transparent;
-    padding-top: 0;
-  }
-
-  .bar[data-collapsed='true'] .prompt {
-    pointer-events: auto;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--phosphor-dim);
-    border-radius: var(--radius-control);
-    cursor: pointer;
-  }
-
-  .bar[data-collapsed='true'] .input {
-    /* Kept mounted so focus() lands on a real element when it expands. */
-    width: 0;
-    flex: 0;
-    padding: 0;
-    opacity: 0;
-    pointer-events: none;
-  }
-}

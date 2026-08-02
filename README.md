@@ -143,10 +143,16 @@ Layout rules on a phone:
 - **Portrait drops the machine.** Below 720px in portrait the desk and bezel
   disappear and the screen takes the whole viewport, keeping only a slim beige
   status strip. Landscape and larger keep the full 1983 desktop.
-- **The command bar collapses** to a `>` button; tapping expands and focuses
-  the input. `interactive-widget=resizes-content` makes the keyboard shrink the
-  layout viewport rather than cover it.
-- **Tabs scroll horizontally** with the resource read-out pinned.
+- **No command bar in portrait.** Everything it does has a touch equivalent —
+  the four knobs are sliders and chips on Form SO-1, `sell` and `retire` are
+  buttons on the Ledger, navigation is the tab row. It used to collapse to a
+  `>` button in the bottom-right corner, which is Android's floating-action
+  position and shape, so it read as the primary action of every screen while
+  being the one control that could do nothing the screen could not.
+- **Tabs wrap in portrait**, with the resource read-out on its own line above
+  them. They used to scroll with the read-out pinned right, which at 360 CSS px
+  left two of six screens reachable without a swipe. `npm run viewports` is the
+  check that says so.
 - **Touch targets** are raised to 44px under `@media (pointer: coarse)`, which
   also covers touchscreen laptops.
 - **Hardware back** returns to the Terminal, and exits from there.
@@ -165,7 +171,8 @@ packages/client/src/
 ```
 
 The screens are not routes. One always-mounted shell switches on
-`activeScreen`, driven by both the tab row and the command bar.
+`activeScreen`, driven by the tab row and — everywhere but compact portrait —
+the command bar.
 
 ## Design tokens
 

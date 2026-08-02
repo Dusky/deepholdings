@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { api } from '../api/client';
-import { COMPACT_QUERY, useMediaQuery } from '../hooks/useMediaQuery';
 import { usePersistentState } from '../hooks/usePersistentState';
 import {
   COMMAND_PLACEHOLDER,
@@ -22,43 +21,30 @@ const HISTORY_LIMIT = 40;
 /**
  * The other half of navigation: type where you want to go, and what to do.
  *
- * On a phone in portrait the bar collapses to a `>` button — the tabs already
- * cover navigation there, and a permanent input row spends a line of screen on
- * an affordance that needs the keyboard anyway.
+ * **Not rendered on a phone in portrait** — see `Console`. It used to collapse
+ * to a `>` button there, which was worse than either extreme: a 44px bordered
+ * square in the bottom-right corner is exactly Android's floating-action-button
+ * position and shape, so it read as *the* primary action of every screen while
+ * being the one control on the phone that could not do anything the screen
+ * could not already do by tap.
+ *
+ * Everything here has a touch equivalent — the four knobs are sliders and chips
+ * on Form SO-1, `sell` and `retire` are buttons on the Ledger, navigation is
+ * the tab row, `sync` is the poll. So this is a desktop convenience and a piece
+ * of the terminal fiction, and on a phone it was neither.
  */
 export function CommandBar({ onNavigate }: CommandBarProps) {
   const { refresh, state, fileOrders } = useServer();
   const [value, setValue] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [expanded, setExpanded] = useState(false);
   const [history, setHistory] = usePersistentState<{ entries: string[] }>(
     'deepholdings.commandHistory',
     () => ({ entries: [] }),
   );
   // -1 is "composing something new"; 0 is the most recent entry.
   const [recalled, setRecalled] = useState(-1);
-  const compact = useMediaQuery(COMPACT_QUERY);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Rotating out of compact must not strand the bar half-open.
-  useEffect(() => {
-    if (!compact) setExpanded(false);
-  }, [compact]);
-
-  const open = () => {
-    setExpanded(true);
-    // Focus after paint, so the keyboard opens against the resized viewport.
-    requestAnimationFrame(() => {
-      inputRef.current?.focus();
-      inputRef.current?.scrollIntoView({ block: 'nearest' });
-    });
-  };
-
-  const collapse = () => {
-    setExpanded(false);
-    inputRef.current?.blur();
-  };
 
   const context: CommandContext = useMemo(
     () => ({
@@ -140,7 +126,6 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
     remember(raw);
     setValue('');
     void submit(raw);
-    if (compact) collapse();
   };
 
   /** Step through history. `delta` of 1 goes further back. */
@@ -162,7 +147,6 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Escape' && compact) return collapse();
     if (event.key === 'ArrowUp') {
       event.preventDefault();
       return recall(1);
@@ -177,17 +161,15 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
     }
   };
 
-  const collapsed = compact && !expanded;
-
   return (
-    <div className={styles.dock} data-collapsed={collapsed}>
-      {!collapsed && response && (
+    <div className={styles.dock}>
+      {response && (
         <div className={`text-dim ${styles.response}`} role="status">
           {response}
         </div>
       )}
 
-      {!collapsed && suggestions.length > 0 && (
+      {suggestions.length > 0 && (
         <div className={styles.suggestions}>
           {suggestions.map((option) => (
             <button
@@ -208,17 +190,10 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
         </div>
       )}
 
-      <form className={styles.bar} data-collapsed={collapsed} onSubmit={handleSubmit}>
-        <button
-          type="button"
-          className={styles.prompt}
-          onClick={collapsed ? open : undefined}
-          tabIndex={collapsed ? 0 : -1}
-          aria-label={collapsed ? 'Open command line' : undefined}
-          aria-hidden={!collapsed}
-        >
+      <form className={styles.bar} onSubmit={handleSubmit}>
+        <span className={styles.prompt} aria-hidden="true">
           &gt;
-        </button>
+        </span>
         <input
           ref={inputRef}
           className={styles.input}
@@ -228,9 +203,6 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
             setRecalled(-1);
           }}
           onKeyDown={handleKeyDown}
-          onBlur={() => {
-            if (compact && !value.trim()) setExpanded(false);
-          }}
           placeholder={COMMAND_PLACEHOLDER}
           aria-label="Command"
           autoComplete="off"

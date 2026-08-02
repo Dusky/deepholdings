@@ -6,9 +6,8 @@
   border-bottom: 1px solid var(--phosphor-dim);
 }
 
-/* Tabs scroll; the resource read-out stays pinned. Five tabs never fit a phone
-   width, and wrapping to a second row wastes space that progressive disclosure
-   will reclaim anyway. */
+/* Tabs scroll and the read-out stays pinned — on anything wider than a phone
+   in portrait. See the compact block for why that stops being true there. */
 .tabs {
   display: flex;
   min-width: 0;
@@ -65,17 +64,62 @@
   white-space: nowrap;
 }
 
+/*
+ * Compact portrait: the tabs wrap and the read-out gets its own line.
+ *
+ * The original rule was "tabs scroll, read-out pinned right, never wrap —
+ * wrapping wastes a row that progressive disclosure will reclaim anyway."
+ * Measured at 360 CSS px with all six screens cleared, that produced:
+ *
+ *     tabs need 499px, have 220px
+ *     read-out takes 118px of 360 = 33%
+ *     2 of 6 tabs reachable without scrolling
+ *
+ * Four of the six screens sat behind a horizontal swipe with no visible
+ * affordance. Two things were wrong with the reasoning.
+ *
+ * Progressive disclosure runs the wrong way for it. Clearance *grants* screens
+ * as an officer works, so the tab count grows from two to six — a new player
+ * gets one row and no wasted space, and a veteran gets the second row at
+ * exactly the point they have six places to go. The cost is paid by the people
+ * who need it.
+ *
+ * And the read-out was never navigation. Pinning it took a third of the strip
+ * permanently, which is what made the tabs scroll in the first place; the
+ * comment on `permitChip` had already noticed this about one chip without
+ * following it to the other two.
+ *
+ * The row this costs is the row the command bar gave back when it stopped
+ * being rendered here. `npm run viewports` fails on the old layout.
+ */
 @media (max-width: 720px) and (orientation: portrait) {
   .tabRow {
+    flex-wrap: wrap;
     padding: 6px calc(var(--safe-right) + 10px) 0 calc(var(--safe-left) + 10px);
   }
 
-  .chip {
-    margin-left: 8px;
+  /* Above the tabs, right-aligned, smaller: a read-out rather than a control. */
+  .chips {
+    order: -1;
+    flex-basis: 100%;
+    justify-content: flex-end;
+    padding-bottom: 4px;
+    /* No longer overlapping anything, so the mask that hid tabs sliding under
+       it is not just unnecessary, it would draw a shadow across the row. */
+    background: none;
+    box-shadow: none;
   }
 
-  .chips {
-    padding-left: 10px;
+  .chip {
+    margin-left: 10px;
+    font-size: calc(9.5px * var(--font-scale));
+  }
+
+  /* Every tab on screen, no gesture. */
+  .tabs {
+    flex-basis: 100%;
+    flex-wrap: wrap;
+    overflow-x: visible;
   }
 }
 

@@ -10,9 +10,14 @@ run the API on your desktop and point the phone at it over the LAN.
 
 Before wrestling an SDK onto SteamOS, most of what needs checking can be
 checked in the phone's browser against the dev server. This covers the portrait
-layout, the collapsing command bar against a real software keyboard, the first
-session, clearance, and the shift digest — everything except native
-notifications and the APK itself.
+layout, the first session, clearance, and the shift digest — everything except
+native notifications and the APK itself.
+
+`npm run viewports -w @deepholdings/client` checks the layout parts of that
+without a phone at all: every screen reachable without a gesture, nothing
+overflowing sideways, every touch target ≥44px where the pointer is coarse. It
+exists because two portrait rules shipped and had to be reported from a real
+device, and neither was the kind of thing a unit test can hold.
 
 Three terminals on the desktop:
 

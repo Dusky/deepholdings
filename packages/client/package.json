@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "build:android": "npm run build && cap sync android",
     "open:android": "cap open android",
-    "test": "node --import tsx --test test/*.test.ts"
+    "test": "node --import tsx --test test/*.test.ts",
+    "viewports": "node tools/viewport-check.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",

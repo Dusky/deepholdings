@@ -639,6 +639,16 @@ Not a milestone; pick these up as they start to hurt.
   writing time in every milestone, not just M3. Tone is the one thing a
   better-funded competitor cannot copy convincingly — in the genre's biggest
   hit, the writing is the second most-praised quality after progression.
+- **The game may simply be short, and not know it.**
+  [`docs/research/mobile-incrementals.md`](docs/research/mobile-incrementals.md)
+  reads the two Play-native incrementals we will actually sit beside. Both sell
+  "thousands of upgrades" and "months or years"; we have 19 unlocks, 7
+  requisitions, one prestige axis, and a hard ceiling at Floor 12 / Permit D-8
+  with nothing past it. Every balance measurement taken so far describes a
+  fortnight, because the harness has only ever run fourteen days. Nothing in
+  any design document says what a player does in month two.
+  This is a bigger risk than "is the loop fun", and unlike that one it is
+  measurable without a tester.
 - **Onboarding cliff.** Worth restating as a risk, not just a task: competitors
   lose most churned players inside thirty minutes, to the interface rather than
   the game.

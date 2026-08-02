@@ -72,6 +72,12 @@ without diverging.
 - **The world heartbeat** is the only scheduled job. It advances shared state
   only — market prices, guild progress, region events — and is safe to run from
   several instances: the world row is locked and the beat only moves once due.
+  A row scheduled *further* out than one interval is treated as due rather than
+  as not-yet, because nothing legitimate writes that and the alternative is a
+  shared world that silently stops. The dev fast-forward reached it: a beat
+  landing during an advance writes its next due time from the advanced clock,
+  and the offset resets on restart, leaving the world frozen for as long as the
+  gap.
 - **Storage sits behind a port** (`ports.ts`) with two adapters. Postgres is the
   real one; the in-memory adapter runs the same test suite. `transaction()` plus
   `SELECT … FOR UPDATE` is what stops two concurrent requests double-resolving

@@ -55,15 +55,6 @@
   white-space: nowrap;
 }
 
-.heartbeat {
-  margin-right: 10px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  color: var(--hw-muted);
-  white-space: nowrap;
-}
-
 .gear {
   padding: 2px 6px;
   font-size: 18px;
@@ -108,11 +99,9 @@
     background: var(--bezel-beige);
   }
 
+  /* The badge stays in portrait now that the clock has gone. A machine label
+     is the flavour the strip was carrying anyway, and it does not tick. */
   .model {
-    display: none;
-  }
-
-  .heartbeat {
     margin-right: 4px;
   }
 

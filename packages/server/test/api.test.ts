@@ -4,6 +4,7 @@ import { after, before, describe, test } from 'node:test';
 import {
   HOARD_SALE_BONUS,
   JOURNAL_LINES_BY_TIER,
+  HEARTBEAT_SECONDS,
   JOURNAL_PAGE_SIZE,
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
@@ -490,6 +491,32 @@ for (const adapter of adapters) {
       const after = await repo.getWorld();
       assert.equal(after.beat, before.beat + 1);
       assert.ok(new Date(after.nextBeatAt) > new Date(before.nextBeatAt));
+    });
+
+    test('a world scheduled impossibly far ahead beats anyway', async () => {
+      // The failure this exists for: `/v1/dev/advance` moves an in-process
+      // clock offset, a beat landing during a fast-forward writes its next due
+      // time from the advanced clock, and the offset resets when the process
+      // restarts. The row was found pointing seventeen days out with `beat`
+      // stuck — market and guild bar frozen, and nothing to unfreeze them but
+      // seventeen days of waiting.
+      const before = await repo.getWorld();
+      const far = new Date(Date.now() + HEARTBEAT_SECONDS * 1000 * 100);
+      await repo.saveWorld({ ...before, nextBeatAt: far.toISOString() });
+
+      assert.equal(await beatOnce(repo, new Date()), true, 'a corrupt row must self-heal');
+
+      const healed = await repo.getWorld();
+      assert.equal(healed.beat, before.beat + 1);
+      const ahead = new Date(healed.nextBeatAt).getTime() - Date.now();
+      assert.ok(
+        ahead > 0 && ahead <= HEARTBEAT_SECONDS * 1000 + 2000,
+        `next beat is ${Math.round(ahead / 1000)}s out, expected one interval`,
+      );
+
+      // And an ordinary future beat is still left alone — self-healing must not
+      // become "beat on every call".
+      assert.equal(await beatOnce(repo, new Date()), false);
     });
 
     test('the full death and pension cycle', async () => {

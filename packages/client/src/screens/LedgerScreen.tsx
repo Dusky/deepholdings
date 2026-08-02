@@ -1,11 +1,40 @@
 import { useCallback, useState } from 'react';
-import type { RequisitionId, UnlockId } from '@deepholdings/shared';
+import { HEARTBEAT_SECONDS, type RequisitionId, type UnlockId } from '@deepholdings/shared';
 import { api } from '../api/client';
 import { useResource } from '../hooks/useResource';
+import { useServerClock } from '../hooks/useServerClock';
+import { secondsUntil } from '../lib/activity';
+import { formatCountdown } from '../lib/format';
 import { useServer } from '../state/serverContext';
 import { CabinetColumn, type BulkSelector } from './CabinetColumn';
 import columns from './columns.module.css';
 import styles from './LedgerScreen.module.css';
+
+/**
+ * When the market rerolls.
+ *
+ * Its own component so the second hand re-renders eleven characters rather than
+ * the whole Ledger. This countdown used to sit in the bezel, where it ticked
+ * the entire application once a second for information nobody on that screen
+ * could act on — here it answers one question, and the question is live: sell
+ * into this demand, or wait for the next draw.
+ */
+function MarketClock() {
+  const { state, receivedAt } = useServer();
+  const serverNow = useServerClock(state?.now, receivedAt, 1000);
+  if (!state) return null;
+  const seconds = secondsUntil(state.world.nextBeatAt, serverNow);
+  return (
+    <>
+      Revised every {Math.round(HEARTBEAT_SECONDS / 60)} minutes; next draw{' '}
+      {/* "00:00" reads as a stopped clock rather than an imminent one. The beat
+          is due and lands on the heartbeat's next pass, so say that — same rule
+          as the permit ETA's "imminent". */}
+      <span className="text-body">{seconds <= 0 ? 'due now' : `in ${formatCountdown(seconds)}`}</span>
+      .
+    </>
+  );
+}
 
 /** Inventory, market, and the two things value can be turned into. */
 export function LedgerScreen() {
@@ -116,7 +145,7 @@ export function LedgerScreen() {
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>MARKET</div>
         <div className={`text-dim ${styles.hint}`}>
-          Standing demand, revised each world tick. Applied to every sale.
+          Standing demand, applied to every sale. <MarketClock />
         </div>
         {data.market.map((quote) => {
           const swing = Math.round((quote.demand - 1) * 100);

@@ -648,7 +648,14 @@ Not a milestone; pick these up as they start to hurt.
   fortnight, because the harness has only ever run fourteen days. Nothing in
   any design document says what a player does in month two.
   This is a bigger risk than "is the loop fun", and unlike that one it is
-  measurable without a tester.
+  measurable without a tester. **Now measured**: `npm run longrun` says the
+  last new thing happens on **day 13.4**, and 76 of 90 days contain nothing
+  the player has not seen. All 8 permits are gone by day 3.2, all 12 floors by
+  day 4.3, all 7 requisitions by day 4.1; the 19 prestige unlocks arrive in
+  three lump sums (2, then 8, then 6) rather than a curve; and Grade climbs to
+  46 while `authorisedDepth` has been capped at 12 since day four, so the
+  Terminal's most prominent number stops meaning anything almost immediately.
+  Full timeline in [`docs/design/balance.md`](docs/design/balance.md).
 - **Onboarding cliff.** Worth restating as a risk, not just a task: competitors
   lose most churned players inside thirty minutes, to the interface rather than
   the game.

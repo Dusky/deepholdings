@@ -737,3 +737,86 @@ The cadence probe did not count "Case #… opened" as a genuine event, so its
 first report of this system was partly its own blind spot. Worth stating
 plainly because it is the third time this session that an instrument, not the
 game, produced the surprising number.
+
+## The exhaustion curve: the game is thirteen days long
+
+Every measurement above ran fourteen days, because fourteen days is what the
+design talks about. `research/mobile-incrementals.md` made that a problem —
+the Play-native incrementals we will sit beside sell "months or years" — so
+`npm run longrun` plays ninety days and records the tick at which each *new*
+thing happens for the first time. The last entry on that timeline is the
+moment the game runs out.
+
+Eight careers, an officer who spends as soon as they can (the fastest
+exhaustion, deliberately — a casual player takes longer to reach the same
+place):
+
+> **The last new thing happens on day 13.4.** Earliest 8.5, latest 19.2.
+> **Seventy-six of the ninety days contain nothing the player has not already
+> seen.**
+
+That is the headline, and it is bad. Three specific findings underneath it are
+worse, because each is a structural fault rather than a shortage of content.
+
+### Everything structural is gone in four days
+
+| | done by |
+| --- | --- |
+| all 8 permit tiers | day 3.2 |
+| all 12 floors | day 4.3 |
+| all 7 requisitions | day 4.1 |
+
+The permit ladder is the thing the Terminal is *built to display* — the
+pending-permit line, the ETA, the "legible ladder" M4 item. It is finished
+before the end of day three. After day 4.3 there is no floor a player has not
+seen and no permit left to wait for.
+
+### Prestige arrives in clumps, not a curve
+
+The unlock timeline from one career:
+
+```
+day  1.7   2 unlocks
+day  4.4   2 unlocks
+day  4.9   1 unlock
+day 10.4   8 unlocks        <-- five and a half days of nothing, then eight
+day 19.2   6 unlocks        <-- eight days of nothing, then six
+```
+
+Pension accumulates while nothing is affordable; a death pays out; every
+affordable rung is bought in the same minute. So the player gets nothing for
+most of a week and then eight things at once — which is both a worse reward
+schedule than a flat drip and the direct cause of the gap between day 4.9 and
+day 10.4, the longest empty stretch in the game.
+
+This is not a content problem. Nineteen unlocks *is* the content; it is being
+delivered in three payments.
+
+### Grade stops meaning anything on day four
+
+At day 90 the median recruit is **Grade 46**. `authorisedDepth` is
+
+```ts
+Math.min(targetDepth, permitDepthLimit(permitTier), level + GRADE_STRETCH, MAX_DEPTH)
+```
+
+with `MAX_DEPTH = 12`, so past level 12 the `level` term can never bind. Grade
+is the most prominent number on the Terminal's stat line, it climbs forever,
+and from roughly day four it does nothing at all. A number that visibly
+increases while changing nothing is worse than no number — it is a progress
+bar wired to a disconnected motor.
+
+### What this does and does not say
+
+It does not say the game is bad; a fortnight of real progression is more than
+many games in this genre offer before their first wall. It says the game is
+**thirteen days long and does not know it**, and that the last nine of those
+days are three lump-sum payments.
+
+The tempting fix is more content, and
+[`research/mobile-incrementals.md`](../research/mobile-incrementals.md)
+records why that alone is wrong: the genre's most common complaint is
+late-game grind, so padding the ceiling trades our problem for the one players
+write reviews about. The three faults above are all *structural* — a ladder
+that finishes too early, a reward schedule that clumps, and a stat that stops
+mattering — and none of them is fixed by adding more rungs.

@@ -14,7 +14,8 @@
     "simulate": "tsx tools/simulate.ts",
     "cadence": "tsx tools/cadence.ts",
     "push:ping": "tsx tools/push-ping.ts",
-    "load": "tsx tools/load.ts"
+    "load": "tsx tools/load.ts",
+    "longrun": "tsx tools/longrun.ts"
   },
   "dependencies": {
     "@deepholdings/shared": "*",

@@ -35,6 +35,8 @@ import {
   type RequisitionId,
   type UnlockId,
   STAFF_LADDER,
+  COMMENDATION_CATALOGUE,
+  type Transfer,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
@@ -62,6 +64,15 @@ const RUNS = flag('runs', 8);
  * and the missing "Case #… opened" event class before it.
  */
 const STAFF = args.includes('--staff');
+/**
+ * `--transfer` files Form T-1 once the pension catalogue is exhausted.
+ *
+ * Off by default so every number already in `balance.md` stays comparable. On,
+ * it answers the question the whole slice exists for: does the second prestige
+ * layer actually put new things past day forty, or does it only re-sell the
+ * nineteen rungs the officer has already read?
+ */
+const TRANSFER = args.includes('--transfer');
 
 interface Milestone {
   tick: number;
@@ -78,6 +89,9 @@ function playOne(seed: number): {
   perFortnight: { deaths: number; earned: number }[];
   /** Minutes the department spent unpaid, and what it cost in wages. */
   unpaidTicks: number;
+  /** Transfers filed, and Commendation rungs bought with what they paid. */
+  careers: number;
+  commendations: number;
   wages: number;
   hires: number;
   /**
@@ -119,6 +133,7 @@ function playOne(seed: number): {
   const requisitions: RequisitionId[] = [];
   let filings: Filing[] = [];
   let registry: Registry = { staff: [], spent: 0, unpaid: false };
+  let transfer: Transfer = { total: 0, spent: 0, unlocks: [], careers: 0 };
   let unpaidTicks = 0;
   let fromService = 0;
   let fromEstate = 0;
@@ -126,6 +141,16 @@ function playOne(seed: number): {
   let shortPension = 0;
   let filingId = 0;
   let pension = 0;
+  /**
+   * Pension already spent on rungs, which the transfer award reads.
+   *
+   * This was hardcoded to zero on every visit, and the bug is instructive: the
+   * officer buys the whole 460,000-gold unlock ladder, so `total` alone
+   * under-reported pension ever banked by more than a third of it, and Form T-1
+   * paid one Commendation where it owed four. Nothing failed — the run just
+   * reported a prestige layer that barely pays.
+   */
+  let pensionSpent = 0;
   let deaths = 0;
   /** Deaths and pension earned per fortnight, to see whether income holds. */
   const perFortnight: { deaths: number; earned: number }[] = [];
@@ -168,9 +193,10 @@ function playOne(seed: number): {
     const after = visit(
       {
         character, inventory, caseFiles, filings,
-        pension: { total: pension, spent: 0, unlocks },
+        pension: { total: pension, spent: pensionSpent, unlocks },
         registry,
         requisitions,
+        transfer,
       },
       {
         sells: true,
@@ -178,6 +204,7 @@ function playOne(seed: number): {
         unlocks: true,
         staff: STAFF,
         hires: STAFF ? { reserve: 400 } : undefined,
+        transfers: TRANSFER,
       },
       out.ticksResolved,
       () => `f${(filingId += 1)}`,
@@ -189,6 +216,8 @@ function playOne(seed: number): {
     filings = after.filings;
     registry = after.registry;
     pension = after.pension.total;
+    pensionSpent = after.pension.spent;
+    transfer = after.transfer;
     unlocks.length = 0;
     unlocks.push(...after.pension.unlocks);
     requisitions.length = 0;
@@ -204,6 +233,33 @@ function playOne(seed: number): {
     for (const id of after.hired) {
       note(tick, `Registry: ${STAFF_LADDER.find((e) => e.id === id)!.label}`);
     }
+    for (const id of after.boughtCommendations) {
+      note(tick, `Commendation: ${COMMENDATION_CATALOGUE.find((e) => e.id === id)!.label}`);
+    }
+    /**
+     * A transfer issues a fresh posting, which `visit` cannot do — it has no
+     * way to make a recruit. Handled here for the same reason the death branch
+     * below is: `succeed` is the only door, and the harness has to walk through
+     * it exactly as the server does.
+     */
+    if (after.transferred) {
+      note(tick, `Transfer: posting ${transfer.careers + 1}`);
+      const posting = succeed({
+        id: `${accountId}-p${transfer.careers + 1}`, accountId,
+        previous: character, depthReached: character.depth,
+        unlocks: [], atTick: tick,
+        commendations: transfer.unlocks, posting: true,
+      });
+      character = posting.character;
+      inventory = posting.inventory;
+      caseFiles = posting.caseFiles;
+      filings = posting.filings;
+      permitAppliedTick = posting.permitAppliedTick;
+      // A new posting has no deepest floor on record: the permit ladder starts
+      // again, so counting the old one would mark every floor as already seen
+      // and hide the entire re-climb from the timeline.
+      deepest = 0;
+    }
 
     if (!character.alive) {
       deaths += 1;
@@ -212,7 +268,7 @@ function playOne(seed: number): {
       perFortnight[window].deaths += 1;
       const service = tick - character.bornTick;
       const estate = character.gold + inventory.reduce((a, i) => a + i.unitValue * i.quantity, 0);
-      const award = pensionAward(service, deepest, estate, unlocks);
+      const award = pensionAward(service, deepest, estate, unlocks, transfer.unlocks);
       perFortnight[window].earned += award;
       pension += award;
 
@@ -227,6 +283,7 @@ function playOne(seed: number): {
       record = succeed({
         id: `${accountId}-${n}`, accountId, previous: character,
         depthReached: character.depth, unlocks, atTick: tick,
+        commendations: transfer.unlocks,
       });
       character = record.character;
       inventory = record.inventory;
@@ -246,6 +303,8 @@ function playOne(seed: number): {
     finalLevel: character.level,
     perFortnight,
     unpaidTicks,
+    careers: transfer.careers,
+    commendations: transfer.unlocks.length,
     wages: registry.spent,
     // Rungs, not members: there are only ever three posts, so counting rows
     // would report a full department the moment each was appointed.
@@ -263,7 +322,7 @@ const med = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length
 
 console.log(
   `${RUNS} careers x ${DAYS} days, an officer who spends as soon as they can` +
-    `${STAFF ? ', with a department' : ''}\n`,
+    `${STAFF ? ', with a department' : ''}${TRANSFER ? ', who transfers when the ladder runs out' : ''}\n`,
 );
 
 console.log('--- when the last new thing happens ---');
@@ -288,6 +347,14 @@ if (STAFF) {
   console.log(`hire + wages, total: ${med(runs.map((r) => r.wages))} gold`);
   const stalled = runs.map((r) => (r.unpaidTicks / (DAYS * 1440)) * 100);
   console.log(`time unpaid:         ${med(stalled).toFixed(1)}% of the run`);
+}
+
+if (TRANSFER) {
+  console.log('\n--- the officer\'s own prestige ---');
+  console.log(`transfers filed:     ${med(runs.map((r) => r.careers))}`);
+  console.log(
+    `commendation rungs:  ${med(runs.map((r) => r.commendations))} of ${COMMENDATION_CATALOGUE.length}`,
+  );
 }
 
 console.log('\n--- where the pension actually comes from ---');

@@ -15,6 +15,7 @@ import {
   staffTitle,
   unlockTier,
   type CaseFile,
+  type CommendationId,
   type Character,
   type Filing,
   type InventoryItem,
@@ -70,6 +71,12 @@ export interface StaffInput {
   ticksResolved: number;
   /** For filing ids, so this stays testable without reaching for randomness. */
   newId: () => string;
+  /**
+   * Commendations held. Only Departmental Patronage reads them, and only to
+   * lower the payroll — but it has to be here rather than at the call site, or
+   * the wage the officer is charged and the wage the Ledger prints disagree.
+   */
+  commendations?: readonly CommendationId[];
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
@@ -99,7 +106,7 @@ export function runStaff(input: StaffInput): StaffOutcome {
   // Paid first, and in full or not at all for the span. Staff who could only be
   // half paid working half the time would be a rounding argument nobody wants
   // to have with a log file.
-  const owed = payrollPerTick(registry) * ticksResolved;
+  const owed = payrollPerTick(registry, input.commendations ?? []) * ticksResolved;
   if (character.gold < owed) {
     // Take what there is — the department is owed it either way — and stop.
     // Debt would be a spiral with no way out; downing tools is recoverable, and

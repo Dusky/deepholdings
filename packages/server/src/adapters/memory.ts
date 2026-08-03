@@ -8,9 +8,10 @@ import type {
   Registry,
   StandingOrders,
   TavernMessage,
+  Transfer,
   WorldState,
 } from '@deepholdings/shared';
-import { DEFAULT_ORDERS } from '@deepholdings/shared';
+import { DEFAULT_ORDERS, EMPTY_TRANSFER } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
 
@@ -156,12 +157,22 @@ export class MemoryRepository implements Repository {
       .slice(-limit);
   }
 
+  private readonly transfers = new Map<string, Transfer>();
+
   async getPension(accountId: string): Promise<Pension> {
     return this.pensions.get(accountId) ?? { total: 0, spent: 0, unlocks: [] };
   }
 
   async savePension(accountId: string, pension: Pension): Promise<void> {
     this.pensions.set(accountId, { ...pension, unlocks: [...pension.unlocks] });
+  }
+
+  async getTransfer(accountId: string): Promise<Transfer> {
+    return this.transfers.get(accountId) ?? { ...EMPTY_TRANSFER, unlocks: [] };
+  }
+
+  async saveTransfer(accountId: string, transfer: Transfer): Promise<void> {
+    this.transfers.set(accountId, { ...transfer, unlocks: [...transfer.unlocks] });
   }
 
   async getOffice(accountId: string): Promise<Office> {

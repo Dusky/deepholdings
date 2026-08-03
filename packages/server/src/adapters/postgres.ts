@@ -10,6 +10,7 @@ import type {
   Office,
   Pension,
   Registry,
+  Transfer,
   RequisitionId,
   StandingOrders,
   TavernMessage,
@@ -322,6 +323,31 @@ export class PostgresRepository implements Repository {
       spent: rows[0].spent,
       requisitions: (rows[0].requisitions ?? []) as RequisitionId[],
     };
+  }
+
+  async getTransfer(accountId: string): Promise<Transfer> {
+    const { rows } = await this.db.query(
+      'SELECT commendations, spent, unlocks, careers FROM transfers WHERE account_id = $1',
+      [accountId],
+    );
+    if (!rows[0]) return { total: 0, spent: 0, unlocks: [], careers: 0 };
+    return {
+      total: rows[0].commendations,
+      spent: rows[0].spent,
+      unlocks: (rows[0].unlocks ?? []) as Transfer['unlocks'],
+      careers: rows[0].careers,
+    };
+  }
+
+  async saveTransfer(accountId: string, transfer: Transfer): Promise<void> {
+    await this.db.query(
+      `INSERT INTO transfers (account_id, commendations, spent, unlocks, careers)
+       VALUES ($1, $2, $3, $4::jsonb, $5)
+       ON CONFLICT (account_id) DO UPDATE SET
+         commendations = EXCLUDED.commendations, spent = EXCLUDED.spent,
+         unlocks = EXCLUDED.unlocks, careers = EXCLUDED.careers`,
+      [accountId, transfer.total, transfer.spent, JSON.stringify(transfer.unlocks), transfer.careers],
+    );
   }
 
   async getRegistry(accountId: string): Promise<Registry> {

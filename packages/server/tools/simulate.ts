@@ -10,6 +10,7 @@
  */
 import {
   EMPTY_REGISTRY,
+  EMPTY_TRANSFER,
   MAX_CATCHUP_TICKS,
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
@@ -195,6 +196,7 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
           pension: { total: 0, spent: 0, unlocks: [] },
           registry: EMPTY_REGISTRY,
           requisitions: owned,
+          transfer: EMPTY_TRANSFER,
         },
         policyFor(profile),
         out.ticksResolved,

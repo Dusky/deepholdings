@@ -7,6 +7,7 @@ import {
   type FileFormRequest,
   type HireStaffRequest,
   type StaffPolicyRequest,
+  type CommendationId,
   type RequisitionId,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -22,6 +23,8 @@ import {
   devMakeAway,
   authenticateDevice,
   bulkSell,
+  fileTransfer,
+  purchaseCommendation,
   claimPension,
   retireRecruit,
   fileForm,
@@ -292,6 +295,18 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     await requireAccount(request, reply);
     const { token } = (request.body ?? {}) as { token?: unknown };
     return unregisterPushToken(repo, token);
+  });
+
+  app.post('/v1/career/transfer', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    return fileTransfer(repo, accountId);
+  });
+
+  app.post('/v1/transfer/commendations', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { id } = (request.body ?? {}) as { id?: CommendationId };
+    if (!id) throw new ServiceError('invalid_request', 'id required');
+    return purchaseCommendation(repo, accountId, id);
   });
 
   app.post('/v1/pension/claim', async (request, reply) => {

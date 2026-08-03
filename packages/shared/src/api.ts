@@ -8,6 +8,7 @@
 import type { CaseFile } from './items.js';
 import type { FormId } from './forms.js';
 import type { Registry, StaffRole } from './staff.js';
+import type { CommendationId, CommendationTrack, Transfer } from './transfer.js';
 import type {
   Account,
   Character,
@@ -167,6 +168,15 @@ export interface StateResponse {
   retirement: RetirementOffer | null;
   /** True when the server will accept `POST /v1/dev/advance`. Never in production. */
   devTools: boolean;
+  /**
+   * Commendations held, and what a transfer would pay right now.
+   *
+   * On the state response for the same reason `retirement` is: the decision an
+   * officer is making is "is this posting worth more continued than banked",
+   * and they cannot make it without the number in front of them.
+   */
+  transfer: Transfer;
+  transferAward: number;
 }
 
 /**
@@ -259,6 +269,18 @@ export interface LedgerStack extends InventoryItem {
   stackOffer: number;
 }
 
+/** POST /v1/career/transfer, POST /v1/transfer/commendations */
+export interface TransferResponse {
+  transfer: Transfer;
+  /** Commendations this call banked. Zero when it was a purchase. */
+  awarded: number;
+  /** The recruit now on the books, or null when nobody is. */
+  character: Character | null;
+  commendations: CommendationOffer[];
+}
+
+export type CommendationOffer = LadderOffer<CommendationId, CommendationTrack>;
+
 /** GET /v1/ledger */
 export interface LedgerResponse {
   inventory: LedgerStack[];
@@ -269,6 +291,16 @@ export interface LedgerResponse {
   gold: number;
   office: Office;
   requisitions: RequisitionOffer[];
+  /**
+   * The commendation ladder, beside the pension one it outlives.
+   *
+   * On the Ledger rather than a screen of its own: it is a third column of the
+   * same shape as the two already there, and a seventh tab for one ladder would
+   * cost the tab row more than the ladder is worth. `npm run viewports` is what
+   * decides that, not this comment — see the check in the client package.
+   */
+  commendations: CommendationOffer[];
+  transfer: Transfer;
 }
 
 /**

@@ -33,9 +33,13 @@
  * them doing nothing.
  */
 import {
+  COMMENDATION_CATALOGUE,
   REQUISITION_CATALOGUE,
   STAFF_CATALOGUE,
   UNLOCK_CATALOGUE,
+  canTransfer,
+  commendationAward,
+  commendationTier,
   nextStaffRung,
   requisitionTier,
   unlockTier,
@@ -46,8 +50,10 @@ import {
   type Pension,
   type Registry,
   type RequisitionId,
+  type CommendationId,
   type StaffRung,
   type StaffRungId,
+  type Transfer,
   type UnlockId,
 } from '@deepholdings/shared';
 import { runStaff } from '../src/domain/staff.js';
@@ -76,6 +82,17 @@ export interface OfficerPolicy {
   /** Let hired staff work the span. Independent of `hires`, so a harness can
    *  model a department that was inherited rather than built. */
   staff?: boolean;
+  /**
+   * File Form T-1 as soon as the pension ladder has nothing left to sell, and
+   * spend the Commendations it pays.
+   *
+   * Gated on the *catalogue* rather than a pension figure because that is the
+   * decision a player actually makes: you transfer when the thing you were
+   * saving for has run out. An officer who transferred on a number would be
+   * modelling an optimiser, and the award is linear precisely so that nobody
+   * has to be one.
+   */
+  transfers?: boolean;
 }
 
 export interface VisitState {
@@ -86,6 +103,7 @@ export interface VisitState {
   pension: Pension;
   registry: Registry;
   requisitions: RequisitionId[];
+  transfer: Transfer;
 }
 
 export interface VisitResult extends VisitState {
@@ -95,6 +113,12 @@ export interface VisitResult extends VisitState {
   boughtUnlocks: UnlockId[];
   /** Rungs of the promotion ladder bought, appointments included. */
   hired: StaffRungId[];
+  boughtCommendations: CommendationId[];
+  /** True when Form T-1 was filed this visit. The caller has to issue the
+   *  posting: `visit` does not know how to make a recruit. */
+  transferred: boolean;
+  /** Commendations the transfer paid, zero when none was filed. */
+  awarded: number;
   /** Lines the department filed, verbatim, for harnesses that count events. */
   notes: string[];
 }
@@ -154,8 +178,12 @@ export function visit(
     staff: state.registry.staff.map((member) => ({ ...member })),
   };
   const requisitions = [...state.requisitions];
+  let transfer: Transfer = { ...state.transfer, unlocks: [...state.transfer.unlocks] };
   const boughtRequisitions: RequisitionId[] = [];
+  const boughtCommendations: CommendationId[] = [];
   const hired: StaffRungId[] = [];
+  let transferred = false;
+  let awarded = 0;
   const notes: string[] = [];
   let realised = 0;
   /**
@@ -171,6 +199,7 @@ export function visit(
   if (policy.staff && registry.staff.length > 0) {
     const worked = runStaff({
       character, inventory, caseFiles, filings, pension, registry, ticksResolved, newId,
+      commendations: transfer.unlocks,
     });
     character = worked.character;
     inventory = worked.inventory;
@@ -259,8 +288,52 @@ export function visit(
 
   const boughtUnlocks = pension.unlocks.filter((id) => !unlocksBefore.has(id));
 
+  /**
+   * 6. Form T-1, once the pension catalogue has nothing left to sell.
+   *
+   * Last in the visit on purpose. Transferring first would surrender a pension
+   * the officer could still have spent, which no player would do and which
+   * would make the harness report the prestige layer as a loss.
+   */
+  if (policy.transfers && nextUnlock(pension.unlocks) === null && canTransfer(pension.total + pension.spent)) {
+    awarded = commendationAward(pension.total + pension.spent);
+    transfer = {
+      total: transfer.total + awarded,
+      spent: transfer.spent,
+      unlocks: [...transfer.unlocks],
+      careers: transfer.careers + 1,
+    };
+    pension = { total: 0, spent: 0, unlocks: [] };
+    transferred = true;
+  }
+
+  // 7. And spend them, cheapest rung first, the same way every other ladder in
+  //    this file is climbed.
+  if (policy.transfers) {
+    for (;;) {
+      const rung = COMMENDATION_CATALOGUE.filter(
+        (entry) =>
+          !transfer.unlocks.includes(entry.id) &&
+          commendationTier(transfer.unlocks, entry.track) === entry.tier - 1 &&
+          entry.cost <= transfer.total,
+      ).reduce<(typeof COMMENDATION_CATALOGUE)[number] | null>(
+        (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
+        null,
+      );
+      if (!rung) break;
+      transfer = {
+        ...transfer,
+        total: transfer.total - rung.cost,
+        spent: transfer.spent + rung.cost,
+        unlocks: [...transfer.unlocks, rung.id],
+      };
+      boughtCommendations.push(rung.id);
+    }
+  }
+
   return {
-    character, inventory, caseFiles, filings, pension, registry, requisitions,
-    realised, boughtRequisitions, boughtUnlocks, hired, notes,
+    character, inventory, caseFiles, filings, pension, registry, requisitions, transfer,
+    realised, boughtRequisitions, boughtUnlocks, boughtCommendations, hired, notes,
+    transferred, awarded,
   };
 }

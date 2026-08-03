@@ -1319,3 +1319,66 @@ The Registry column is therefore verified by stubbing `/v1/state` and
 renders. That covers the three cases the column has — a post mid-ladder, a post
 at the top, a vacancy — plus overflow and touch targets. It does not cover the
 sixty days.
+
+## Transfer: the officer gets a reset too
+
+Death has always been the *recruit's* reset. The officer never had one, and
+that is the whole reason a ninety-day run ends the way it does — after the last
+pension rung there is nothing but repetition with a larger number on it.
+
+Filing Form T-1 surrenders the pension and every rung bought with it, restarts
+the permit ladder, and issues a fresh posting. It keeps the department, the
+office equipment and the Commendations. The department staying is the
+load-bearing half: a Grade 1 recruit with a Chief Filing Clerk still on the
+books is a different proposition from starting over alone, and "different
+proposition" is what stops a prestige reset reading as punishment.
+
+**One Commendation per 150,000 pension ever banked since the last transfer, and
+the award is linear.** Filing at the threshold and filing at ten times the
+threshold pay the same rate, so there is no optimal moment to work out and no
+way to find out afterwards that you pulled the lever wrong — which is the
+standing complaint about prestige in this genre. Depth is deliberately not a
+second term: it is already inside the pension formula, and paying for it twice
+would price the same decision twice.
+
+### What it does to the curve
+
+| last new thing        | flat posts | the registry ladder | + transfer |
+| --------------------- | ---------- | ------------------- | ---------- |
+| ninety days           | day 34.7   | day 36.6            | day 64.9   |
+| a hundred and eighty  | —          | —                   | day 175.5  |
+
+Over 180 days: **4.5 empty days out of 180**, six transfers filed, seven of
+twelve Commendation rungs bought. That is the answer to the question
+`mobile-incrementals.md` raised — the two Play-native incrementals we sit beside
+sell "months or years", and nothing here had ever described month two.
+
+Lifetime pension falls from 1,418,172 to 1,217,590 over ninety days, which is
+the cost of prestige and is meant to be: two resets mean two re-climbs of the
+permit ladder at shallow floors where the pension rate is lowest.
+
+### The bill: the department starves after a transfer
+
+`time unpaid` goes from 0.9% to 8.2%. A transfer keeps a nine-gold-a-minute
+department and hands it a Grade 1 recruit earning almost nothing, so the payroll
+cannot be met and the staff down tools until it can.
+
+This is the greedy officer's worst case by construction — `longrun` promotes
+every post to the top and *then* transfers, which is the least favourable order.
+Departmental Patronage is the designed answer and only its first tier (20%) is
+reached inside ninety days; over 180 the figure falls to 6.7% as the deeper
+tiers arrive. It is left as a real cost rather than tuned away: an officer who
+has built a department they cannot carry through a reset has made a decision,
+and the game says so in a log line they can act on.
+
+### And another harness bug, same shape as all the others
+
+The first `--transfer` run reported one Commendation per transfer against an
+expected four. `longrun` passed `spent: 0` into the visit on every call, so the
+award — which reads pension *ever banked*, total plus spent — never counted the
+460,000 the officer had already spent on the unlock ladder.
+
+Nothing failed. The run simply reported a prestige layer that barely pays, with
+a coherent timeline to back it up. That is now four instrument bugs in one
+session, all of the same shape: a plausible number, no error, and only a
+disagreement with an expectation to reveal it.

@@ -5,6 +5,7 @@ import type {
   BulkSellResponse,
   BulletinResponse,
   ClaimPensionResponse,
+  CommendationId,
   DeviceAuthResponse,
   JournalResponse,
   LedgerResponse,
@@ -20,6 +21,7 @@ import type {
   StandingOrders,
   StateResponse,
   TavernResponse,
+  TransferResponse,
   UnlockId,
   UpdateOrdersResponse,
 } from '@deepholdings/shared';
@@ -207,6 +209,15 @@ export class ApiClient {
 
   claimPension(): Promise<ClaimPensionResponse> {
     return this.request('POST', '/v1/pension/claim', {});
+  }
+
+  /** Form T-1. Surrenders the pension; the department comes with you. */
+  fileTransfer(): Promise<TransferResponse> {
+    return this.request('POST', '/v1/career/transfer', {});
+  }
+
+  purchaseCommendation(id: CommendationId): Promise<TransferResponse> {
+    return this.request('POST', '/v1/transfer/commendations', { id });
   }
 
   retireRecruit(): Promise<ClaimPensionResponse> {

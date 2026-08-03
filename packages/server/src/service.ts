@@ -8,7 +8,11 @@ import {
   HOARD_SALE_BONUS,
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
+  COMMENDATION_CATALOGUE,
+  PENSION_PER_COMMENDATION,
   clampPolicy,
+  commendationAward,
+  commendationTier,
   clampRetreatPct,
   clauseById,
   isHired,
@@ -48,7 +52,10 @@ import {
   type PendingFiling,
   type Registry,
   type RegistryResponse,
+  type CommendationId,
   type StaffRole,
+  type Transfer,
+  type TransferResponse,
   type PurchaseRequisitionResponse,
   type RequisitionId,
   type StandingOrders,
@@ -208,6 +215,7 @@ export async function loadState(
     // earlier request" has never been reachable.
     const existing = record ?? (await tx.getLatestCharacter(accountId));
     let pension = await tx.getPension(accountId);
+    const transfer = await tx.getTransfer(accountId);
     const office = await tx.getOffice(accountId);
     const orders = await tx.getOrders(accountId);
     const world = await tx.getWorld();
@@ -231,6 +239,7 @@ export async function loadState(
         permitAppliedTick: record.permitAppliedTick,
         caseFiles: record.caseFiles,
         filings: record.filings,
+        commendations: transfer.unlocks,
       });
 
       if (result.journal.length > 0) {
@@ -316,8 +325,13 @@ export async function loadState(
       caseFiles: current.caseFiles ?? [],
       filings: pendingFilings(current, now),
       registry: await tx.getRegistry(accountId),
+      transfer,
+      // Quoted continuously, like the retirement offer, because the decision is
+      // "is this posting worth more continued than banked" and it cannot be
+      // made without the number.
+      transferAward: commendationAward(pension.total + pension.spent),
       pendingPermit: pendingPermitOf(current, pension.unlocks, now),
-      retirement: retirementOffer(current, pension.unlocks),
+      retirement: retirementOffer(current, pension.unlocks, transfer.unlocks),
       character: current.character,
       orders,
       pension,
@@ -363,6 +377,7 @@ function digestOf(
 function retirementOffer(
   record: CharacterRecord,
   unlocks: readonly UnlockId[],
+  commendations: readonly CommendationId[] = [],
 ): RetirementOffer | null {
   if (!record.character.alive) return null;
 
@@ -375,7 +390,7 @@ function retirementOffer(
     eligible: serviceTicks >= RETIREMENT_MIN_SERVICE_TICKS,
     serviceTicks,
     minServiceTicks: RETIREMENT_MIN_SERVICE_TICKS,
-    award: pensionAward(serviceTicks, record.character.depth, estate, unlocks),
+    award: pensionAward(serviceTicks, record.character.depth, estate, unlocks, commendations),
   };
 }
 
@@ -727,6 +742,7 @@ async function applyStaff(
     registry,
     ticksResolved,
     newId: randomUUID,
+    commendations: (await tx.getTransfer(accountId)).unlocks,
   });
   if (!worked.changed) return { record, pension };
 
@@ -767,6 +783,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
 
   const orders = await tx.getOrders(accountId);
   const pension = await tx.getPension(accountId);
+  const transfer = await tx.getTransfer(accountId);
   const result = resolve({
     character: record.character,
     inventory: record.inventory,
@@ -776,6 +793,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     permitAppliedTick: record.permitAppliedTick,
     caseFiles: record.caseFiles,
     filings: record.filings,
+    commendations: transfer.unlocks,
   });
 
   if (result.ticksResolved === 0) return record;
@@ -847,6 +865,7 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
   return repo.transaction(async (tx) => {
     const record = await tx.getActiveCharacterForUpdate(accountId);
     let pension = await tx.getPension(accountId);
+    const transfer = await tx.getTransfer(accountId);
     const office = await tx.getOffice(accountId);
     const world = await tx.getWorld();
     const orders = await tx.getOrders(accountId);
@@ -859,6 +878,8 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
       gold,
       office,
       requisitions: ladderOffers(REQUISITION_CATALOGUE, office.requisitions, gold),
+      commendations: ladderOffers(COMMENDATION_CATALOGUE, transfer.unlocks, transfer.total),
+      transfer,
     };
   });
 }
@@ -1166,7 +1187,10 @@ export async function retireRecruit(
     const estate =
       record.character.gold +
       record.inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
-    const award = pensionAward(service, record.character.depth, estate, pension.unlocks);
+    const award = pensionAward(
+      service, record.character.depth, estate, pension.unlocks,
+      (await tx.getTransfer(accountId)).unlocks,
+    );
 
     const separation: DeathRecord = {
       id: randomUUID(),
@@ -1241,6 +1265,7 @@ async function claimInside(
     depthReached: award.depth,
     unlocks: banked.unlocks,
     atTick: tickOf(worldNow()),
+    commendations: (await tx.getTransfer(accountId)).unlocks,
   });
   await tx.insertCharacter(record);
   await tx.appendJournal([replacementEntry(record.character)]);
@@ -1454,3 +1479,146 @@ function secondsUntil(iso: string, now: Date): number {
 }
 
 export { HEARTBEAT_SECONDS };
+
+/**
+ * Form T-1: file for a transfer.
+ *
+ * The officer's own prestige, and the answer to what a ninety-day run kept
+ * saying — that after the last pension rung the game is repetition with a
+ * larger number on it. Filing hands the caseload back: the pension, every rung
+ * bought with it, the permit ladder and the current recruit all go. The
+ * department, the office equipment and the Commendations do not.
+ *
+ * The award is linear in pension ever banked since the last transfer, which
+ * makes the timing decision *safe*: filing at the threshold and filing at ten
+ * times the threshold pay the same rate, so there is no optimal moment to work
+ * out and no way to discover afterwards that you got it wrong. Not knowing when
+ * to pull the lever is the standing complaint about prestige in this genre.
+ */
+export async function fileTransfer(
+  repo: Repository,
+  accountId: string,
+): Promise<TransferResponse> {
+  return repo.transaction(async (tx) => {
+    // Resolve first, so the pension the award is computed against includes
+    // everything the officer earned up to the moment they filed. Without this a
+    // transfer would silently discard the unresolved span.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+
+    const pension = await tx.getPension(accountId);
+    const banked = pension.total + pension.spent;
+    const award = commendationAward(banked);
+    if (award < 1) {
+      throw new ServiceError(
+        'not_authorised',
+        `a transfer requires ${PENSION_PER_COMMENDATION} pension banked; you have ${banked}`,
+      );
+    }
+
+    const before = await tx.getTransfer(accountId);
+    const transfer: Transfer = {
+      total: before.total + award,
+      spent: before.spent,
+      unlocks: [...before.unlocks],
+      careers: before.careers + 1,
+    };
+    await tx.saveTransfer(accountId, transfer);
+    // The pension goes to zero including what was already spent: `banked` is
+    // the meter the next award reads, so leaving `spent` behind would pay for
+    // the same service twice, every transfer, forever.
+    await tx.savePension(accountId, { total: 0, spent: 0, unlocks: [] });
+
+    const atTick = record.character.lastResolvedTick;
+    // The same three steps a retirement takes: close the recruit, file the
+    // record, issue the next. Reusing `claimInside` would be shorter and wrong
+    // — it banks a pension award, and the pension is the thing just surrendered.
+    await tx.saveCharacter({
+      ...record,
+      character: { ...record.character, alive: false },
+    });
+    await tx.recordDeath(accountId, {
+      id: randomUUID(),
+      characterName: record.character.name,
+      depth: record.character.depth,
+      cause: 'transferred at own request',
+      goldHandled: record.character.gold,
+      pensionAwarded: 0,
+      at: new Date().toISOString(),
+    });
+    const posting = succeed({
+      id: randomUUID(),
+      accountId,
+      previous: record.character,
+      depthReached: record.character.depth,
+      unlocks: [],
+      atTick,
+      commendations: transfer.unlocks,
+      posting: true,
+    });
+    await tx.insertCharacter(posting);
+    await tx.appendJournal([
+      entry_(
+        posting.character,
+        `Form T-1 approved. ${award} ${award === 1 ? 'Commendation' : 'Commendations'} entered on your record. ` +
+          'Pension entitlement surrendered. Your department travels with you.',
+      ),
+      entry_(
+        posting.character,
+        `New posting opened. ${posting.character.name} assigned. Permit D-${posting.character.permitTier} issued.`,
+        1,
+      ),
+    ]);
+
+    return {
+      transfer,
+      awarded: award,
+      character: posting.character,
+      commendations: ladderOffers(COMMENDATION_CATALOGUE, transfer.unlocks, transfer.total),
+    };
+  });
+}
+
+/** Spending a Commendation. Priced in the one currency a transfer cannot touch. */
+export async function purchaseCommendation(
+  repo: Repository,
+  accountId: string,
+  id: CommendationId,
+): Promise<TransferResponse> {
+  const entry = COMMENDATION_CATALOGUE.find((candidate) => candidate.id === id);
+  if (!entry) throw new ServiceError('invalid_request', 'unknown commendation');
+
+  return repo.transaction(async (tx) => {
+    const transfer = await tx.getTransfer(accountId);
+    if (transfer.unlocks.includes(id)) {
+      throw new ServiceError('already_owned', 'commendation already held');
+    }
+    if (commendationTier(transfer.unlocks, entry.track) !== entry.tier - 1) {
+      throw new ServiceError('invalid_request', 'previous tier not held');
+    }
+    if (transfer.total < entry.cost) {
+      throw new ServiceError('insufficient_pension', 'not enough commendations');
+    }
+
+    const updated: Transfer = {
+      total: transfer.total - entry.cost,
+      spent: transfer.spent + entry.cost,
+      unlocks: [...transfer.unlocks, id],
+      careers: transfer.careers,
+    };
+    await tx.saveTransfer(accountId, updated);
+    const record = await tx.getActiveCharacterForUpdate(accountId);
+    if (record) {
+      await tx.appendJournal([
+        entry_(record.character, `${entry.label} entered on your record. ${entry.detail}`),
+      ]);
+    }
+    return {
+      transfer: updated,
+      awarded: 0,
+      character: record?.character ?? null,
+      commendations: ladderOffers(COMMENDATION_CATALOGUE, updated.unlocks, updated.total),
+    };
+  });
+}

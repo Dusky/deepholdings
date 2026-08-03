@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   EMPTY_REGISTRY,
+  EMPTY_TRANSFER,
   REQUISITION_CATALOGUE,
   STAFF_CATALOGUE,
   STAFF_LADDER,
@@ -34,6 +35,7 @@ function stateOf(overrides: Partial<VisitState> = {}): VisitState {
     pension: { total: 0, spent: 0, unlocks: [] },
     registry: EMPTY_REGISTRY,
     requisitions: [],
+    transfer: EMPTY_TRANSFER,
     ...overrides,
   };
 }

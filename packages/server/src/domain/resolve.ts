@@ -24,6 +24,7 @@ import {
   TICK_SECONDS,
   makeRng,
   pensionAward,
+  type CommendationId,
   RETIREMENT_REMINDER_TICKS,
   rngChance,
   rngInt,
@@ -122,6 +123,14 @@ export interface ResolveOptions {
   toTick: number;
   /** Permit application watermark, carried between resolutions. */
   permitAppliedTick: number | null;
+  /**
+   * Commendations held by the officer, for the Service Endowment multiplier.
+   *
+   * Optional and defaulting to none, so every harness that models an officer on
+   * their first posting keeps saying exactly what it said before. The server
+   * always passes the row it loaded.
+   */
+  commendations?: readonly CommendationId[];
 }
 
 export function tickOf(date: Date): number {
@@ -219,6 +228,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
   const inventory: InventoryItem[] = options.inventory.map((item) => ({ ...item }));
   let caseFiles: CaseFile[] = (options.caseFiles ?? []).map((f) => ({ ...f }));
   const { orders, unlocks } = options;
+  const commendations = options.commendations ?? [];
 
   /**
    * The carried stat block, recomputed whenever the files change.
@@ -364,7 +374,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
       // Current depth, not the deepest reached: this line is about Form R-1,
       // and R-1 pays on where the recruit is standing. Death pays on the
       // deepest floor. Quoting the wrong one makes the Ledger a liar.
-      const award = pensionAward(served, character.depth, estate, unlocks);
+      const award = pensionAward(served, character.depth, estate, unlocks, commendations);
       log(
         tick,
         `Service review: ${character.name} has served ${Math.round(served / 60)} hours. ` +
@@ -494,7 +504,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
           character.gold +
           inventory.reduce((total, item) => total + item.unitValue * item.quantity, 0);
         const award = Math.round(
-          pensionAward(tick - character.bornTick, counters.deepestFloor, estate, unlocks) *
+          pensionAward(tick - character.bornTick, counters.deepestFloor, estate, unlocks, commendations) *
             (insured ? INSURANCE_PENSION_BONUS : 1),
         );
         character.hp = 0;

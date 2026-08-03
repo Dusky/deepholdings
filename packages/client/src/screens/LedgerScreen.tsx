@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   HEARTBEAT_SECONDS,
+  PENSION_PER_COMMENDATION,
   STAFF_CATALOGUE,
   isHired,
   nextStaffRung,
@@ -8,6 +9,8 @@ import {
   policyOf,
   staffRung,
   staffTier,
+  type CommendationId,
+  type LedgerResponse,
   type Registry,
   type RequisitionId,
   type StaffRole,
@@ -185,6 +188,113 @@ function RegistryColumn({
         );
       })}
       {notice && <div className={`text-dim ${styles.hint}`}>{notice}</div>}
+    </div>
+  );
+}
+
+/**
+ * Commendations, beside the pension they outlive.
+ *
+ * A third column of the same shape rather than a seventh tab. The tab row is
+ * already the tightest thing on a 390px phone — it took a layout fix and a
+ * viewport harness to fit six — and one ladder does not earn a seventh. If this
+ * column ever grows past the Ledger's scroll, `npm run viewports` is what says
+ * so, not a hunch.
+ */
+function CommendationColumn({
+  data,
+  award,
+  onChanged,
+}: {
+  data: LedgerResponse;
+  award: number;
+  onChanged: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState<CommendationId | 'transfer' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const buy = async (id: CommendationId) => {
+    setBusy(id);
+    setNotice(null);
+    try {
+      await api.purchaseCommendation(id);
+      await onChanged();
+    } catch {
+      setNotice('The commendation was not entered. Nothing was spent.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const transfer = async () => {
+    setBusy('transfer');
+    setNotice(null);
+    try {
+      const out = await api.fileTransfer();
+      await onChanged();
+      setNotice(
+        `Form T-1 approved. ${out.awarded} entered on your record. New posting opened.`,
+      );
+    } catch {
+      setNotice('Form T-1 returned. Your posting is unchanged.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const { transfer: held } = data;
+
+  return (
+    <div className={columns.column}>
+      <div className={`text-head ${columns.head}`}>
+        COMMENDATIONS — {held.total}
+        {held.careers > 0 ? ` — POSTING ${held.careers + 1}` : ''}
+      </div>
+      <div className={`text-dim ${styles.hint}`}>
+        Earned by transferring. Nothing here is ever surrendered — not by a
+        death, and not by a transfer.
+      </div>
+      {data.commendations.map((offer) => {
+        const state = offer.owned ? 'owned' : offer.affordable ? 'affordable' : 'locked';
+        return (
+          <button
+            key={offer.track}
+            type="button"
+            className={styles.unlock}
+            data-state={state}
+            disabled={!offer.affordable || busy !== null}
+            onClick={() => void buy(offer.id)}
+          >
+            <span className={styles.unlockHead}>
+              <span className={offer.owned ? 'text-bright' : 'text-body'}>{offer.label}</span>
+              <span className={offer.owned ? 'text-bright' : 'text-dim'}>
+                {offer.owned ? 'COMPLETE' : busy === offer.id ? '...' : offer.cost}
+              </span>
+            </span>
+            <span className={`text-dim ${styles.unlockDetail}`}>
+              {offer.maxTier > 1 && `Tier ${offer.tier}/${offer.maxTier} — `}
+              {offer.detail}
+            </span>
+          </button>
+        );
+      })}
+
+      <button
+        type="button"
+        className={styles.retire}
+        disabled={award < 1 || busy !== null}
+        onClick={() => void transfer()}
+      >
+        {busy === 'transfer'
+          ? 'FILING FORM T-1...'
+          : `FILE FORM T-1 — TRANSFER FOR ${award}`}
+        <span className={`text-dim ${styles.retireNote}`}>
+          {award >= 1
+            ? 'Surrenders the pension and every rung bought with it. Your department, your equipment and your commendations come with you.'
+            : `A transfer is assessed on pension banked this posting. ${PENSION_PER_COMMENDATION} earns one commendation.`}
+        </span>
+      </button>
+      {notice && <div className="text-dim">{notice}</div>}
     </div>
   );
 }
@@ -395,6 +505,14 @@ export function LedgerScreen() {
         )}
         {retireNotice && <div className="text-dim">{retireNotice}</div>}
       </div>
+
+      <CommendationColumn
+        data={data}
+        award={state?.transferAward ?? 0}
+        onChanged={async () => {
+          await Promise.all([reload(), refresh()]);
+        }}
+      />
 
       <RegistryColumn
         registry={state?.registry ?? { staff: [], spent: 0, unpaid: false }}

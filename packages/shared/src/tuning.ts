@@ -8,6 +8,7 @@ import type {
   UnlockId,
   UnlockTrack,
 } from './domain.js';
+import { endowmentMultiplier, type CommendationId } from './transfer.js';
 
 /** One resolution tick per minute of real time. */
 export const TICK_SECONDS = 60;
@@ -186,12 +187,22 @@ export function pensionAward(
   depthReached: number,
   goldHandled: number,
   unlocks: readonly UnlockId[] = [],
+  /**
+   * Commendations, which outlive the pension they multiply.
+   *
+   * Last and optional so that every existing call site keeps meaning what it
+   * meant — an officer who has never filed for a transfer — rather than
+   * silently becoming a different measurement.
+   */
+  commendations: readonly CommendationId[] = [],
 ): number {
   const service = Math.max(0, serviceTicks);
   const depthFactor = 1 + depthReached * PENSION_DEPTH_FACTOR;
   const credit = SERVICE_CREDIT_BY_TIER[unlockTier(unlocks, 'service')];
   return Math.round(
-    (service * PENSION_SERVICE_RATE * depthFactor + goldHandled * PENSION_ESTATE_RATE) * credit,
+    (service * PENSION_SERVICE_RATE * depthFactor + goldHandled * PENSION_ESTATE_RATE) *
+      credit *
+      endowmentMultiplier(commendations),
   );
 }
 

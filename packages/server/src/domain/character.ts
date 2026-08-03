@@ -15,6 +15,9 @@ import {
   type CaseFile,
   type Character,
   type Filing,
+  intakeFloor,
+  startingPermitTier,
+  type CommendationId,
   type InventoryItem,
   type UnlockId,
 } from '@deepholdings/shared';
@@ -70,6 +73,23 @@ export interface Succession {
   /** Permanent unlocks are the only other thing that crosses a death. */
   unlocks: readonly UnlockId[];
   atTick: number;
+  /**
+   * Commendations, which cross a *transfer* and therefore cross everything.
+   *
+   * Optional, and that is a deliberate risk taken with eyes open: making it
+   * required would have every harness and test pass `[]` explicitly, which is
+   * noise around a default that is correct for all of them. The exposure is
+   * that a real call site forgets it and quietly issues recruits without the
+   * intake floor — so `service.ts` is the only place that may pass a non-empty
+   * value, and it does so from the transfer row it has already loaded.
+   */
+  commendations?: readonly CommendationId[];
+  /**
+   * True when this recruit is the first of a new posting rather than a
+   * successor. A transfer hands the caseload back: the permit ladder restarts
+   * at whatever Transferred Dispensation bought, and nothing is inherited.
+   */
+  posting?: boolean;
 }
 
 /**
@@ -90,12 +110,18 @@ export function succeed(input: Succession): {
     character: newRecruit(
       input.id,
       input.accountId,
-      previous ? previous.recruitNum + 1 : 1,
+      input.posting || !previous ? 1 : previous.recruitNum + 1,
       input.unlocks,
       input.atTick,
-      previous?.permitTier ?? STARTING_PERMIT_TIER,
-      previous?.level ?? 1,
-      previous ? input.depthReached : 0,
+      // Resolved here, not inside: a posting's tier is *granted* by Transferred
+      // Dispensation, and running it through `inheritedPermitTier` would take
+      // one straight back off the thing the officer just paid for.
+      input.posting
+        ? startingPermitTier(input.commendations ?? [])
+        : inheritedPermitTier(previous?.permitTier ?? STARTING_PERMIT_TIER),
+      input.posting ? 1 : previous?.level ?? 1,
+      input.posting ? 0 : previous ? input.depthReached : 0,
+      input.commendations ?? [],
     ),
     inventory: STARTING_INVENTORY.map((item) => ({ ...item })),
     permitAppliedTick: null,
@@ -124,13 +150,21 @@ function newRecruit(
   recruitNum: number,
   unlocks: readonly UnlockId[],
   atTick: number,
-  previousPermitTier: number,
+  permitTier: number,
   previousLevel: number,
   previousDepth: number,
+  commendations: readonly CommendationId[],
 ): Character {
   const intake = RECRUIT_GRADE_BY_TIER[unlockTier(unlocks, 'recruit')];
   const settlement = ESTATE_GOLD_BY_TIER[unlockTier(unlocks, 'estate')];
-  const level = Math.max(inheritedLevel(previousLevel, previousDepth), intake);
+  // The Commendation floor is a floor under *everything*, including a fresh
+  // posting where there is no predecessor to inherit from. That is the whole
+  // point of it: it is what makes the reset survivable.
+  const level = Math.max(
+    inheritedLevel(previousLevel, previousDepth),
+    intake,
+    intakeFloor(commendations),
+  );
 
   return {
     id,
@@ -142,7 +176,7 @@ function newRecruit(
     hp: maxHpForLevel(level),
     maxHp: maxHpForLevel(level),
     depth: 0,
-    permitTier: inheritedPermitTier(previousPermitTier),
+    permitTier,
     gold: STARTING_GOLD + settlement,
     supplies: STARTING_SUPPLIES,
     // Reputation is not inherited. The office is; the standing is earned.

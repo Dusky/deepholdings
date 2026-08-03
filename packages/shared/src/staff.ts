@@ -90,6 +90,7 @@
  */
 
 import type { LadderEntry } from './tuning.js';
+import { payrollShare, type CommendationId } from './transfer.js';
 
 export type StaffRole = 'clerk' | 'officer' | 'archivist';
 
@@ -305,12 +306,23 @@ export function policyOf(registry: Registry, role: StaffRole): number | null {
   return registry.staff.find((member) => member.role === role)?.policy ?? null;
 }
 
-/** Gold per minute for everyone on the books, at the tier they hold. */
-export function payrollPerTick(registry: Registry): number {
-  return registry.staff.reduce(
+/**
+ * Gold per minute for everyone on the books, at the tier they hold.
+ *
+ * Departmental Patronage is applied here rather than at the call site so that
+ * every reader of the payroll — the wage charge, the Ledger heading, the
+ * harness — agrees about what the officer actually pays. Rounded up, so a
+ * department can never become free while still working.
+ */
+export function payrollPerTick(
+  registry: Registry,
+  commendations: readonly CommendationId[] = [],
+): number {
+  const gross = registry.staff.reduce(
     (total, member) => total + (staffRung(member.role, member.tier ?? 1)?.upkeep ?? 0),
     0,
   );
+  return gross === 0 ? 0 : Math.max(1, Math.ceil(gross * payrollShare(commendations)));
 }
 
 /**

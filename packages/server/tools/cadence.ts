@@ -23,6 +23,7 @@
 import {
   DEFAULT_ORDERS,
   EMPTY_REGISTRY,
+  EMPTY_TRANSFER,
   pensionAward,
   statsOf,
   type CaseFile,
@@ -163,6 +164,7 @@ function runCareer(seed: number): Career {
         pension: { total: 0, spent: 0, unlocks: [] },
         registry: EMPTY_REGISTRY,
         requisitions: [],
+        transfer: EMPTY_TRANSFER,
       },
       OFFICER,
       out.ticksResolved,

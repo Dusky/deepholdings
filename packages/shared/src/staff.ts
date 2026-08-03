@@ -56,25 +56,37 @@
  *     lifetime pension        ~1,503k          982k        1,263k
  *     last new thing         day 39.5      day 58.8      day 50.2
  *
- * A department that cost **35% of lifetime pension** — and the mechanism is
- * structural rather than a bad number. `pensionAward` pays out on the estate at
- * `goldHandled * 0.4`, so **every gold a recurring sink takes is 0.4 gold of
- * pension it takes with it**, and the loss compounds: less pension buys fewer
- * Service Credit rungs, which lowers the multiplier on every pension after.
+ * A department that cost **35% of lifetime pension** — and the mechanism was
+ * structural rather than a bad number. `pensionAward` paid out on the estate at
+ * `goldHandled * 0.4`, so **every gold a recurring sink took was 0.4 gold of
+ * pension it took with it**, and the loss compounded: less pension bought fewer
+ * Service Credit rungs, which lowered the multiplier on every pension after.
  *
- * That is worth knowing about far beyond this file. Requisitions never showed
- * it because they are bought once; wages are the first cost that keeps
- * arriving, so they are the first thing to run into it. Any recurring sink
- * added after this one is a pension tax at the same rate, and has to be priced
- * knowing that.
+ * Requisitions never showed it because they are bought once. Wages are the
+ * first cost that keeps arriving, so they were the first thing to hit it — and
+ * hitting it is what got the formula measured. The estate turned out to be
+ * **96.3% of every award**, so `pensionAward` was pricing systems that had not
+ * been designed yet, quietly, on a rule its own comment denied.
  *
- * At one a minute each the tax is about 16% and the curve stretches by ten days
- * rather than nineteen. Still a real cost — which is the point, an automation
- * you do not feel is not a decision — but no longer a feature that mostly makes
- * the game slower. Note the direction of that trade before extending the
- * department: in this genre automation is supposed to *accelerate*, and a post
- * whose only benefit is convenience will always read as a tax in a simulation
- * that cannot value the officer's time.
+ * ## What that changed
+ *
+ * The formula now accrues on service, with the estate at a tenth rather than
+ * two fifths. Gold is the economy and pension is time-and-depth; spending no
+ * longer costs pension. The department's price at one a minute each:
+ *
+ *     ninety days, an officer who hires everything as soon as they can
+ *
+ *                        no department    3 g/min, old    3 g/min, now
+ *     lifetime pension        ~1,590k         1,263k          1,514k
+ *     cost of the department      —              16%            4.8%
+ *     time unpaid                 —             2.6%            0.7%
+ *
+ * Wages are now close to what they look like on the tin. That is the right
+ * footing to extend the department from, but it also removes the excuse: at 16%
+ * a post could be defended as "convenience you pay for", and at 4.8% a post
+ * that does nothing but save taps is simply thin. In this genre automation is
+ * supposed to *accelerate*, and every tier added past the first has to buy an
+ * edge rather than another chore.
  */
 
 export type StaffRole = 'clerk' | 'officer' | 'archivist';

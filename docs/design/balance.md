@@ -70,6 +70,12 @@ Pensions now accrue with **service** — `serviceTicks × 0.06 × (1 + depth ×
 a long career on deep floors is worth a great deal. Death-farming collapsed
 from 571/h to 70/h, below what a living recruit earns in gold.
 
+> **This was measured much later and was not true.** The estate term turned out
+> to be 96.3% of every award, so the formula above accrued with the *purse* and
+> the paragraph describing it was wrong for months. See
+> [The pension was never a pension](#the-pension-was-never-a-pension) at the end
+> of this document for the split, the fix, and what it cost.
+
 ## Where it landed
 
 | profile | deaths/wk | gold/h | pension/h | floor | lvl |
@@ -1155,3 +1161,99 @@ The lesson is not "be careful with references". It is that a balance tool does
 not crash when it is wrong — it publishes a number, and the number is the
 deliverable. Every refactor of one has to be gated on reproducing what it said
 before, or the next quiet wrong answer stands.
+
+## The pension was never a pension
+
+`pensionAward` has said the same thing about itself since it was written: the
+award "accrues with *service*", and the anti-death-farming property follows from
+that. Splitting the two terms apart in `longrun` over ninety days:
+
+| term                            | ninety days, no department |
+| ------------------------------- | -------------------------- |
+| `service * 0.06 * depthFactor`  | 35,219                     |
+| `goldHandled * 0.4`             | 909,861                    |
+
+**The estate was 96.3% of every award.** Service was a rounding error. The
+comment described a design nobody had implemented, and the property it claimed
+held only by accident — a recruit who died in forty minutes was cheap because
+they had not accumulated an *estate* either, not because they had not served.
+
+The whole suite was green throughout, because nothing tested the *shape* of the
+formula. Only a harness could see it, and only once someone thought to look.
+
+### Why it mattered beyond one function
+
+Paying out on the estate makes **every gold sink a pension tax**. Gold spent is
+gold not in the purse at death, so a recurring cost took 0.4 of itself in
+pension on top of its face price, and the loss compounded through Service
+Credit. That is where the department's 35% came from, and it was pricing every
+system in slices 3–6 before any of them were designed.
+
+### What it is now
+
+```
+service * 0.75 * (1 + depth * 0.55) + goldHandled * 0.1
+```
+
+Gold is the economy; pension is time and depth. The estate is reduced rather
+than removed — zero would take `HOARD_SALE_BONUS`, the `hoard` spend policy and
+the insurance bonus down with it, since a larger estate is their entire payoff.
+A tenth leaves a good haul worth having and a recurring sink costing 10% over
+its face.
+
+The depth factor nearly doubles at the same time, and had to. Once the award is
+mostly service, depth is the *only* lever an officer has on the rate, and at
+`0.3` a timid officer on Floor 2 banked 35% of a Floor 12 officer's for taking
+none of the risk. At `0.55` the spread is 2.2x to 7.6x.
+
+Calibrated so the total does not move: **1,589,820 against 1,550,271**, a 2.6%
+drift inside run variance. Every number measured against lifetime pension stays
+comparable.
+
+### What it bought
+
+| ninety days                   | before  | after   |
+| ----------------------------- | ------- | ------- |
+| estate share of the award     | 96.3%   | 24.4%   |
+| a short death pays            | 1,190   | 763     |
+| cost of a 3 g/min department  | 16%     | 4.8%    |
+| time the department is unpaid | 2.6%    | 0.7%    |
+
+And in `simulate`, the same thing said from the other side. `equipper` differs
+from `balanced` only in that it spends its gold on requisitions:
+
+| profile    | pension/h before | pension/h after |
+| ---------- | ---------------- | --------------- |
+| balanced   | 9                | 25              |
+| equipper   | 4                | 24              |
+| retirer    | 89               | 171             |
+| retirer+eq | 74               | 168             |
+
+Spending used to cost 55% of pension. It now costs 4%.
+
+`insure` and `hoard` were both re-checked and neither moved: the insurance
+premium is a gold cost and its bonus is multiplicative, so `insured` sits at
+1.8x `balanced` before and after, and `HOARD_SALE_BONUS` was always a gold-side
+edge.
+
+### The bill: the exhaustion curve got shorter
+
+| last new thing | before   | after    |
+| -------------- | -------- | -------- |
+| no department  | day 39.5 | day 32.6 |
+| with staff     | day 50.2 | day 34.7 |
+
+This is the honest consequence and it is worth saying plainly rather than
+burying. Two things caused it. Pension no longer compounds with the gold
+economy — under the old formula, buying Hardship Stipend raised income, which
+raised the estate, which raised the pension that bought the next rung, and that
+feedback loop was doing real work slowing the early ladder. And the department's
+extra ten days turn out to have been **mostly the tax**: remove it and eight of
+the ten disappear, which means the Registry never added ten days of content, it
+added ten days of paying for content twice.
+
+Losing the compounding is a gain disguised as a loss. A catalogue of 29 fixed
+things fed by compounding income exhausts; a flat income against exponentially
+priced generated tiers is a curve that never closes, which is exactly the
+structure the formulaic tail needs. The seven days are bought back in slice 3
+and after, from content rather than from friction.

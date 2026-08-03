@@ -22,6 +22,9 @@
  */
 import {
   DEFAULT_ORDERS,
+  PENSION_DEPTH_FACTOR,
+  PENSION_ESTATE_RATE,
+  PENSION_SERVICE_RATE,
   REQUISITION_CATALOGUE,
   UNLOCK_CATALOGUE,
   pensionAward,
@@ -214,8 +217,8 @@ function playOne(seed: number): {
       pension += award;
 
       // The same two terms `pensionAward` adds together, kept apart.
-      fromService += service * 0.06 * (1 + deepest * 0.3);
-      fromEstate += estate * 0.4;
+      fromService += service * PENSION_SERVICE_RATE * (1 + deepest * PENSION_DEPTH_FACTOR);
+      fromEstate += estate * PENSION_ESTATE_RATE;
       if (service < 60) {
         shortDeaths += 1;
         shortPension += award;
@@ -289,6 +292,10 @@ console.log('\n--- where the pension actually comes from ---');
 {
   const service = med(runs.map((r) => r.fromService));
   const estate = med(runs.map((r) => r.fromEstate));
+  // Everything ever banked, Service Credit included. The calibration target
+  // when the formula changes: the shape may move, the total should not.
+  const lifetime = med(runs.map((r) => r.perFortnight.reduce((a, w) => a + w.earned, 0)));
+  console.log(`lifetime pension:    ${lifetime.toLocaleString()}`);
   const share = (estate / (service + estate)) * 100;
   console.log(`service term:        ${Math.round(service).toLocaleString()}`);
   console.log(`estate term:         ${Math.round(estate).toLocaleString()}`);

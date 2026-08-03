@@ -136,7 +136,51 @@ export function seniorityGradeBonus(level: number): number {
  * deaths an hour and out-earn a careful one who never lost anybody. Under
  * service accrual a recruit who lived forty minutes is worth almost nothing,
  * and a long career on deep floors is worth a great deal.
+ *
+ * ## The above was false for months, and it was measured
+ *
+ * The formula shipped as `service * 0.06 * depthFactor + goldHandled * 0.4`,
+ * and over ninety days the two terms came out at **35,219 against 909,861**.
+ * The estate was 96.3% of every award. Service was a rounding error, the
+ * comment described a design nobody had implemented, and the anti-farming
+ * property it claimed held only by accident — a recruit who died in forty
+ * minutes was cheap because they had not accumulated an *estate* either.
+ *
+ * That mattered well beyond this function, because paying out on the estate
+ * makes **every gold sink a pension tax**. Gold spent is gold not in the purse
+ * at death, so a recurring cost took 0.4 of itself in pension on top of its
+ * face price, and the loss compounded through Service Credit. A department at
+ * six gold a minute cost 35% of lifetime pension. Requisitions never showed it
+ * because they are bought once. It priced every future system before it was
+ * designed, which is a bad thing for a formula to be doing quietly.
+ *
+ * ## What it is now
+ *
+ * The two currencies are separated. **Gold is the economy**: earn it, spend it,
+ * and spending costs nothing but the gold. **Pension is time and depth**: it
+ * accrues by the minute at a rate set by how deep the officer is willing to
+ * operate. That is what the word "pension" meant all along.
+ *
+ * The estate term is reduced rather than removed, which was the alternative.
+ * Zero would have made the purse at death worth nothing, and with it the
+ * `hoard` spend policy, `HOARD_SALE_BONUS`, and the `insure` bonus — three
+ * systems whose entire payoff is a larger estate. A tenth keeps a good haul
+ * worth having and leaves a recurring sink costing 10% over its face, which is
+ * a drag a wage ought to have rather than one that dominates it.
+ *
+ * The depth factor nearly doubles at the same time, and has to. Once the award
+ * is mostly service, depth is the *only* lever an officer has on the rate, and
+ * at `0.3` a timid officer on Floor 2 banked 35% of what a Floor 12 officer did
+ * for taking none of the risk. At `0.55` the spread is 2.2x to 7.6x.
+ *
+ * Calibrated so lifetime pension over ninety days lands where it already was —
+ * about 1.55M. The shape changes; the total does not, so every number measured
+ * against it stays comparable.
  */
+export const PENSION_SERVICE_RATE = 0.75;
+export const PENSION_DEPTH_FACTOR = 0.55;
+export const PENSION_ESTATE_RATE = 0.1;
+
 export function pensionAward(
   serviceTicks: number,
   depthReached: number,
@@ -144,9 +188,11 @@ export function pensionAward(
   unlocks: readonly UnlockId[] = [],
 ): number {
   const service = Math.max(0, serviceTicks);
-  const depthFactor = 1 + depthReached * 0.3;
+  const depthFactor = 1 + depthReached * PENSION_DEPTH_FACTOR;
   const credit = SERVICE_CREDIT_BY_TIER[unlockTier(unlocks, 'service')];
-  return Math.round((service * 0.06 * depthFactor + goldHandled * 0.4) * credit);
+  return Math.round(
+    (service * PENSION_SERVICE_RATE * depthFactor + goldHandled * PENSION_ESTATE_RATE) * credit,
+  );
 }
 
 export function xpForLevel(level: number): number {

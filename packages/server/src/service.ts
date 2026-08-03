@@ -14,6 +14,10 @@ import {
   commendationAward,
   commendationTier,
   clampRetreatPct,
+  contributionOf,
+  guildShare,
+  objectiveForCycle,
+  authorisedSite,
   siteAuthorised,
   SITE_CATALOGUE,
   clauseById,
@@ -60,6 +64,7 @@ import {
   type TransferResponse,
   type PurchaseRequisitionResponse,
   type RequisitionId,
+  type SiteId,
   type StandingOrders,
   type WorldState,
   permitProcessingTicks,
@@ -834,6 +839,26 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
 
   updated = (await applyStaff(tx, accountId, updated, pension, result.ticksResolved)).record;
 
+  /**
+   * The regional effort, after the department and before the save.
+   *
+   * After staff because the payout is gold and the payroll is charged from the
+   * same purse — an officer whose share arrived first would be paying wages out
+   * of it in the same breath, which is true but makes the log unreadable. And
+   * before the save, so the share and the wages land in one write.
+   */
+  const guild = await applyGuild(
+    tx,
+    accountId,
+    updated.character,
+    result.counters,
+    authorisedSite(orders.site ?? 'holdings', transfer.unlocks),
+  );
+  updated = { ...updated, character: guild.character };
+  if (guild.notes.length > 0) {
+    await tx.appendJournal(guild.notes.map((text) => entry_(updated.character, text)));
+  }
+
   await tx.saveCharacter(updated);
 
   if (result.death) {
@@ -1463,10 +1488,24 @@ function withKinds(entries: readonly JournalEntry[]): JournalEntry[] {
   return entries.map((entry) => ({ ...entry, kind: journalKind(entry.text) }));
 }
 
-export async function getBulletin(repo: Repository): Promise<BulletinResponse> {
+export async function getBulletin(
+  repo: Repository,
+  accountId: string,
+): Promise<BulletinResponse> {
   const world = await repo.getWorld();
   const deaths = await repo.listDeaths(12);
-  return { world, deaths };
+  const standing = await repo.getGuildStanding(accountId);
+  return {
+    world,
+    deaths,
+    // Zeroed when the standing is stale: the contribution belongs to an
+    // objective that has already closed, and showing it against the current
+    // bar would credit this office with somebody else's work.
+    guild: {
+      contribution: standing.cycle === world.guildCycle ? standing.contribution : 0,
+      paid: standing.paid,
+    },
+  };
 }
 
 export async function getTavern(repo: Repository, sinceId: number): Promise<TavernResponse> {
@@ -1494,6 +1533,71 @@ function secondsUntil(iso: string, now: Date): number {
 }
 
 export { HEARTBEAT_SECONDS };
+
+/**
+ * The regional effort, on the resolution path.
+ *
+ * Two jobs in one place because they share a read. First, settle anything owed:
+ * if the officer's contribution counts toward a cycle the world has moved past,
+ * that objective completed and their share is due. Then add what this span did
+ * to the current one.
+ *
+ * Claimed lazily, on the officer's next read, which is the same shape as every
+ * other deferred thing here — no job walks the account table paying people.
+ * The consequence worth stating: an officer who never opens the app is never
+ * paid, and that is correct. The purse is for turning up.
+ */
+async function applyGuild(
+  tx: Repository,
+  accountId: string,
+  character: Character,
+  counters: ResolveCounters,
+  site: SiteId,
+): Promise<{ character: Character; notes: string[] }> {
+  const notes: string[] = [];
+  const world = await tx.getWorld();
+  const standing = await tx.getGuildStanding(accountId);
+  let updated = character;
+
+  // 1. Settle. The objective the contribution was made toward has completed if
+  //    the world has moved on from it.
+  if (standing.cycle < world.guildCycle && standing.contribution > 0) {
+    const finished = objectiveForCycle(standing.cycle);
+    const share = guildShare(standing.contribution, finished.target, finished.purse);
+    updated = { ...updated, gold: updated.gold + share };
+    await tx.saveGuildStanding(accountId, {
+      cycle: world.guildCycle,
+      contribution: 0,
+      paid: standing.paid + share,
+    });
+    notes.push(
+      `Regional objective met: ${finished.text} Your office contributed ` +
+        `${standing.contribution}. Share of the purse: ${share} gold.`,
+    );
+  } else if (standing.cycle < world.guildCycle) {
+    // Contributed nothing, so nothing is owed — but the row still has to move
+    // forward or it will be compared against a stale cycle forever.
+    await tx.saveGuildStanding(accountId, { ...standing, cycle: world.guildCycle, contribution: 0 });
+  }
+
+  // 2. Contribute.
+  const objective = objectiveForCycle(world.guildCycle);
+  const contribution = contributionOf(objective.metric, counters, site);
+  if (contribution > 0) {
+    const result = await tx.addGuildProgress(contribution);
+    const current = await tx.getGuildStanding(accountId);
+    await tx.saveGuildStanding(accountId, {
+      ...current,
+      cycle: result.cycle,
+      contribution: current.cycle === result.cycle ? current.contribution + contribution : contribution,
+    });
+    if (result.completed) {
+      notes.push(`Regional objective met. ${objective.text} Assessment of shares follows.`);
+    }
+  }
+
+  return { character: updated, notes };
+}
 
 /**
  * Form T-1: file for a transfer.

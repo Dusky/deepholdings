@@ -234,8 +234,16 @@ export class ApiClient {
     return this.request('POST', '/v1/dev/advance', { hours });
   }
 
+  /**
+   * Authenticated now, where it used to be anonymous.
+   *
+   * The world event and the death feed are public in the fiction, but the
+   * response carries this office's own contribution to the regional objective —
+   * and a shared bar with no personal number on it is a bar you cannot tell
+   * whether you are affecting, which is the defect the bar itself was fixed for.
+   */
   getBulletin(): Promise<BulletinResponse> {
-    return this.send('GET', '/v1/bulletin', undefined, null);
+    return this.request('GET', '/v1/bulletin');
   }
 
   getTavern(sinceId = 0): Promise<TavernResponse> {

@@ -330,7 +330,10 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     return getJournalPage(repo, accountId, before);
   });
 
-  app.get('/v1/bulletin', async () => getBulletin(repo));
+  app.get('/v1/bulletin', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    return getBulletin(repo, accountId);
+  });
 
   app.get('/v1/tavern', async (request) => {
     const { sinceId } = request.query as { sinceId?: string };

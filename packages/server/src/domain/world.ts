@@ -3,9 +3,9 @@ import {
   MARKET_DEMAND_FLOOR,
   MARKET_DEMAND_SPREAD,
   makeRng,
-  rngInt,
   rngPick,
   tickSeed,
+  objectiveForCycle,
   type LootPriority,
   type WorldState,
 } from '@deepholdings/shared';
@@ -34,13 +34,17 @@ const EVENTS = [
 ] as const;
 
 export function initialWorld(now: Date): WorldState {
+  const objective = objectiveForCycle(0);
   return {
     beat: 0,
     event: EVENTS[0],
     guildName: 'OFFICE OF THE UNDERSILL',
-    guildObjective: 'Contribute 500 Supplies to the regional stockpile.',
-    guildProgress: 312,
-    guildTarget: 500,
+    guildCycle: 0,
+    guildObjective: objective.text,
+    // Starts empty. It used to start at 312 of 500 with nothing having happened,
+    // which is a progress bar apologising for itself.
+    guildProgress: 0,
+    guildTarget: objective.target,
     market: CATEGORIES.map((entry) => ({ ...entry, demand: 1 })),
     nextBeatAt: new Date(now.getTime() + HEARTBEAT_SECONDS * 1000).toISOString(),
   };
@@ -56,15 +60,21 @@ export function advanceWorld(world: WorldState, now: Date): WorldState {
 
   const market = CATEGORIES.map((entry) => ({ ...entry, demand: driftDemand(rng) }));
 
-  const guildProgress = Math.min(world.guildTarget, world.guildProgress + rngInt(rng, 0, 9));
   const event = beat % 12 === 0 ? rngPick(rng, EVENTS) : world.event;
 
+  /**
+   * The heartbeat no longer touches the guild bar.
+   *
+   * It used to add `rngInt(rng, 0, 9)` here, which meant the regional effort
+   * advanced at the same rate whether the office had one officer or a thousand,
+   * and whether any of them descended. Progress now comes from `addGuildProgress`
+   * on the resolution path — the officers move it, or it does not move.
+   */
   return {
     ...world,
     beat,
     event,
     market,
-    guildProgress,
     nextBeatAt: new Date(now.getTime() + HEARTBEAT_SECONDS * 1000).toISOString(),
   };
 }

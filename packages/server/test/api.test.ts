@@ -459,7 +459,7 @@ for (const adapter of adapters) {
       assert.equal(retired.json().character.alive, true);
 
       // The separation is on the feed, and it does not claim they died.
-      const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin' });
+      const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin', headers: auth() });
       const separation = bulletin
         .json()
         .deaths.find((d: { characterName: string }) => d.characterName === previousName);
@@ -567,7 +567,7 @@ for (const adapter of adapters) {
       const fresh = await app.inject({ method: 'GET', url: '/v1/state', headers: auth() });
       assert.equal((fresh.json() as StateResponse).character.alive, true);
 
-      const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin' });
+      const bulletin = await app.inject({ method: 'GET', url: '/v1/bulletin', headers: auth() });
       assert.ok(bulletin.json().deaths.length > 0);
     });
 

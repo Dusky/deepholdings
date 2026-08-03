@@ -17,8 +17,9 @@ import type {
   UnlockId,
   WorldState,
 } from '@deepholdings/shared';
-import { DEFAULT_ORDERS } from '@deepholdings/shared';
+import { DEFAULT_ORDERS, GUILD_OBJECTIVES } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
+import type { GuildStanding } from '../ports.js';
 import { pendingMigrations, runMigrations } from '../migrations/runner.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
 
@@ -67,8 +68,8 @@ export class PostgresRepository implements Repository {
     }
 
     await this.db.query(
-      `INSERT INTO world (id, beat, event, guild_name, guild_objective, guild_progress, guild_target, market, next_beat_at)
-       VALUES (1, $1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+      `INSERT INTO world (id, beat, event, guild_name, guild_objective, guild_progress, guild_target, market, next_beat_at, guild_cycle)
+       VALUES (1, $1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9)
        ON CONFLICT (id) DO NOTHING`,
       worldParams(initialWorld(new Date())),
     );
@@ -328,6 +329,83 @@ export class PostgresRepository implements Repository {
     };
   }
 
+  async getGuildStanding(accountId: string): Promise<GuildStanding> {
+    const { rows } = await this.db.query(
+      'SELECT cycle, contribution, paid FROM guild_contributions WHERE account_id = $1',
+      [accountId],
+    );
+    if (!rows[0]) return { cycle: 0, contribution: 0, paid: 0 };
+    return { cycle: rows[0].cycle, contribution: rows[0].contribution, paid: rows[0].paid };
+  }
+
+  async saveGuildStanding(accountId: string, standing: GuildStanding): Promise<void> {
+    await this.db.query(
+      `INSERT INTO guild_contributions (account_id, cycle, contribution, paid)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (account_id) DO UPDATE SET
+         cycle = EXCLUDED.cycle, contribution = EXCLUDED.contribution, paid = EXCLUDED.paid`,
+      [accountId, standing.cycle, standing.contribution, standing.paid],
+    );
+  }
+
+  /**
+   * One statement, and it has to be.
+   *
+   * This is the first number in the game that many accounts write at once. A
+   * `SELECT` followed by an `UPDATE` would lose contributions the moment two
+   * officers resolve together, and — worse — two callers could both see the
+   * target crossed and both roll the cycle, paying one objective twice and
+   * skipping the next. Doing the add, the completion test and the roll in a
+   * single `UPDATE ... RETURNING` means exactly one caller can observe
+   * `completed` for a given cycle, whatever the concurrency.
+   *
+   * The new objective's text and target are computed in SQL from the rolled
+   * cycle via a CASE over the catalogue, which is duplication of
+   * `objectiveForCycle` and is called out as such: the alternative is a second
+   * statement, and a second statement is the bug this one exists to avoid.
+   * `test/guild.test.ts` asserts the two agree for every cycle in the rotation.
+   */
+  async addGuildProgress(amount: number): Promise<{ cycle: number; completed: boolean }> {
+    const add = Math.max(0, Math.round(amount));
+    const catalogue = GUILD_OBJECTIVES.map((objective, index) => ({
+      index,
+      text: objective.text,
+      target: objective.target,
+    }));
+    const textCase = catalogue
+      .map((entry) => `WHEN ${entry.index} THEN $${entry.index * 2 + 2}::text`)
+      .join(' ');
+    const targetCase = catalogue
+      .map((entry) => `WHEN ${entry.index} THEN $${entry.index * 2 + 3}::int`)
+      .join(' ');
+    const params: unknown[] = [add];
+    for (const entry of catalogue) params.push(entry.text, entry.target);
+
+    const { rows } = await this.db.query(
+      `UPDATE world SET
+         guild_progress = CASE WHEN guild_progress + $1 >= guild_target THEN 0
+                               ELSE guild_progress + $1 END,
+         guild_cycle    = CASE WHEN guild_progress + $1 >= guild_target THEN guild_cycle + 1
+                               ELSE guild_cycle END,
+         guild_objective = CASE WHEN guild_progress + $1 >= guild_target
+                                THEN CASE (guild_cycle + 1) % ${catalogue.length} ${textCase} END
+                                ELSE guild_objective END,
+         guild_target   = CASE WHEN guild_progress + $1 >= guild_target
+                                THEN CASE (guild_cycle + 1) % ${catalogue.length} ${targetCase} END
+                                ELSE guild_target END
+       WHERE id = 1
+       RETURNING guild_cycle, (guild_cycle > (SELECT guild_cycle FROM world WHERE id = 1)) AS rolled`,
+      params,
+    );
+    if (!rows[0]) return { cycle: 0, completed: false };
+    // `guild_cycle` in RETURNING is the value *after* the update, so a roll is
+    // detectable by comparing it with what the caller's contribution counted
+    // toward — the completed cycle is one less than the new one.
+    const cycle: number = rows[0].guild_cycle;
+    const completed = Boolean(rows[0].rolled);
+    return { cycle: completed ? cycle - 1 : cycle, completed };
+  }
+
   async getTransfer(accountId: string): Promise<Transfer> {
     const { rows } = await this.db.query(
       'SELECT commendations, spent, unlocks, careers FROM transfers WHERE account_id = $1',
@@ -422,6 +500,7 @@ export class PostgresRepository implements Repository {
       beat: Number(row.beat),
       event: row.event,
       guildName: row.guild_name,
+      guildCycle: row.guild_cycle ?? 0,
       guildObjective: row.guild_objective,
       guildProgress: row.guild_progress,
       guildTarget: row.guild_target,
@@ -433,7 +512,8 @@ export class PostgresRepository implements Repository {
   async saveWorld(world: WorldState): Promise<void> {
     await this.db.query(
       `UPDATE world SET beat = $1, event = $2, guild_name = $3, guild_objective = $4,
-         guild_progress = $5, guild_target = $6, market = $7::jsonb, next_beat_at = $8
+         guild_progress = $5, guild_target = $6, market = $7::jsonb, next_beat_at = $8,
+         guild_cycle = $9
        WHERE id = 1`,
       worldParams(world),
     );
@@ -564,6 +644,7 @@ function worldParams(world: WorldState): unknown[] {
   return [
     world.beat, world.event, world.guildName, world.guildObjective,
     world.guildProgress, world.guildTarget, JSON.stringify(world.market), world.nextBeatAt,
+    world.guildCycle,
   ];
 }
 

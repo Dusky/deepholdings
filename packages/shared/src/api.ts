@@ -394,6 +394,14 @@ export interface PurchaseRequisitionResponse {
 export interface BulletinResponse {
   world: WorldState;
   deaths: DeathRecord[];
+  /**
+   * What this office has put in, and been paid.
+   *
+   * On the Bulletin because a shared bar with no personal number on it is a
+   * bar you cannot tell whether you are affecting — which is the defect this
+   * whole thing was fixed for, one level up.
+   */
+  guild: { contribution: number; paid: number };
 }
 
 /** GET /v1/tavern?sinceId=N */

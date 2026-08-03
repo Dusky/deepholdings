@@ -91,6 +91,15 @@ export interface ResolveCounters {
   stalledTicks: number;
   /** Case files opened in this span. */
   caseFilesFound: number;
+  /**
+   * Descents made in this span, not the deepest reached.
+   *
+   * `deepestFloor` is a watermark and cannot be summed across officers, which
+   * is exactly what a regional objective has to do. Counting the act rather
+   * than the position also means a recruit who works Floor 9 all day
+   * contributes what they actually did rather than the number 9 once.
+   */
+  floorsDescended: number;
   /** Forms that concluded in this span, ruled either way. */
   filingsConcluded: number;
 }
@@ -306,6 +315,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     permitsApproved: 0,
     stalledTicks: 0,
     caseFilesFound: 0,
+    floorsDescended: 0,
     filingsConcluded: 0,
   };
   const finish = (): ResolveResult => {
@@ -488,6 +498,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
     if (!stalled && character.depth < authorised) {
       character.depth += 1;
       counters.deepestFloor = Math.max(counters.deepestFloor, character.depth);
+      counters.floorsDescended += 1;
       log(tick, `Down to Floor ${character.depth}.`);
     }
 

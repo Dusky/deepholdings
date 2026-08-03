@@ -99,6 +99,19 @@ export interface Repository {
   getTransfer(accountId: string): Promise<Transfer>;
   saveTransfer(accountId: string, transfer: Transfer): Promise<void>;
 
+  getGuildStanding(accountId: string): Promise<GuildStanding>;
+  saveGuildStanding(accountId: string, standing: GuildStanding): Promise<void>;
+  /**
+   * Add to the regional total and say what happened.
+   *
+   * A single statement, not a read-modify-write, and that is the point: this is
+   * the first number in the game that many accounts write concurrently, and
+   * `SELECT ... then UPDATE` would lose contributions under any real load. The
+   * completion check and the cycle roll happen inside the same statement, so
+   * exactly one caller can ever observe `completed` for a given cycle.
+   */
+  addGuildProgress(amount: number): Promise<{ cycle: number; completed: boolean }>;
+
   getOffice(accountId: string): Promise<Office>;
   getRegistry(accountId: string): Promise<Registry>;
   saveRegistry(accountId: string, registry: Registry): Promise<void>;
@@ -154,4 +167,18 @@ export interface Repository {
    * helper that breaks the first time an adapter is refactored.
    */
   markAwayForTesting(accountId: string, seconds: number): Promise<void>;
+}
+
+/**
+ * What one account has put into the current objective.
+ *
+ * `cycle` is which objective the contribution counts toward. When the world has
+ * moved past it, a payout is owed — that comparison is the entire claim
+ * mechanism, and it is why nothing has to run per-player on a schedule.
+ */
+export interface GuildStanding {
+  cycle: number;
+  contribution: number;
+  /** Gold paid out over every cycle, ever. */
+  paid: number;
 }

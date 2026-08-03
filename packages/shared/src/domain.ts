@@ -196,6 +196,14 @@ export interface WorldState {
   beat: number;
   event: string;
   guildName: string;
+  /**
+   * Which objective is in force. Increments when one completes.
+   *
+   * The payout is claimed lazily, so this is the watermark a contributor's own
+   * row is compared against — the same shape as `lastResolvedTick`, and for the
+   * same reason: nothing in this game runs per-player on a schedule.
+   */
+  guildCycle: number;
   guildObjective: string;
   guildProgress: number;
   guildTarget: number;

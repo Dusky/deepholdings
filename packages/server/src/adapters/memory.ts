@@ -11,9 +11,9 @@ import type {
   Transfer,
   WorldState,
 } from '@deepholdings/shared';
-import { DEFAULT_ORDERS, EMPTY_TRANSFER } from '@deepholdings/shared';
+import { DEFAULT_ORDERS, EMPTY_TRANSFER, objectiveForCycle } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
-import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
+import type { CharacterRecord, GuildStanding, NewJournalEntry, Repository } from '../ports.js';
 
 
 
@@ -165,6 +165,36 @@ export class MemoryRepository implements Repository {
 
   async savePension(accountId: string, pension: Pension): Promise<void> {
     this.pensions.set(accountId, { ...pension, unlocks: [...pension.unlocks] });
+  }
+
+  private readonly guild = new Map<string, GuildStanding>();
+
+  async getGuildStanding(accountId: string): Promise<GuildStanding> {
+    return this.guild.get(accountId) ?? { cycle: 0, contribution: 0, paid: 0 };
+  }
+
+  async saveGuildStanding(accountId: string, standing: GuildStanding): Promise<void> {
+    this.guild.set(accountId, { ...standing });
+  }
+
+  async addGuildProgress(amount: number): Promise<{ cycle: number; completed: boolean }> {
+    // Single-threaded here, so the atomicity the Postgres version needs is free.
+    const world = this.world;
+    const progress = world.guildProgress + Math.max(0, amount);
+    if (progress < world.guildTarget) {
+      this.world = { ...world, guildProgress: progress };
+      return { cycle: world.guildCycle, completed: false };
+    }
+    const cycle = world.guildCycle + 1;
+    const next = objectiveForCycle(cycle);
+    this.world = {
+      ...world,
+      guildCycle: cycle,
+      guildObjective: next.text,
+      guildTarget: next.target,
+      guildProgress: 0,
+    };
+    return { cycle: world.guildCycle, completed: true };
   }
 
   async getTransfer(accountId: string): Promise<Transfer> {

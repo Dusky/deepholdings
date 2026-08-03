@@ -1469,3 +1469,71 @@ catalogue that changes what the player *looks at* rather than a number, and
 somebody who has read the same bestiary for a month buys the new place first.
 Modelling them as a pure price-optimiser left an entire site unmeasured — which
 is the fifth instrument bug of this session and the same shape as the other four.
+
+## The guild bar was a progress bar wired to a clock
+
+`advanceWorld` advanced `guildProgress` by `rngInt(rng, 0, 9)` on every world
+heartbeat. It climbed at the same rate whether the office had one officer or a
+thousand, whether any of them descended, and when it reached the target it
+stopped there forever. It also *started* at 312 of 500 with nothing having
+happened, which is a progress bar apologising for itself.
+
+This is the same defect the Grade readout had before `seniority`: a number that
+visibly moves while meaning nothing is worse than no number, because the player
+does the work of noticing it.
+
+### What it is now
+
+Four objectives in rotation, each counting something a recruit does without the
+officer changing any order — floors surveyed, case files opened, encounters
+logged, permits cleared. An objective that required a particular standing order
+would be an instruction rather than a bulletin.
+
+Contribution is drawn from the resolver's own counters on the resolution path,
+so it moves when people play and does not move when they do not. Measured
+against the live server: one officer playing 2.5 days moved the survey objective
+to 1,369 of 4,000; a second officer who did nothing contributed zero. A solo
+officer completes an objective in about four and a half days.
+
+The payout is claimed lazily on the officer's next read, in the same "nothing
+runs per-player on a schedule" style as everything else. The consequence worth
+stating: an officer who never opens the app is never paid. The purse is for
+turning up.
+
+### Two decisions that needed writing down
+
+**The reward is gold, not pension.** `pensionAward` was just separated into a
+clean statement — pension is time and depth, gold is the economy — and a third
+source paying pension for something that is neither would put the ambiguity
+straight back. Gold also has somewhere to go now: the Registry's promotion
+ladder costs 324,000.
+
+**The purse is a rate, not a pot.** Shares are not capped to sum to the purse,
+so another officer's work never reduces yours. A fixed pot divided among
+contributors turns a shared bar into a competitive one and gives every player a
+reason to resent a busy region; this game has no leaderboards and no
+pay-to-win, and a cooperative bar that quietly punishes company would contradict
+all of it. A solo officer who does all four thousand floors collects the whole
+purse. There is also a floor of 1,500 gold, because share-proportional alone
+pays a casual contributor two hundred and forty gold and correctly teaches them
+the system is not for them.
+
+### The first shared write in the game
+
+`addGuildProgress` is a single `UPDATE ... RETURNING` that adds, tests for
+completion, and rolls the cycle. A `SELECT` then `UPDATE` would lose
+contributions the moment two officers resolve together, and worse, two callers
+could both observe the target crossed and both roll — paying one objective twice
+and skipping the next.
+
+The cost is that the rotation is stated twice: once in `objectiveForCycle` and
+once as a SQL `CASE`. That duplication is accepted deliberately, because the
+alternative is a second statement and a second statement is the race this one
+exists to avoid. `test/guild.test.ts` walks the whole rotation and asserts the
+two agree, and separately fires fifty concurrent contributions to check none are
+lost.
+
+`GET /v1/bulletin` is authenticated now, where it used to be anonymous: it
+carries this office's own contribution, and a shared bar with no personal number
+on it is a bar you cannot tell whether you are affecting — which is the defect
+the bar itself was fixed for.

@@ -175,6 +175,10 @@ export class MemoryRepository implements Repository {
 
   private readonly guild = new Map<string, GuildStanding>();
 
+  async ping(): Promise<void> {
+    // Nothing to reach. The in-memory adapter is as available as the process.
+  }
+
   async getGuildStanding(accountId: string): Promise<GuildStanding> {
     return this.guild.get(accountId) ?? { cycle: 0, contribution: 0, paid: 0 };
   }

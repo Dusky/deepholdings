@@ -53,6 +53,14 @@ export interface NewJournalEntry {
 export interface Repository {
   init(options?: { autoMigrate?: boolean }): Promise<void>;
   close(): Promise<void>;
+  /**
+   * Can this process still reach its storage?
+   *
+   * Its own method rather than "run any query and see", because the readiness
+   * probe calls it on a schedule set by the platform and must not be expensive
+   * enough to matter. Throwing is the answer; returning is success.
+   */
+  ping(): Promise<void>;
 
   transaction<T>(fn: (repo: Repository) => Promise<T>): Promise<T>;
 

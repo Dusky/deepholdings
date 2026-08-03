@@ -6,10 +6,11 @@
   "main": "./dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json && cp src/migrations/*.sql dist/migrations/",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start": "node dist/index.js",
     "migrate": "tsx src/migrate.ts",
+    "migrate:dist": "node dist/migrate.js",
     "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
     "simulate": "tsx tools/simulate.ts",
     "cadence": "tsx tools/cadence.ts",

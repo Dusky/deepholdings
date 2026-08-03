@@ -1,0 +1,19 @@
+{
+  // The production build, narrowed to what ships.
+  //
+  // `tsconfig.json` includes `src`, `test` and `tools` with `rootDir: "."`, so
+  // it emits `dist/src/index.js` — while `package.json` has always claimed
+  // `dist/index.js`. Nothing caught it because nothing had ever run the built
+  // server: every path in this project so far goes through `tsx` against
+  // source. The container is the first consumer, and it would have been written
+  // around the bug.
+  //
+  // Typechecking deliberately stays on the wide config, which is why CI runs
+  // `npm run typecheck` as its own step — narrowing the *build* would otherwise
+  // silently stop checking the tests and harnesses.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}

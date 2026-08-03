@@ -14,7 +14,16 @@ test('developer time travel is off unless asked for, and impossible in productio
   assert.equal(off.devTools, false, 'off by default');
   assert.equal(dev.devTools, true, 'on when asked for outside production');
   assert.equal(
-    loadConfig({ NODE_ENV: 'production', TOKEN_SECRET: 'x', DEV_TOOLS: 'true' }).devTools,
+    // A complete production environment, because `loadConfig` now refuses an
+    // incomplete one — see `config.test.ts`. The claim under test is unchanged:
+    // production ignores DEV_TOOLS however it is set.
+    loadConfig({
+      NODE_ENV: 'production',
+      TOKEN_SECRET: 'x'.repeat(32),
+      DATABASE_URL: 'postgres://user:pass@db/deepholdings',
+      CORS_ORIGINS: 'https://localhost',
+      DEV_TOOLS: 'true',
+    }).devTools,
     false,
     'production ignores the environment entirely',
   );

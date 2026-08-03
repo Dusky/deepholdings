@@ -1,9 +1,10 @@
 import { MemoryRepository } from './adapters/memory.js';
 import { PostgresRepository } from './adapters/postgres.js';
 import { buildApp } from './app.js';
-import { loadConfig } from './config.js';
+import { describeConfig, loadConfig } from './config.js';
 import { startHeartbeat } from './heartbeat.js';
 import type { Repository } from './ports.js';
+import { makeReporter } from './errors.js';
 import { makeSender } from './push/sender.js';
 import { sweepOnce } from './push/sweep.js';
 
@@ -24,7 +25,12 @@ const sender = makeSender(config, {
   warn: (message) => console.warn(message),
 });
 
-const app = buildApp({ repo, config, sender });
+const reporter = makeReporter({ error: (payload, message) => console.error(payload, message) });
+const app = buildApp({ repo, config, sender, reporter });
+
+// What this instance is actually running with, redacted. First question of
+// every incident; `loadConfig` has already refused anything unsafe.
+app.log.info(describeConfig(config), 'configuration');
 
 if (!config.databaseUrl) {
   app.log.warn('DATABASE_URL not set — using the in-memory adapter. State is lost on restart.');
@@ -36,14 +42,14 @@ if (!config.databaseUrl) {
 const sweep = config.runSweep
   ? async () => {
       const report = await sweepOnce(repo, sender, (error) =>
-        app.log.error(error, 'sweep: one account failed'),
+        reporter.report(error, { at: 'sweep' }),
       );
       if (report.pushed > 0 || report.replayed > 0) app.log.info(report, 'death sweep');
     }
   : undefined;
 
 const stopHeartbeat = config.runHeartbeat
-  ? startHeartbeat(repo, (error) => app.log.error(error, 'heartbeat failed'), sweep)
+  ? startHeartbeat(repo, (error) => reporter.report(error, { at: 'heartbeat' }), sweep)
   : () => {};
 
 const shutdown = async () => {
@@ -55,5 +61,19 @@ const shutdown = async () => {
 
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);
+
+/**
+ * An async throw outside a request currently kills the process with a bare
+ * stack and no record of it anywhere. Report, then exit non-zero rather than
+ * swallowing: the process's state is unknown after one of these, and letting
+ * the platform restart something in a known-good state is safer than
+ * continuing in one nobody can reason about.
+ */
+for (const signal of ['uncaughtException', 'unhandledRejection'] as const) {
+  process.on(signal, (error: unknown) => {
+    reporter.report(error, { at: signal });
+    process.exit(1);
+  });
+}
 
 await app.listen({ port: config.port, host: config.host });

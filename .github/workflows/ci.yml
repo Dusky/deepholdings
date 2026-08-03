@@ -52,6 +52,15 @@ jobs:
       # Shared must be built before the others typecheck against it.
       - run: npm run build
 
+      # Its own step, and it has to be. The server's *build* is narrowed to
+      # `src` (tsconfig.build.json) so the image gets `dist/index.js` rather
+      # than `dist/src/index.js` — which means compiling no longer typechecks
+      # `test/` and `tools/` as a side effect, and `npm test` runs them under
+      # tsx, which strips types without checking them. Without this line,
+      # narrowing the build silently stopped typechecking several thousand
+      # lines of tests and harnesses.
+      - run: npm run typecheck
+
       - run: npm test
 
       # The Android project is committed but its build needs an SDK this job

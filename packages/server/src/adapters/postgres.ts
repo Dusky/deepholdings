@@ -332,6 +332,13 @@ export class PostgresRepository implements Repository {
     };
   }
 
+  async ping(): Promise<void> {
+    // Deliberately the cheapest statement Postgres has. A readiness probe runs
+    // on the platform's schedule, not ours, and one that cost a real query
+    // would add load in exactly the conditions it exists to detect.
+    await this.db.query('SELECT 1');
+  }
+
   async getGuildStanding(accountId: string): Promise<GuildStanding> {
     const { rows } = await this.db.query(
       'SELECT cycle, contribution, paid FROM guild_contributions WHERE account_id = $1',

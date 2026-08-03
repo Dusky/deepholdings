@@ -16,6 +16,8 @@ import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
 import { LIMITS, RateLimiter } from './rateLimit.js';
+import { worldHealth } from './health.js';
+import { LogReporter, type ErrorReporter } from './errors.js';
 import { makeSender } from './push/sender.js';
 import type { PushSender } from './push/port.js';
 import { sweepOnce } from './push/sweep.js';
@@ -52,6 +54,8 @@ import {
 export interface AppDeps {
   repo: Repository;
   config: Config;
+  /** Where unexpected failures go. Defaults to the log; see `errors.ts`. */
+  reporter?: ErrorReporter;
   /**
    * Push transport. Only the dev sweep route uses it, but it is injected
    * rather than built here so the server has exactly one — an `FcmSender`
@@ -74,8 +78,24 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   internal: 500,
 };
 
-export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyInstance {
-  const app = Fastify({ logger: process.env.NODE_ENV !== 'test' });
+export function buildApp({ repo, config, sender: injected, reporter: given }: AppDeps): FastifyInstance {
+  const app = Fastify({
+    logger:
+      process.env.NODE_ENV === 'test'
+        ? false
+        : {
+            level: process.env.LOG_LEVEL ?? 'info',
+            /**
+             * Fastify's default request serialiser does not log headers, so
+             * nothing leaks today. This is here for the day somebody adds a
+             * custom serialiser: a bearer token in a log drain is a credential
+             * in a place nobody is watching, and the cost of pre-empting it is
+             * one line.
+             */
+            redact: ['req.headers.authorization'],
+          },
+  });
+  const reporter = given ?? new LogReporter(app.log);
   // Built lazily and only when the dev sweep can actually be reached: in
   // production this route does not exist, and constructing a sender would
   // parse credentials for nobody.
@@ -152,16 +172,48 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
       .send(errorBody('rate_limited', `Filing too quickly. The clerk will see you in ${wait}s.`));
   });
 
-  app.setErrorHandler(async (error, _request, reply) => {
+  app.setErrorHandler(async (error, request, reply) => {
     if (error instanceof SentReply) return;
+    // The game saying no is not an incident. `ServiceError` covers "not enough
+    // gold" and "the post is filled"; reporting those would fire an alert
+    // channel on ordinary play, and a channel that fires on ordinary play is
+    // muted within a day.
     if (error instanceof ServiceError) {
       return reply.status(ERROR_STATUS[error.code]).send(errorBody(error.code, error.message));
     }
-    app.log.error(error);
+    reporter.report(error, { method: request.method, url: request.url, reqId: request.id });
     return reply.status(500).send(errorBody('internal', 'internal error'));
   });
 
+  /**
+   * Liveness. No I/O, deliberately — a restart probe that touches the database
+   * will restart-loop a healthy process whose database is briefly away, which
+   * is the one thing guaranteed to make an outage worse.
+   */
   app.get('/health', async () => ({ ok: true }));
+
+  /**
+   * Readiness, and the world clock.
+   *
+   * 503 only when storage is unreachable: that is the condition under which
+   * this instance genuinely cannot serve, and the one a load balancer should
+   * route around. A stale world beat is reported as a *field* — see
+   * `health.ts` for why failing on it would convert a stopped background job
+   * into a fleet-wide outage.
+   *
+   * Neither probe is rate-limited (neither appears in `LIMITS`), because a
+   * platform health check that starts getting 429s looks exactly like an
+   * unhealthy instance.
+   */
+  app.get('/ready', async (_request, reply) => {
+    try {
+      await repo.ping();
+    } catch (error) {
+      reporter.report(error, { at: 'ready' });
+      return reply.status(503).send({ ok: false, database: 'down' });
+    }
+    return { ok: true, database: 'up', world: await worldHealth(repo) };
+  });
 
   // Hitting the API in a browser is a normal thing to do while setting up a
   // device; a bare 404 gives no clue that the server is fine.

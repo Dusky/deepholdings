@@ -70,13 +70,97 @@ export type CorsOrigin = string[] | ((origin: string) => boolean);
 const PRIVATE_ORIGIN =
   /^https?:\/\/(?:localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|169\.254\.\d+\.\d+|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+|\[::1\])(?::\d+)?$/;
 
+/**
+ * Everything that must be true before this process is allowed to serve players.
+ *
+ * All of these throw rather than warn, and the distinction is the whole point of
+ * the function. A misconfigured server that starts is worse than one that does
+ * not: it takes traffic, writes state, and tells nobody. A server that refuses
+ * to boot is discovered in the deploy, by the person deploying it.
+ */
+function assertProductionSafe(env: NodeJS.ProcessEnv, config: Config): void {
+  if (env.NODE_ENV !== 'production') return;
+
+  /**
+   * The check above this one only catches the literal default string, so
+   * `TOKEN_SECRET=x` passed it. This key signs every device token; a short one
+   * is a forgeable one, and the whole account model rests on it.
+   */
+  if (config.tokenSecret.length < 32) {
+    throw new Error(
+      `TOKEN_SECRET must be at least 32 characters in production (got ${config.tokenSecret.length}). ` +
+        'It signs every device token.',
+    );
+  }
+
+  /**
+   * The expensive one.
+   *
+   * Without `DATABASE_URL` the server does not fail — it quietly builds a
+   * `MemoryRepository` and logs "State is lost on restart" at *warn*. In
+   * production that means every account, every pension and every commendation
+   * is discarded on the next deploy, and the only evidence is one line in a log
+   * nobody reads until a player asks where their career went.
+   *
+   * The in-memory adapter is a genuinely useful thing to have — the whole test
+   * suite and a laptop run on it. It is just not a thing that should ever be
+   * reachable by *omission* on a production host.
+   */
+  if (!config.databaseUrl) {
+    throw new Error(
+      'DATABASE_URL must be set in production. Without it the server would run ' +
+        'on the in-memory adapter and discard every account on restart.',
+    );
+  }
+
+  /**
+   * An empty allow-list is a server that serves nobody, politely.
+   *
+   * `resolveCorsOrigins` takes an explicit list literally in production — no
+   * private-network fallback — so `CORS_ORIGINS=""` produces a server that
+   * boots, answers health checks, and rejects every browser and every Capacitor
+   * build at the preflight. That failure looks like a client bug from every
+   * angle except this one.
+   */
+  if (Array.isArray(config.corsOrigins) && config.corsOrigins.length === 0) {
+    throw new Error(
+      'CORS_ORIGINS resolved to nothing in production. The Android build talks ' +
+        'to the API cross-origin, so an empty list refuses every real client.',
+    );
+  }
+}
+
+/**
+ * The configuration, with the two private keys removed.
+ *
+ * Logged once at boot, because "which settings is this instance actually
+ * running with" is the first question of every incident and the answer should
+ * not require a redeploy to find out. `tokenSecret` signs every device token
+ * and `fcmServiceAccount` can push to every registered handset; neither goes
+ * anywhere near a log line, so both are reported as presence rather than value.
+ */
+export function describeConfig(config: Config): Record<string, unknown> {
+  return {
+    port: config.port,
+    host: config.host,
+    database: config.databaseUrl ? 'postgres' : 'memory',
+    tokenSecret: config.tokenSecret === 'dev-secret-change-me' ? 'DEFAULT' : 'set',
+    fcm: config.fcmServiceAccount ? 'configured' : 'absent',
+    runHeartbeat: config.runHeartbeat,
+    runSweep: config.runSweep,
+    autoMigrate: config.autoMigrate,
+    devTools: config.devTools,
+    corsOrigins: Array.isArray(config.corsOrigins) ? config.corsOrigins : 'private-network + list',
+  };
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   const tokenSecret = env.TOKEN_SECRET ?? 'dev-secret-change-me';
   if (env.NODE_ENV === 'production' && tokenSecret === 'dev-secret-change-me') {
     throw new Error('TOKEN_SECRET must be set in production');
   }
 
-  return {
+  const config: Config = {
     port: Number(env.PORT ?? 8787),
     host: env.HOST ?? '0.0.0.0',
     databaseUrl: env.DATABASE_URL ?? null,
@@ -90,6 +174,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     fcmServiceAccount: readServiceAccount(env),
     runSweep: env.RUN_SWEEP !== 'false',
   };
+
+  assertProductionSafe(env, config);
+  return config;
 }
 
 function readServiceAccount(env: NodeJS.ProcessEnv): string | null {

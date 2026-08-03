@@ -46,6 +46,7 @@ export interface ApiError {
       | 'already_owned'
       | 'character_dead'
       | 'rate_limited'
+      | 'duplicate_request'
       | 'internal';
     message: string;
   };

@@ -16,6 +16,7 @@ import { bearerToken, issueToken, verifyToken } from './auth.js';
 import type { Config } from './config.js';
 import type { Repository } from './ports.js';
 import { LIMITS, RateLimiter } from './rateLimit.js';
+import { registerIdempotency } from './idempotency.js';
 import { worldHealth } from './health.js';
 import { LogReporter, type ErrorReporter } from './errors.js';
 import { makeSender } from './push/sender.js';
@@ -75,6 +76,7 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   already_owned: 409,
   character_dead: 409,
   rate_limited: 429,
+  duplicate_request: 409,
   internal: 500,
 };
 
@@ -148,6 +150,8 @@ export function buildApp({ repo, config, sender: injected, reporter: given }: Ap
    * to defend: `verifyToken` is a signature check with no database access. If
    * that ever needs bounding it belongs at the network edge, not here.
    */
+  registerIdempotency(app, repo, config.tokenSecret);
+
   const limiter = new RateLimiter();
   app.addHook('onRequest', async (request, reply) => {
     const route = `${request.method} ${request.routeOptions?.url ?? request.url}`;

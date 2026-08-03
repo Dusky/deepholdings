@@ -116,6 +116,34 @@ export interface Repository {
   getTransfer(accountId: string): Promise<Transfer>;
   saveTransfer(accountId: string, transfer: Transfer): Promise<void>;
 
+  /**
+   * Claim a key, or report what the last holder did with it.
+   *
+   * One call rather than get-then-insert, because two requests arriving
+   * together is the entire case this exists for and a read followed by a write
+   * loses that race by construction.
+   */
+  beginIdempotent(
+    accountId: string,
+    key: string,
+    route: string,
+    requestHash: string,
+    staleAfterSeconds: number,
+  ): Promise<IdempotentClaim>;
+  /** Record the outcome so a retry can be answered without re-running it. */
+  completeIdempotent(
+    accountId: string,
+    key: string,
+    status: number,
+    response: unknown,
+  ): Promise<void>;
+  /** Give the key back — the request failed and must stay retryable. */
+  releaseIdempotent(accountId: string, key: string): Promise<void>;
+  /** Prune. Returns how many rows went. */
+  expireIdempotency(olderThanSeconds: number): Promise<number>;
+  /** Test support: age a reservation so the stale-reclaim path is reachable. */
+  backdateIdempotentForTesting(accountId: string, key: string, seconds: number): Promise<void>;
+
   getAssignments(accountId: string): Promise<AssignmentState>;
   saveAssignments(accountId: string, state: AssignmentState): Promise<void>;
 
@@ -196,6 +224,20 @@ export interface Repository {
  * moved past it, a payout is owed — that comparison is the entire claim
  * mechanism, and it is why nothing has to run per-player on a schedule.
  */
+/**
+ * What `beginIdempotent` found.
+ *
+ * - `fresh` — the key is ours; run the request.
+ * - `replay` — it completed before; send the recorded response again.
+ * - `in_flight` — another request holds it right now.
+ * - `conflict` — the key was used for a *different* request.
+ */
+export type IdempotentClaim =
+  | { state: 'fresh' }
+  | { state: 'replay'; status: number; response: unknown }
+  | { state: 'in_flight' }
+  | { state: 'conflict' };
+
 export interface GuildStanding {
   cycle: number;
   contribution: number;

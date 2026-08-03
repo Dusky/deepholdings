@@ -20,7 +20,7 @@ import type {
 } from '@deepholdings/shared';
 import { DEFAULT_ORDERS, GUILD_OBJECTIVES } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
-import type { GuildStanding } from '../ports.js';
+import type { GuildStanding, IdempotentClaim } from '../ports.js';
 import { pendingMigrations, runMigrations } from '../migrations/runner.js';
 import type { CharacterRecord, NewJournalEntry, Repository } from '../ports.js';
 
@@ -414,6 +414,98 @@ export class PostgresRepository implements Repository {
     const cycle: number = rows[0].guild_cycle;
     const completed = Boolean(rows[0].rolled);
     return { cycle: completed ? cycle - 1 : cycle, completed };
+  }
+
+  async beginIdempotent(
+    accountId: string,
+    key: string,
+    route: string,
+    requestHash: string,
+    staleAfterSeconds: number,
+  ): Promise<IdempotentClaim> {
+    /**
+     * One statement to claim, and it has to be one statement.
+     *
+     * `INSERT … ON CONFLICT DO NOTHING RETURNING` is atomic: exactly one of two
+     * simultaneous requests gets a row back, which is precisely the race this
+     * table exists to settle. A `SELECT` first would have both see nothing and
+     * both proceed — the double-charge, reintroduced by the mechanism meant to
+     * prevent it.
+     */
+    const claimed = await this.db.query(
+      `INSERT INTO idempotency_keys (account_id, key, route, request_hash)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (account_id, key) DO NOTHING
+       RETURNING account_id`,
+      [accountId, key, route, requestHash],
+    );
+    if (claimed.rows.length > 0) return { state: 'fresh' };
+
+    const { rows } = await this.db.query(
+      `SELECT route, request_hash, status, response,
+              EXTRACT(EPOCH FROM (now() - created_at)) AS age
+         FROM idempotency_keys WHERE account_id = $1 AND key = $2`,
+      [accountId, key],
+    );
+    // Deleted between the two statements by the expiry sweep: nobody holds it.
+    if (!rows[0]) return { state: 'fresh' };
+
+    const held = rows[0];
+    if (held.route !== route || held.request_hash !== requestHash) return { state: 'conflict' };
+    if (held.status === null) {
+      if (Number(held.age) > staleAfterSeconds) {
+        // Abandoned by a process that died mid-request. Reclaim it rather than
+        // leave the key jammed forever — see `idempotency.ts` for the residual
+        // risk that trade accepts.
+        await this.db.query(
+          'UPDATE idempotency_keys SET created_at = now() WHERE account_id = $1 AND key = $2',
+          [accountId, key],
+        );
+        return { state: 'fresh' };
+      }
+      return { state: 'in_flight' };
+    }
+    return { state: 'replay', status: held.status, response: held.response };
+  }
+
+  async completeIdempotent(
+    accountId: string,
+    key: string,
+    status: number,
+    response: unknown,
+  ): Promise<void> {
+    await this.db.query(
+      `UPDATE idempotency_keys SET status = $3, response = $4::jsonb
+        WHERE account_id = $1 AND key = $2`,
+      [accountId, key, status, JSON.stringify(response ?? null)],
+    );
+  }
+
+  async releaseIdempotent(accountId: string, key: string): Promise<void> {
+    await this.db.query('DELETE FROM idempotency_keys WHERE account_id = $1 AND key = $2', [
+      accountId,
+      key,
+    ]);
+  }
+
+  async expireIdempotency(olderThanSeconds: number): Promise<number> {
+    const { rowCount } = await this.db.query(
+      `DELETE FROM idempotency_keys WHERE created_at < now() - ($1 || ' seconds')::interval`,
+      [String(olderThanSeconds)],
+    );
+    return rowCount ?? 0;
+  }
+
+  async backdateIdempotentForTesting(
+    accountId: string,
+    key: string,
+    seconds: number,
+  ): Promise<void> {
+    await this.db.query(
+      `UPDATE idempotency_keys SET created_at = created_at - ($3 || ' seconds')::interval
+        WHERE account_id = $1 AND key = $2`,
+      [accountId, key, String(seconds)],
+    );
   }
 
   async getAssignments(accountId: string): Promise<AssignmentState> {

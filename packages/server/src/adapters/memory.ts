@@ -19,7 +19,13 @@ import {
   objectiveForCycle,
 } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
-import type { CharacterRecord, GuildStanding, NewJournalEntry, Repository } from '../ports.js';
+import type {
+  CharacterRecord,
+  GuildStanding,
+  IdempotentClaim,
+  NewJournalEntry,
+  Repository,
+} from '../ports.js';
 
 
 
@@ -208,6 +214,76 @@ export class MemoryRepository implements Repository {
   }
 
   private readonly assignments = new Map<string, AssignmentState>();
+
+  private readonly idempotency = new Map<
+    string,
+    { route: string; hash: string; status: number | null; response: unknown; at: number }
+  >();
+
+  async beginIdempotent(
+    accountId: string,
+    key: string,
+    route: string,
+    requestHash: string,
+    staleAfterSeconds: number,
+  ): Promise<IdempotentClaim> {
+    const id = `${accountId}|${key}`;
+    const held = this.idempotency.get(id);
+    if (!held) {
+      this.idempotency.set(id, {
+        route, hash: requestHash, status: null, response: null, at: Date.now(),
+      });
+      return { state: 'fresh' };
+    }
+    if (held.route !== route || held.hash !== requestHash) return { state: 'conflict' };
+    if (held.status === null) {
+      // A reservation older than the window is treated as abandoned — see the
+      // note in `idempotency.ts` about the crash that would otherwise jam it.
+      if (Date.now() - held.at > staleAfterSeconds * 1000) {
+        this.idempotency.set(id, { ...held, at: Date.now() });
+        return { state: 'fresh' };
+      }
+      return { state: 'in_flight' };
+    }
+    return { state: 'replay', status: held.status, response: held.response };
+  }
+
+  async completeIdempotent(
+    accountId: string,
+    key: string,
+    status: number,
+    response: unknown,
+  ): Promise<void> {
+    const id = `${accountId}|${key}`;
+    const held = this.idempotency.get(id);
+    if (held) this.idempotency.set(id, { ...held, status, response });
+  }
+
+  async releaseIdempotent(accountId: string, key: string): Promise<void> {
+    this.idempotency.delete(`${accountId}|${key}`);
+  }
+
+  async expireIdempotency(olderThanSeconds: number): Promise<number> {
+    const cutoff = Date.now() - olderThanSeconds * 1000;
+    let removed = 0;
+    for (const [id, held] of this.idempotency) {
+      if (held.at < cutoff) {
+        this.idempotency.delete(id);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  async backdateIdempotentForTesting(
+    accountId: string,
+    key: string,
+    seconds: number,
+  ): Promise<void> {
+    const id = `${accountId}|${key}`;
+    const held = this.idempotency.get(id);
+    if (held) this.idempotency.set(id, { ...held, at: held.at - seconds * 1000 });
+  }
 
   async getAssignments(accountId: string): Promise<AssignmentState> {
     return this.assignments.get(accountId) ?? { ...EMPTY_ASSIGNMENTS, completed: [] };

@@ -5,6 +5,7 @@ import { describeConfig, loadConfig } from './config.js';
 import { startHeartbeat } from './heartbeat.js';
 import type { Repository } from './ports.js';
 import { makeReporter } from './errors.js';
+import { KEY_RETENTION_SECONDS } from './idempotency.js';
 import { makeSender } from './push/sender.js';
 import { sweepOnce } from './push/sweep.js';
 
@@ -45,6 +46,12 @@ const sweep = config.runSweep
         reporter.report(error, { at: 'sweep' }),
       );
       if (report.pushed > 0 || report.replayed > 0) app.log.info(report, 'death sweep');
+      // Piggy-backed on the sweep rather than given a timer of its own: it is
+      // one bounded DELETE, and the sweep is already the only scheduled work
+      // in the process. Note for `deploy.md`: with RUN_SWEEP=false nothing
+      // prunes these.
+      const expired = await repo.expireIdempotency(KEY_RETENTION_SECONDS);
+      if (expired > 0) app.log.info({ expired }, 'idempotency keys expired');
     }
   : undefined;
 

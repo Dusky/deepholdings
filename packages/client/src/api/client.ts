@@ -120,6 +120,7 @@ export class ApiClient {
     path: string,
     body: unknown,
     token: string | null,
+    idempotencyKey?: string,
   ): Promise<T> {
     let response: Response;
     try {
@@ -128,6 +129,7 @@ export class ApiClient {
         headers: {
           ...(body === undefined ? {} : { 'content-type': 'application/json' }),
           ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...(idempotencyKey ? { 'idempotency-key': idempotencyKey } : {}),
         },
         body: body === undefined ? undefined : JSON.stringify(body),
       });
@@ -148,14 +150,33 @@ export class ApiClient {
   }
 
   /** Authenticated request; a 401 means the token died, so sign in and retry once. */
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  /**
+   * `idempotent` sends an `Idempotency-Key` so a retried charge is answered
+   * from the server's record rather than executed again.
+   *
+   * The key is minted **here**, not inside `send`, and that placement is the
+   * whole point: the 401 retry below re-sends through `send` with the *same*
+   * key, which is exactly the behaviour wanted — one logical purchase, however
+   * many times the transport tries it.
+   *
+   * `randomId` rather than `crypto.randomUUID`, for the reason already recorded
+   * above the device id: `randomUUID` is secure-context only, and the LAN
+   * phone-testing path is plain http.
+   */
+  private async request<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    idempotent = false,
+  ): Promise<T> {
     const token = this.token ?? (await this.authenticate());
+    const key = idempotent ? randomId() : undefined;
     try {
-      return await this.send<T>(method, path, body, token);
+      return await this.send<T>(method, path, body, token, key);
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {
         this.token = null;
-        return this.send<T>(method, path, body, await this.authenticate());
+        return this.send<T>(method, path, body, await this.authenticate(), key);
       }
       throw error;
     }
@@ -182,11 +203,11 @@ export class ApiClient {
   }
 
   sellItem(name: string, quantity?: number): Promise<SellItemResponse> {
-    return this.request('POST', '/v1/ledger/sell', { name, quantity });
+    return this.request('POST', '/v1/ledger/sell', { name, quantity }, true);
   }
 
   bulkSell(selector: BulkSellRequest): Promise<BulkSellResponse> {
-    return this.request('POST', '/v1/ledger/sell-bulk', selector);
+    return this.request('POST', '/v1/ledger/sell-bulk', selector, true);
   }
 
   purchaseRequisition(id: RequisitionId): Promise<PurchaseRequisitionResponse> {
@@ -199,11 +220,16 @@ export class ApiClient {
 
   /** Form 12-C. The fee leaves the purse here, whatever the panel rules. */
   fileForm(request: FileFormRequest): Promise<FileFormResponse> {
-    return this.request('POST', '/v1/armoury/file', request);
+    return this.request('POST', '/v1/armoury/file', request, true);
   }
 
+  /**
+   * Idempotent, and the most important of the four: this climbs a *ladder*, so
+   * a retried request does not repeat a purchase — it buys the next tier the
+   * officer never asked for.
+   */
   hireStaff(role: StaffRole): Promise<RegistryResponse> {
-    return this.request('POST', '/v1/registry/hire', { role });
+    return this.request('POST', '/v1/registry/hire', { role }, true);
   }
 
   /** Amending a standing instruction. Free — it is a form, not a purchase. */

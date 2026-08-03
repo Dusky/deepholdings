@@ -14,6 +14,7 @@
     "test": "node --import tsx --test --test-concurrency=1 test/*.test.ts",
     "simulate": "tsx tools/simulate.ts",
     "cadence": "tsx tools/cadence.ts",
+    "forecast": "tsx tools/forecast.ts",
     "push:ping": "tsx tools/push-ping.ts",
     "load": "tsx tools/load.ts",
     "longrun": "tsx tools/longrun.ts"

@@ -6,6 +6,8 @@ export * from './transfer.js';
 export * from './sites.js';
 export * from './guild.js';
 export * from './assignments.js';
+export * from './glossary.js';
+export * from './forecast.js';
 export * from './api.js';
 export * from './rng.js';
 export * from './tuning.js';

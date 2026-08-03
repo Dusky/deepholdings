@@ -36,7 +36,7 @@ payment."
 
 > **Rule for us:** catch-up is never sold. It is the promise of the genre, and
 > charging for it is charging players to undo a punishment we invented. This
-> is already product goal #2; the market confirms it.
+> is already product goal #3; the market confirms it.
 
 ### 2. Reveal the machine slowly
 

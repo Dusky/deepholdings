@@ -16,6 +16,8 @@ import {
   GRIEVOUS_MAX_FRACTION,
   GRIEVOUS_MULTIPLIER,
   HOARD_SALE_BONUS,
+  INSURE_PENSION_BONUS,
+  INSURE_PREMIUM_PER_TICK,
   MAX_HIT_FRACTION,
   authorisedDepth,
   gradeMismatchMultiplier,
@@ -166,8 +168,10 @@ const ENCOUNTER_CHANCE_BASE = 0.24;
 const ENCOUNTER_CHANCE_PER_DEPTH = 0.012;
 const SUPPLY_DRAIN_TICKS = 12;
 const RESUPPLY_COST_PER_UNIT = 6;
-const INSURANCE_PREMIUM_PER_TICK = 1;
-const INSURANCE_PENSION_BONUS = 1.25;
+// Both quoted to the player on the Orders screen, so both live in shared
+// tuning — one definition, read by the resolver and by the forecast alike.
+const INSURANCE_PREMIUM_PER_TICK = INSURE_PREMIUM_PER_TICK;
+const INSURANCE_PENSION_BONUS = INSURE_PENSION_BONUS;
 
 /**
  * Deeper floors hit harder, but never harder than MAX_HIT_FRACTION of the

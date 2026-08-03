@@ -37,7 +37,7 @@ Our resolution:
 - **Offline catch-up is never touched.** Not sold, not extended, not tiered.
   The nearest competitor puts extended offline progress behind a subscription
   and is criticised for it constantly: charging for the core promise of the
-  genre. Absence is never punished — that is product goal #2 and it is not for
+  genre. Absence is never punished — that is product goal #3 and it is not for
   sale.
 
 ## What we sell

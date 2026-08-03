@@ -130,7 +130,7 @@ scope increase and worth deciding deliberately rather than drifting into.
 ### 4. Do not paywall the async promise
 
 Their subscription extends offline hours. Ours must not: "absence is never
-punished" is product goal #2, and selling relief from a punishment we designed
+punished" is product goal #3, and selling relief from a punishment we designed
 is the cynical version of this genre.
 
 **Do:** keep catch-up free at whatever the right number is. Sell cosmetics

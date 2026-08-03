@@ -37,7 +37,7 @@ Both are, in other words, winning on **volume of numbers**.
 
 ## The uncomfortable comparison
 
-Deep Holdings' product goal #7 is:
+Deep Holdings' product goal #8 is:
 
 > **Numbers stay human.** Gold in the hundreds, permits in tiers, pensions in
 > round numbers. Never ship scientific notation.

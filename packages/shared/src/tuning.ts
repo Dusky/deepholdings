@@ -562,6 +562,18 @@ export function cabinetSlots(unlocks: readonly UnlockId[]): number {
 export const HOARD_SALE_BONUS = 1.15;
 
 /**
+ * What the Insure premium buys: a larger pension when this recruit dies.
+ *
+ * Lives here rather than beside the other two spend-policy constants in
+ * `resolve.ts` because the player is now told this number on the Orders screen,
+ * and a figure quoted to a player must come from the same place the resolver
+ * reads it. The alternative is a gloss saying "25%" beside a constant somebody
+ * later changes to 1.2 — worse than no gloss, because it is believed.
+ */
+export const INSURE_PENSION_BONUS = 1.25;
+export const INSURE_PREMIUM_PER_TICK = 1;
+
+/**
  * Market demand band: 0.8x to 1.2x book value, redrawn each world heartbeat.
  *
  * Wide enough that checking the market before clearing the cabinet is worth

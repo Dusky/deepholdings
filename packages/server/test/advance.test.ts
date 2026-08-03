@@ -154,13 +154,28 @@ for (const adapter of adapters) {
       // Orders nobody dies under, so this measures chunking rather than
       // mortality — advancing stops at a death, and under the real defaults a
       // recruit can easily be lost inside the first chunk.
+      //
+      // **Floor 1, not Floor 2, and that is the whole of a long-standing flake.**
+      // The device id above is randomised per run so each run gets a fresh
+      // account, and every tick is seeded from `(characterId, tick)` — so the
+      // seeds differ every run and "safe orders" were only ever *probably* safe.
+      // This failed roughly one run in twenty with `died: true`, and was
+      // recorded as an intermittent Postgres fault on the strength of three
+      // failures that happened to follow a database restart. It is neither
+      // intermittent nor about Postgres: it is an unseeded assertion, and the
+      // memory adapter was exposed to exactly the same coin flip.
+      //
+      // Floor 1 is the one depth the forecast sweep measured with no deaths at
+      // all — 24 careers x 5 days at each of eight retreat thresholds, 960
+      // career-days, zero funerals — so survival here is a property of the
+      // game rather than a property of the seed.
       await app.inject({
         method: 'PUT',
         url: '/v1/orders',
         headers: auth(),
         payload: {
           orders: {
-            targetDepth: 2,
+            targetDepth: 1,
             retreatPct: RETREAT_MAX_PCT,
             lootPriority: 'gear',
             spendPolicy: 'resupply',

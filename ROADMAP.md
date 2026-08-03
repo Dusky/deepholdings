@@ -25,21 +25,37 @@ The things every decision gets checked against.
 1. **The joke has to survive the simulation.** The deadpan clerical voice is the
    product. A feature that can't be written in that voice probably isn't a
    feature.
-2. **Respect the player's time.** Two check-ins a day should be plenty. Absence
+   **Read this with #2, never alone.** Taken by itself it says every noun should
+   be in-fiction, and that is how the game ended up with sixteen invented terms
+   on its main screen and glosses for four of them. The voice is what a sentence
+   *sounds* like. It is not permitted to be the only thing carrying the meaning.
+2. **Plain meaning is never optional.** Every term of art carries its plain
+   meaning where it is used, not in a manual. A label, a number or a button that
+   cannot be understood without knowing the fiction is a bug, not flavour.
+   The failure mode this exists to prevent, verbatim from the shipped build:
+   *"Form R-1 available — GRIMWALD I has served 32 hours. Separation assessed at
+   3056."* Three invented terms and a number with no unit — it is pension, and
+   the word "pension" does not appear. Also testable: `glossary.ts` holds the
+   plain meaning of every term of art, and a test fails when the client renders
+   one that has no entry.
+3. **Respect the player's time.** Two check-ins a day should be plenty. Absence
    is never punished — the recruit works while you're gone, and the log is
    waiting when you come back.
-3. **Pay for convenience, never pay to win.** There is a public death feed and
+4. **Pay for convenience, never pay to win.** There is a public death feed and
    a shared world; bought advantage poisons both. The line is testable — see
    [`docs/design/monetization.md`](docs/design/monetization.md): given equal
    time played, a buyer must never end up ahead.
-4. **Quality floor.** Every effect is defeatable: effects off, reduced motion,
+5. **Quality floor.** Every effect is defeatable: effects off, reduced motion,
    high contrast, font scale. Already built; keep it that way.
-5. **Server is the only truth.** The client renders. It never invents a number
+6. **Server is the only truth.** The client renders. It never invents a number
    that someone could sell, buy, or brag about.
-6. **Reveal the machine slowly.** Everything-unlocked-at-once is the genre's
+7. **Reveal the machine slowly.** Everything-unlocked-at-once is the genre's
    most common fatal mistake — it reads as overwhelming on day one and hollow
    at hour one hundred. Clearance is our in-fiction unlock mechanism.
-7. **Numbers stay human — in the early game.** Gold in the hundreds, permits
+   **This governs when a thing appears, not whether it means anything** — see
+   #2. Six systems arriving on one screen at once is this goal failing; six
+   systems arriving unexplained is the other one.
+8. **Numbers stay human — in the early game.** Gold in the hundreds, permits
    in tiers, pensions in round numbers. Never ship scientific notation.
    **Softened, deliberately, and this is the record of it.** The original rule
    applied everywhere and was a flat rejection of the thing the category
@@ -70,7 +86,7 @@ The things every decision gets checked against.
 | --- | --- | --- |
 | M0 — Playable loop, end to end | ✅ Done | yes |
 | M1 — On your phone | **Next.** Image, runbook and restore drill done; needs a host | yes |
-| M2 — The first session | Built; needs a stranger to verify | yes |
+| M2 — The first session | **Tested and failed.** Legibility work in progress | yes |
 | M3 — It calls you back | Push verified on device; deep-link tap not | yes |
 | M4 — It has direction | Transfer, a second site, assignments; day 178.7. Needs a tester | yes |
 | M4.5 — It has a department | Three posts, three tiers each, with edges | yes |
@@ -213,13 +229,30 @@ with no direction.
       which reads as a broken input rather than a wrong word.
       This changes what Keyboard Requisition can sell — see
       [`docs/design/requisitions.md`](docs/design/requisitions.md).
-- [ ] **The exit criterion still needs a stranger.** Everything above is built;
-      whether it *works* is a question only someone who has never seen the game
-      can answer.
+- [x] **The exit criterion has been tested. It failed.** 2026-08-03. The verdict,
+      in the owner's words: *"you still went so hard with theming that nothing
+      makes sense, it's not obvious what anything means, what you're supposed to
+      do, or what your goals are."*
+- [ ] **Legibility work, opened by that verdict.** An audit of the client found:
+      no goal, next step or objective stated anywhere in the product; sixteen
+      invented terms on the main screen with glosses for four; no tooltip
+      system, help screen or glossary of any kind; the `help` command not
+      rendered on a phone in portrait, which is the target platform; onboarding
+      delivered as three journal lines that scroll away and cannot be recalled;
+      six systems and four currencies on the Ledger, some costs printed without
+      units; and three names — Depth, Floor, Permit D-n — for one axis.
+
+> **Everything above this line was built, and none of it was enough.** The list
+> reads as complete because each item was completed. What no item asked was
+> whether a person could read the result, and the answer was no. That is a hole
+> in the goals, not in the work: it is why product goal #2 now exists, and why
+> `glossary.ts` makes a missing explanation fail the test suite rather than wait
+> for another six months of feature work to notice it.
 
 **Exit:** someone who has never seen the game installs it, plays for twenty
 minutes, and can tell you what they are supposed to do next — without asking
-you.
+you. **Tested once, failed once.** It is not met until it is tested again by
+someone who did not read this document.
 
 ---
 
@@ -641,7 +674,7 @@ people played.
       extended offline progression behind a subscription and is steadily
       criticised for it — charging for the core promise of the genre. Automation
       is earned by default, too; an extra standing-order slot is convenience
-      *and* power, and selling power breaks goal #3.
+      *and* power, and selling power breaks goal #4.
 
 **Exit:** a test purchase survives an uninstall/reinstall cycle on a fresh
 device.

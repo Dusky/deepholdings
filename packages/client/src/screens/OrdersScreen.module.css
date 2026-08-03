@@ -39,9 +39,26 @@
   margin-top: 6px;
 }
 
-/* The site's one-line character note, under its chips. */
+/* Every control's plain meaning, sat directly under its label. */
 .hint {
   margin-top: 6px;
   font-size: 0.85em;
   line-height: 1.4;
+}
+
+/*
+ * The consequence panel. Set apart from the form deliberately: it is the one
+ * block on the screen that is a readout rather than a control, and a player
+ * scanning for something to change should be able to skip it at a glance.
+ */
+.forecast {
+  margin: 22px 0 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-paper);
+}
+
+.forecastRow {
+  margin-top: 4px;
+  line-height: 1.5;
 }

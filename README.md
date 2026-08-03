@@ -53,6 +53,11 @@ start against a schema that is behind, naming the pending migrations, so a
 deploy is a deliberate step rather than a side effect of a restart. Override
 with `AUTO_MIGRATE=true|false`.
 
+Who runs it, and everything else a deployment needs — the container, the
+environment variables that are fatal when missing, health versus readiness,
+backups and the restore drill — is in
+[`docs/ops/deploy.md`](docs/ops/deploy.md).
+
 ## Server architecture
 
 **Nothing runs per player between requests.** Characters carry a

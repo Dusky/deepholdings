@@ -112,3 +112,77 @@ jobs:
               print('\n'.join(bad))
               sys.exit(1)
           EOF
+
+  # The image, which is the one thing in this repository that cannot be checked
+  # on a developer machine without a Docker daemon — and the machine this was
+  # written on did not have one. So it is checked here, on every push, which is
+  # a better guarantee than a local build anyway: it keeps being true.
+  #
+  # It does not merely build. A Dockerfile that compiles and produces a server
+  # which cannot reach its database, or which quietly ships the developer time
+  # travel routes, would pass a build-only job and fail in production. The image
+  # is booted against a real Postgres and put through `scripts/smoke.sh` — the
+  # same script a person runs by hand during a deploy.
+  image:
+    runs-on: ubuntu-latest
+    needs: check
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: deepholdings
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/deepholdings
+      # 32 characters, because `loadConfig` refuses anything shorter in
+      # production — a short signing key is a forgeable one.
+      TOKEN_SECRET: ci-token-secret-thirty-two-chars!
+      CORS_ORIGINS: capacitor://localhost,https://localhost
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: docker build -t deepholdings:ci .
+
+      # Migrations are a release step, never a restart side effect: production
+      # boots with autoMigrate:false and refuses a schema it does not recognise.
+      # Running it here proves the migrator ships in the image and that the SQL
+      # files came with it — they did not, until the build was fixed to copy
+      # them, and a built server found zero migrations and concluded the schema
+      # was current.
+      - name: migrate
+        run: |
+          docker run --rm --network host \
+            -e DATABASE_URL \
+            deepholdings:ci node packages/server/dist/migrate.js
+
+      - name: boot the image
+        run: |
+          docker run -d --name api --network host \
+            -e NODE_ENV=production -e DATABASE_URL -e TOKEN_SECRET -e CORS_ORIGINS \
+            -e PORT=8787 \
+            deepholdings:ci
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8787/health >/dev/null 2>&1 && break
+            sleep 1
+          done
+
+      - name: smoke
+        run: BASE_URL=http://localhost:8787 bash scripts/smoke.sh
+
+      # The logs are the only way to diagnose a failure above, and they are worth
+      # having on a success too — the boot line reports the resolved config, so a
+      # job that passes still shows what it passed with.
+      - name: server log
+        if: always()
+        run: docker logs api || true

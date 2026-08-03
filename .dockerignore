@@ -1,0 +1,18 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+docs
+packages/client
+*.log
+
+# The same two patterns `.gitignore` carries, and for a sharper reason.
+#
+# `.gitignore` does not govern a build context: an FCM private key sitting
+# untracked in a working tree would be copied into an image layer and stay there
+# forever, in something that gets pushed to a registry. Firebase downloads these
+# as `<project>-firebase-adminsdk-<hash>-<digits>.json`, which is why there are
+# two patterns rather than one.
+*service-account*.json
+*firebase-adminsdk*.json

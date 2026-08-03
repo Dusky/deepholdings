@@ -147,20 +147,16 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       )}
 
       {/*
-        The first session's only nudge, and it used to name a problem without
-        naming the fix: "Form SO-1 has not been filed" told a new player that
-        something was wrong, in a vocabulary they had not been taught, and did
-        not say where to go about it. It is a sentence and a destination now.
+        The unfiled-orders nudge used to live here, reading "Form SO-1 has not
+        been filed. Descent proceeds on default orders." — a problem named in a
+        vocabulary the player had not been taught, with no indication of where
+        to fix it.
+        It is gone rather than rewritten. `guidance` above already opens on
+        exactly this case and says it better, with the aim attached; keeping
+        both put the same sentence on screen twice, one above the other, on the
+        first screen a new player ever sees. Caught by looking at a screenshot
+        of hour zero, which is a thing nobody had done.
       */}
-      {!state.ordersFiled && (
-        <div className={`text-dim ${styles.nudge}`}>
-          You have not set your standing orders yet — your recruit is working to
-          the defaults.{' '}
-          <button type="button" className={styles.link} onClick={() => goTo('orders')}>
-            Set orders
-          </button>
-        </div>
-      )}
 
       {/* The next rung, always visible while it is being processed: the
           genre's hundred-hour churn is "nothing is ahead of me". */}

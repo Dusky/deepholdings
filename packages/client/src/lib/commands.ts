@@ -95,13 +95,15 @@ export const COMMANDS: readonly CommandSpec[] = [
     name: 'depth',
     aliases: ['target'],
     usage: `depth <1-${MAX_DEPTH}>`,
-    summary: 'Amend Target Depth. An aspiration, not an instruction.',
+    // The verb stays `depth` — it is muscle memory and an alias costs nothing —
+    // but everything the player reads back says Floor, like the rest of the game.
+    summary: 'How deep to work. An aspiration, not an instruction.',
     run(args, ctx) {
       const value = Number(args[0]);
       if (!Number.isInteger(value) || value < 1 || value > MAX_DEPTH) {
-        return `Target Depth must be a whole number from 1 to ${MAX_DEPTH}.`;
+        return `Target Floor must be a whole number from 1 to ${MAX_DEPTH}.`;
       }
-      return amend(ctx, { targetDepth: value }, `Target Depth ${value}`);
+      return amend(ctx, { targetDepth: value }, `Target Floor ${value}`);
     },
   },
   {

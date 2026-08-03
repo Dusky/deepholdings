@@ -187,7 +187,7 @@ export const GLOSSARY = {
     screen: 'orders',
   },
   targetDepth: {
-    term: 'Target Depth',
+    term: 'Target Floor',
     plain: 'How deep to push. Deeper pays better and kills faster.',
     detail:
       'An aspiration rather than an instruction — the recruit works down to ' +

@@ -41,6 +41,7 @@ export function TabRow({ activeScreen, onNavigate }: TabRowProps) {
   const clearance = state?.clearance ?? ['terminal'];
   const pinned = requisitionTier(state?.office.requisitions ?? [], 'readouts') >= 1;
   const permit = permitChip(state?.pendingPermit ?? null);
+  const supplies = character?.supplies ?? 0;
 
   return (
     <div className={styles.tabRow}>
@@ -61,7 +62,20 @@ export function TabRow({ activeScreen, onNavigate }: TabRowProps) {
       </div>
       <div className={styles.chips}>
         <div className={styles.chip}>{character?.gold ?? 0}g</div>
-        <div className={styles.chip}>{character?.supplies ?? 0} supplies</div>
+        {/*
+          Supplies was the worst chip in the strip: a permanently visible number
+          with no explanation anywhere in the client, no screen of its own, and
+          nothing the player could do about it. It is not decoration — one is
+          burned every twelve minutes underground, and at zero the recruit takes
+          damage until starvation kills them, which the death notice names.
+          Removing it was the first instinct and the wrong one; what it needed
+          was to say when it matters. The number alone is now the quiet case,
+          and running out is stated in words on the one strip that is on every
+          screen. What it *is* lives in the help panel, from the same glossary.
+        */}
+        <div className={`${styles.chip} ${supplies === 0 ? styles.chipAlarm : ''}`}>
+          {supplies === 0 ? 'no supplies — starving' : `${supplies} supplies`}
+        </div>
         {/* Pinned Readouts: depth and the permit clock follow you off the
             Terminal. Both numbers are already on screen there — this buys the
             trip back, not the information. */}

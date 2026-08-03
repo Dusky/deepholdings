@@ -16,20 +16,13 @@
   border-left: 2px solid var(--log-authority);
 }
 
-.nudge {
-  margin-bottom: 12px;
-  padding-left: 10px;
-  border-left: 2px solid var(--log-authority);
-}
-
 /*
  * Doubled class for specificity. `text-dim` is a global utility on the *same*
  * element, not a child, so a descendant selector never matches it and a single
  * class ties on specificity and loses to whichever stylesheet loads last —
  * which is a coin toss to depend on.
  */
-.ladder.ladder,
-.nudge.nudge {
+.ladder.ladder {
   color: var(--log-authority);
 }
 

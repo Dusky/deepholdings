@@ -299,12 +299,22 @@ function CommendationColumn({
   );
 }
 
-/** Inventory, market, and the two things value can be turned into. */
+/**
+ * What the Ledger is showing. One currency each, deliberately.
+ *
+ * `sell` turns loot into gold; `office` spends gold; `pension` spends pension;
+ * `career` spends commendations. The old screen did all four at once, in six
+ * columns, which is what "the shop menus are confusing" was about.
+ */
+type LedgerSection = 'sell' | 'office' | 'pension' | 'career';
+
+/** Selling, and the three things value can be turned into. */
 export function LedgerScreen() {
   const { refresh, state } = useServer();
   const load = useCallback(() => api.getLedger(), []);
   const { data, error, loading, reload } = useResource(load, 60_000);
   const [pending, setPending] = useState<UnlockId | RequisitionId | null>(null);
+  const [section, setSection] = useState<LedgerSection>('sell');
   const [notice, setNotice] = useState<string | null>(null);
   const [selling, setSelling] = useState<string | null>(null);
   const [saleNotice, setSaleNotice] = useState<string | null>(null);
@@ -393,8 +403,86 @@ export function LedgerScreen() {
   if (loading && !data) return <div className="text-dim">Retrieving ledger...</div>;
   if (!data) return <div className="text-dim">{error ?? 'Ledger unavailable.'}</div>;
 
+  /**
+   * One section per currency, and each states its own balance.
+   *
+   * The balance line is the fix for the sharpest confusion here: the gold purse
+   * used to live in the Requisitions heading two columns away from the Registry
+   * that spends it every minute, and pension and commendation costs printed as
+   * bare integers next to gold costs suffixed `g`. A player reading `1200`,
+   * `900g` and `3` on one screen had no way to know they were three different
+   * kinds of money.
+   */
+  const sections: { id: LedgerSection; label: string; balance: string }[] = [
+    {
+      id: 'sell',
+      label: 'SELL',
+      balance: `${data.gold.toLocaleString('en-GB')} gold in the purse.`,
+    },
+    {
+      id: 'office',
+      label: 'OFFICE',
+      balance: `${data.gold.toLocaleString('en-GB')} gold in the purse.`,
+    },
+    {
+      id: 'pension',
+      label: 'PENSION',
+      balance: `${data.pension.total.toLocaleString('en-GB')} pension banked. Permanent — it survives every death.`,
+    },
+    // Offered only once it means something. Before the first transfer this is a
+    // ladder with no currency to climb it, which is a screen telling a new
+    // player about a thing they cannot have.
+    ...(data.transfer.total > 0 || (state?.transferAward ?? 0) > 0
+      ? [
+          {
+            id: 'career' as const,
+            label: 'CAREER',
+            balance: `${data.transfer.total.toLocaleString('en-GB')} commendations. Never surrendered, by any death or transfer.`,
+          },
+        ]
+      : []),
+  ];
+  const activeSection = sections.find((entry) => entry.id === section) ?? sections[0];
+
   return (
-    <div className={columns.columns}>
+    <>
+      {/*
+        One job at a time.
+
+        This screen used to render six systems side by side — inventory, the
+        market, requisitions, pension unlocks, commendations and the staff
+        registry — spending four different currencies, with costs printed as
+        `900g`, `1200` and `3` in adjacent columns and the gold purse absent
+        from the one column that spends it per minute. "The shop menus are
+        confusing" was the report, and that is the whole of why.
+
+        Splitting by *purpose* rather than by widget: what you sell, what gold
+        buys, what pension buys, what commendations buy. Each section names its
+        own currency and shows that balance, so a number on a button can only
+        mean one thing. The sections a player has no use for yet are simply not
+        offered — the commendation ladder does not exist until a transfer is
+        worth something, which is the same progressive-disclosure argument the
+        tab strip already makes.
+      */}
+      <div className={styles.sections} role="tablist" aria-label="Ledger sections">
+        {sections.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            aria-selected={section === entry.id}
+            className={styles.sectionTab}
+            data-active={section === entry.id}
+            onClick={() => setSection(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+      <div className={`text-dim ${styles.sectionBalance}`}>{activeSection.balance}</div>
+
+      <div className={columns.columns}>
+      {section === 'sell' && (
       <CabinetColumn
         inventory={data.inventory}
         market={data.market}
@@ -404,7 +492,9 @@ export function LedgerScreen() {
         busy={selling}
         notice={saleNotice}
       />
+      )}
 
+      {section === 'sell' && (
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>MARKET</div>
         <div className={`text-dim ${styles.hint}`}>
@@ -426,10 +516,15 @@ export function LedgerScreen() {
           );
         })}
 
-        <div className={`text-head ${columns.headLater}`}>REQUISITIONS — {data.gold}g</div>
+      </div>
+      )}
+
+      {section === 'office' && (
+      <div className={columns.column}>
+        <div className={`text-head ${columns.head}`}>REQUISITIONS</div>
         <div className={`text-dim ${styles.hint}`}>
-          Office equipment, bought with gold. Permanent — a desk is not buried
-          with the recruit who paid for it.
+          Office equipment. Permanent — a desk is not buried with the recruit who
+          paid for it. Prices below are in gold.
         </div>
         {data.requisitions.map((offer) => {
           const offerState = offer.owned ? 'owned' : offer.affordable ? 'affordable' : 'locked';
@@ -456,11 +551,14 @@ export function LedgerScreen() {
           );
         })}
       </div>
+      )}
 
+      {section === 'pension' && (
       <div className={columns.column}>
-        <div className={`text-head ${columns.head}`}>PENSION — {data.pension.total}</div>
+        <div className={`text-head ${columns.head}`}>PERMANENT UPGRADES</div>
         <div className={`text-dim ${styles.hint}`}>
-          Tap an unlock to redeem pension. Permanent. Survives death.
+          Bought with pension, and kept through every future recruit. Prices
+          below are in pension.
         </div>
         {data.unlocks.map((unlock) => {
           const unlockState = unlock.owned ? 'owned' : unlock.affordable ? 'affordable' : 'locked';
@@ -505,7 +603,9 @@ export function LedgerScreen() {
         )}
         {retireNotice && <div className="text-dim">{retireNotice}</div>}
       </div>
+      )}
 
+      {section === 'career' && (
       <CommendationColumn
         data={data}
         award={state?.transferAward ?? 0}
@@ -513,7 +613,9 @@ export function LedgerScreen() {
           await Promise.all([reload(), refresh()]);
         }}
       />
+      )}
 
+      {section === 'office' && (
       <RegistryColumn
         registry={state?.registry ?? { staff: [], spent: 0, unpaid: false }}
         gold={state?.character.gold ?? 0}
@@ -521,7 +623,8 @@ export function LedgerScreen() {
           await Promise.all([reload(), refresh()]);
         }}
       />
-
-    </div>
+      )}
+      </div>
+    </>
   );
 }

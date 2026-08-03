@@ -1,0 +1,115 @@
+/*
+ * Chrome, not phosphor — same reasoning as the settings drawer: the hardware
+ * palette stays amber even when the screen palette is swapped.
+ *
+ * Wider and taller than the settings panel because this is prose rather than a
+ * row of toggles, and it scrolls: the glossary grows, and a panel that clips
+ * its last section is a panel that hides exactly the newest terms.
+ */
+.panel {
+  position: fixed;
+  top: 30px;
+  right: 30px;
+  bottom: 30px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, calc(100vw - 60px));
+  border: 1px solid var(--hw-amber-dim);
+  border-radius: 8px;
+  background: var(--panel-bg);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* On a phone the drawer is the screen. A 420px panel inset by 30px each side
+   would leave the content in a column too narrow to read a paragraph in. */
+@media (max-width: 560px) {
+  .panel {
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    width: auto;
+  }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  padding: 16px 18px 10px;
+  border-bottom: 1px solid var(--hw-amber-dim);
+}
+
+.title {
+  color: var(--hw-amber-bright);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.close {
+  color: var(--hw-amber-body);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  /* Thumb-sized on touch, per the quality floor. */
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.body {
+  overflow-y: auto;
+  padding: 14px 18px 20px;
+  /* Momentum scrolling inside a fixed overlay on iOS Safari. */
+  -webkit-overflow-scrolling: touch;
+}
+
+.section {
+  margin: 16px 0 8px;
+  color: var(--hw-amber-bright);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.section:first-child {
+  margin-top: 0;
+}
+
+.entry {
+  margin-bottom: 12px;
+}
+
+.term {
+  color: var(--hw-amber-bright);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.code {
+  color: var(--hw-amber-dim);
+}
+
+/*
+ * The line that has to work on its own. Body-weight and full contrast, because
+ * this is the sentence somebody came here to read — the `detail` under it is
+ * the optional second helping and is set back accordingly.
+ */
+.plain {
+  margin-top: 2px;
+  color: var(--hw-amber-body);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+
+.detail {
+  margin-top: 4px;
+  color: var(--hw-amber-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+}

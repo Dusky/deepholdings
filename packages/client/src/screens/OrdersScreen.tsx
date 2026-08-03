@@ -194,7 +194,7 @@ export function OrdersScreen() {
 
       <div className={styles.row}>
         <label className={`text-dim ${styles.label}`} htmlFor="target-depth">
-          1. TARGET DEPTH
+          1. TARGET FLOOR
         </label>
         <div className={`text-dim ${styles.hint}`}>{gloss('targetDepth')}</div>
         <Slider

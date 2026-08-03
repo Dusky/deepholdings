@@ -25,7 +25,8 @@ export function ShiftDigest({ digest, onDismiss }: ShiftDigestProps) {
     ['Encounters', String(digest.encounters)],
     ['Acquisitions', String(digest.acquisitions)],
   ];
-  if (digest.levelsGained > 0) rows.push(['Grade reviews passed', String(digest.levelsGained)]);
+  // "Grade" is the quality printed on a case file. A recruit gains Levels.
+  if (digest.levelsGained > 0) rows.push(['Levels gained', String(digest.levelsGained)]);
   if (digest.permitsApproved > 0) rows.push(['Permits approved', String(digest.permitsApproved)]);
 
   return (

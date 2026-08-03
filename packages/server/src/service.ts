@@ -177,7 +177,9 @@ function onboardingEntries(character: Character) {
     ),
     entry(
       character,
-      'Your recruit descends without supervision. You file the orders; they file the paperwork. Form SO-1 governs depth, retreat, loot and spending.',
+      // "governs depth" was the last use of the word in the product's own
+      // onboarding, two lines above a screen that says Floor everywhere.
+      'Your recruit descends without supervision. You file the orders; they file the paperwork. Your standing orders — Form SO-1 — set how deep they work, when they turn back, what they collect and what they buy.',
       1,
     ),
     entry(

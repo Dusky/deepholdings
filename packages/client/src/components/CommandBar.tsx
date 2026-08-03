@@ -57,7 +57,7 @@ export function CommandBar({ onNavigate }: CommandBarProps) {
         const shift = `${result.ticksAdvanced} minutes simulated`;
         return result.died
           ? `${shift}. ${result.character.name} did not survive it.`
-          : `${shift}. ${result.character.name} is on Floor ${result.character.depth}, Grade ${result.character.level}.`;
+          : `${shift}. ${result.character.name} is on Floor ${result.character.depth}, Level ${result.character.level}.`;
       },
       refresh,
       orders: state?.orders ?? null,

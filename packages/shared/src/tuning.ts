@@ -689,7 +689,7 @@ export const REQUISITION_CATALOGUE = [
   { id: 'journal1', track: 'journal', tier: 1, label: 'Extended Journal Retention I', detail: 'The Terminal opens with 150 lines instead of 60.', cost: 600 },
   { id: 'journal2', track: 'journal', tier: 2, label: 'Extended Journal Retention II', detail: 'The Terminal opens with 400 lines.', cost: 6000 },
 
-  { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Depth and permit ETA stay on the strip, on every screen.', cost: 2500 },
+  { id: 'readouts1', track: 'readouts', tier: 1, label: 'Pinned Readouts', detail: 'Your floor and the permit countdown stay on the strip, on every screen.', cost: 2500 },
 ] as const satisfies readonly LadderEntry<RequisitionId, RequisitionTrack>[];
 
 export function requisitionTier(

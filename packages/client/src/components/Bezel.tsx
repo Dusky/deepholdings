@@ -5,6 +5,8 @@ import styles from './Bezel.module.css';
 interface BezelProps {
   settingsOpen: boolean;
   onToggleSettings: () => void;
+  helpOpen: boolean;
+  onToggleHelp: () => void;
 }
 
 /**
@@ -29,7 +31,7 @@ interface BezelProps {
  * tree is memoised: measured at 21 Console renders in 20 idle seconds, with no
  * input and no poll due. Removing the clock took that to the poll interval.
  */
-export function Bezel({ settingsOpen, onToggleSettings }: BezelProps) {
+export function Bezel({ settingsOpen, onToggleSettings, helpOpen, onToggleHelp }: BezelProps) {
   const { link } = useServer();
   const linkDown = link === 'degraded' || link === 'offline';
 
@@ -40,6 +42,21 @@ export function Bezel({ settingsOpen, onToggleSettings }: BezelProps) {
         <div className={styles.model}>SRA MODEL 4 — TERMINAL</div>
         <div className={styles.spacer} />
         {linkDown && <div className={styles.fault}>LINK FAULT — RETRYING</div>}
+        {/*
+          There was no `?` anywhere in this product. Everything it explained, it
+          explained once in a journal line that scrolled away, and the `help`
+          command is not rendered on a phone in portrait — so on the target
+          platform there was no way to look anything up at all.
+        */}
+        <button
+          type="button"
+          className={styles.gear}
+          onClick={onToggleHelp}
+          aria-expanded={helpOpen}
+          aria-label="What things mean"
+        >
+          ?
+        </button>
         <button
           type="button"
           className={styles.gear}

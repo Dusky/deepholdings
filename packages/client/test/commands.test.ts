@@ -130,7 +130,8 @@ test('every screen is reachable by typing its name', () => {
 
 test('orders can be amended one field at a time', async () => {
   const { ctx, filed } = context();
-  assert.match(String(await run('depth 9', ctx)), /Target Depth 9/);
+  // The verb is still `depth`; what it reads back is Floor, like everywhere else.
+  assert.match(String(await run('depth 9', ctx)), /Target Floor 9/);
   assert.deepEqual(filed.at(-1), { ...ORDERS, targetDepth: 9 });
 
   assert.match(String(await run('retreat 30', ctx)), /30%/);

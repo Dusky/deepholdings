@@ -65,6 +65,18 @@
 }
 
 /*
+ * The one strip state that is actively costing the player something.
+ *
+ * Colour alone would fail the quality floor under high contrast, so this
+ * carries its meaning in the words too — the chip reads "no supplies —
+ * starving" rather than turning red and hoping.
+ */
+.chipAlarm {
+  color: var(--alert-red);
+  font-weight: 600;
+}
+
+/*
  * Compact portrait: the tabs wrap and the read-out gets its own line.
  *
  * The original rule was "tabs scroll, read-out pinned right, never wrap —

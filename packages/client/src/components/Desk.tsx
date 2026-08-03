@@ -5,6 +5,7 @@ import { usePush } from '../native/usePush';
 import { useServer } from '../state/serverContext';
 import { useSettings } from '../state/settingsContext';
 import { Bezel } from './Bezel';
+import { HelpPanel } from './HelpPanel';
 import { SettingsPanel } from './SettingsPanel';
 import styles from './Desk.module.css';
 
@@ -16,6 +17,7 @@ export function Desk() {
   const { state } = useServer();
   const { effectsOn, reducedMotion, highContrast, fontScale } = useSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   useBackButton();
   useNotificationTap();
   usePush();
@@ -35,8 +37,22 @@ export function Desk() {
       data-contrast={highContrast ? 'high' : 'normal'}
       data-phosphor={greenPhosphor ? 'green' : 'amber'}
     >
-      <Bezel settingsOpen={settingsOpen} onToggleSettings={() => setSettingsOpen((open) => !open)} />
+      <Bezel
+        settingsOpen={settingsOpen}
+        // Only one drawer at a time: they overlap, and two open panels on a
+        // phone is the whole screen covered by chrome.
+        onToggleSettings={() => {
+          setSettingsOpen((open) => !open);
+          setHelpOpen(false);
+        }}
+        helpOpen={helpOpen}
+        onToggleHelp={() => {
+          setHelpOpen((open) => !open);
+          setSettingsOpen(false);
+        }}
+      />
       {settingsOpen && <SettingsPanel onClose={() => setSettingsOpen(false)} />}
+      {helpOpen && <HelpPanel onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }

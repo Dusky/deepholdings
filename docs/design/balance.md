@@ -1098,3 +1098,60 @@ thinks to look. `cadence` still does not model staff — it runs a player who
 buys nothing at all, and hiring is buying, so that is defensible — but the
 duplication is the thing to fix before a third system lands in the same blind
 spot.
+
+## One officer's visit, in one place
+
+`packages/server/tools/officer.ts` is now the only thing that knows what an
+officer does at the terminal: work the department, realise the cabinet, hire,
+buy equipment, redeem rungs. `cadence`, `longrun` and `simulate` all go through
+it and each passes a policy saying which of those it does. Their reporting is
+untouched; only the loop is shared.
+
+The point is the policy object rather than the deduplication. A harness that
+simply never mentions staff is an omission nobody notices; a harness that
+declares `{}` is a decision someone wrote down, and when the next system lands
+in `visit()` there is one file to open and three declarations to revisit.
+`cadence`'s abstention is now explicit for exactly that reason.
+
+### The refactor was not inert, twice, and neither failure failed
+
+The gate was that every published number reproduce first. Both times it did not,
+and both times the tool reported a coherent, plausible, *different* game.
+
+**Unlocks went 19 of 19 to 0.** `visit` returned `pension` by reference when
+nothing was bought, so `result.pension.unlocks` *was* the caller's array;
+`longrun`'s write-back emptied the array it was about to copy from. The
+exhaustion curve moved to a median of day 56 and the run still looked like a
+run. Fixed by copying every field on entry — a caller should not have to know
+which ones survive untouched.
+
+**The department's purchases stopped being events.** `boughtUnlocks` was
+appended to where the *officer* purchased, which skipped every rung the Junior
+Officer had already redeemed inside `runStaff`. The `--staff` curve came back at
+median day 46.5 with one career reading day 15. Rungs are now counted by diffing
+the visit end to end, so any buyer is visible.
+
+A third difference was real but not a bug: hiring used to run before the
+equipment ladder and now had to again. Posts cost 800/2400/4800 against
+requisition rungs an order of magnitude cheaper, so buying equipment first
+delays the department by weeks — which turns "what does staff do" into "what
+does staff do if you buy it last". The order is asserted in
+`test/officer.test.ts` rather than left to comment.
+
+Numbers after the fixes, matching the published ones exactly:
+
+|                     | no department | with department |
+| ------------------- | ------------- | --------------- |
+| last new thing      | day 39.5      | day 50.2        |
+| unlocks             | 19 of 19      | 19 of 19        |
+| requisitions        | 7 of 7        | 7 of 7          |
+| deaths              | 93            | 89              |
+| hire + wages        | —             | 355,559 gold    |
+| time unpaid         | —             | 2.6%            |
+
+`simulate` and `cadence` reproduce byte-identical output.
+
+The lesson is not "be careful with references". It is that a balance tool does
+not crash when it is wrong — it publishes a number, and the number is the
+deliverable. Every refactor of one has to be gated on reproducing what it said
+before, or the next quiet wrong answer stands.

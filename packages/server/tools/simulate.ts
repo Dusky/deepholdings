@@ -9,18 +9,19 @@
  *   npm run simulate --workspace @deepholdings/server -- --days 7 --runs 200
  */
 import {
+  EMPTY_REGISTRY,
   MAX_CATCHUP_TICKS,
   REQUISITION_CATALOGUE,
   RETIREMENT_MIN_SERVICE_TICKS,
   TICK_SECONDS,
   pensionAward,
-  requisitionTier,
   type InventoryItem,
   type RequisitionId,
   type StandingOrders,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
+import { visit, type OfficerPolicy } from './officer.js';
 
 interface Profile {
   name: string;
@@ -52,26 +53,32 @@ interface Profile {
   buysEquipment?: boolean;
 }
 
-/**
- * The cheapest rung the office does not yet hold, respecting tier order.
- *
- * An officer buying on price alone is the least favourable case for the sink:
- * they clear the cheap rungs early and spend the rest of the week with nothing
- * left to want, which is exactly the failure mode worth measuring.
- */
-function nextRung(owned: readonly RequisitionId[]) {
-  const candidates = REQUISITION_CATALOGUE.filter(
-    (entry) =>
-      !owned.includes(entry.id) && requisitionTier(owned, entry.track) === entry.tier - 1,
-  );
-  return candidates.reduce<(typeof REQUISITION_CATALOGUE)[number] | null>(
-    (cheapest, entry) => (cheapest === null || entry.cost < cheapest.cost ? entry : cheapest),
-    null,
-  );
-}
-
 /** Gold held back so a spree cannot starve the resupply the recruit lives on. */
 const EQUIPMENT_RESERVE = 200;
+
+/**
+ * What each profile's officer does at the terminal, stated rather than implied.
+ *
+ * Every field left off is a deliberate abstention. These profiles measure the
+ * *recruit's* curve — how deep, how often they die, what a week earns — so the
+ * officer is kept as simple as the question allows: no pension redemption (the
+ * runs pass `unlocks: []` throughout), and no department, because a wage would
+ * move `value/h` in every row and confound the comparison the table exists for.
+ * `longrun.ts` is where the officer's own ladders get measured.
+ *
+ * The abstentions are written down because `tools/officer.ts` grows: when a
+ * system is added there, this object is the place someone has to look and
+ * decide, instead of the profiles silently continuing not to have it.
+ */
+function policyFor(profile: Profile): OfficerPolicy {
+  // An officer buying on price alone is the least favourable case for the sink:
+  // they clear the cheap rungs early and spend the rest of the week with
+  // nothing left to want, which is exactly the failure mode worth measuring.
+  // `visit` buys cheapest-first in ladder order, which is that officer.
+  return profile.buysEquipment
+    ? { sells: true, requisitions: { reserve: EQUIPMENT_RESERVE } }
+    : {};
+}
 
 const PROFILES: Profile[] = [
   { name: 'timid', orders: { targetDepth: 2, retreatPct: 60, lootPriority: 'gold', spendPolicy: 'resupply' } },
@@ -182,18 +189,22 @@ function simulateOne(profile: Profile, seed: number, totalTicks: number): RunRes
     tick = character.lastResolvedTick;
 
     if (profile.buysEquipment) {
-      // The visit: clear the cabinet, then spend what it realised.
-      const realised = inventoryValue(inventory);
-      if (realised > 0) {
-        character = { ...character, gold: character.gold + realised };
-        inventory = [];
-      }
-      for (;;) {
-        const rung = nextRung(owned);
-        if (!rung || character.gold - rung.cost < EQUIPMENT_RESERVE) break;
-        character = { ...character, gold: character.gold - rung.cost };
-        owned.push(rung.id);
-        result.equipmentSpend += rung.cost;
+      const after = visit(
+        {
+          character, inventory, caseFiles: [], filings: [],
+          pension: { total: 0, spent: 0, unlocks: [] },
+          registry: EMPTY_REGISTRY,
+          requisitions: owned,
+        },
+        policyFor(profile),
+        out.ticksResolved,
+      );
+      character = after.character;
+      inventory = after.inventory;
+      owned.length = 0;
+      owned.push(...after.requisitions);
+      for (const id of after.boughtRequisitions) {
+        result.equipmentSpend += REQUISITION_CATALOGUE.find((entry) => entry.id === id)!.cost;
         result.requisitions += 1;
       }
     }

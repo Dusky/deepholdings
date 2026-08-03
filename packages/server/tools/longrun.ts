@@ -25,8 +25,6 @@ import {
   REQUISITION_CATALOGUE,
   UNLOCK_CATALOGUE,
   pensionAward,
-  requisitionTier,
-  unlockTier,
   type CaseFile,
   type InventoryItem,
   type Filing,
@@ -34,11 +32,10 @@ import {
   type RequisitionId,
   type UnlockId,
   STAFF_CATALOGUE,
-  isHired,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
-import { runStaff } from '../src/domain/staff.js';
+import { visit } from './officer.js';
 
 const args = process.argv.slice(2);
 const flag = (name: string, fallback: number) => {
@@ -66,25 +63,6 @@ const STAFF = args.includes('--staff');
 interface Milestone {
   tick: number;
   what: string;
-}
-
-/** The cheapest rung not yet owned, respecting ladder order. */
-function nextUnlock(owned: readonly UnlockId[]) {
-  return UNLOCK_CATALOGUE.filter(
-    (e) => !owned.includes(e.id) && unlockTier(owned, e.track) === e.tier - 1,
-  ).reduce<(typeof UNLOCK_CATALOGUE)[number] | null>(
-    (best, e) => (best === null || e.cost < best.cost ? e : best),
-    null,
-  );
-}
-
-function nextRequisition(owned: readonly RequisitionId[]) {
-  return REQUISITION_CATALOGUE.filter(
-    (e) => !owned.includes(e.id) && requisitionTier(owned, e.track) === e.tier - 1,
-  ).reduce<(typeof REQUISITION_CATALOGUE)[number] | null>(
-    (best, e) => (best === null || e.cost < best.cost ? e : best),
-    null,
-  );
 }
 
 function playOne(seed: number): {
@@ -158,72 +136,52 @@ function playOne(seed: number): {
     tick = character.lastResolvedTick;
 
     /**
-     * The department works the span, before the officer does anything.
+     * One visit, through the shared model.
      *
-     * Ordered that way because it is the order the server uses — staff run
-     * inside the read, and the officer's visit is what happens next. A harness
-     * that let the officer sell first would have the clerk arriving to an
-     * already-empty cabinet and would report them doing nothing.
+     * `tools/officer.ts` is the single place that knows what an officer does
+     * when they open the terminal — realise the cabinet, let the department
+     * work, buy what is affordable, hire. Every harness goes through it now,
+     * so a system added around `resolve()` cannot be invisible to this tool
+     * the way case files and then staff both were.
      */
-    if (STAFF && registry.staff.length > 0) {
-      const worked = runStaff({
+    const after = visit(
+      {
         character, inventory, caseFiles, filings,
         pension: { total: pension, spent: 0, unlocks },
         registry,
-        ticksResolved: out.ticksResolved,
-        newId: () => `f${(filingId += 1)}`,
-      });
-      character = worked.character;
-      inventory = worked.inventory;
-      caseFiles = worked.caseFiles;
-      filings = worked.filings;
-      pension = worked.pension.total;
-      unlocks.length = 0;
-      unlocks.push(...worked.pension.unlocks);
-      registry = worked.registry;
-      if (registry.unpaid) unpaidTicks += out.ticksResolved;
-      for (const note_ of worked.notes) {
-        if (/redeemed (.+)\. Pension/.test(note_)) {
-          note(tick, `Unlock: ${/redeemed (.+)\. Pension/.exec(note_)![1]}`);
-        }
-      }
-    }
+        requisitions,
+      },
+      {
+        sells: true,
+        requisitions: { reserve: 200 },
+        unlocks: true,
+        staff: STAFF,
+        hires: STAFF ? { reserve: 400 } : undefined,
+      },
+      out.ticksResolved,
+      () => `f${(filingId += 1)}`,
+    );
 
-    // The visit: realise the cabinet, then spend on everything affordable.
-    const realised = inventory.reduce((n2, i) => n2 + i.unitValue * i.quantity, 0);
-    if (realised > 0) {
-      character = { ...character, gold: character.gold + realised };
-      inventory = [];
-    }
+    character = after.character;
+    inventory = after.inventory;
+    caseFiles = after.caseFiles;
+    filings = after.filings;
+    registry = after.registry;
+    pension = after.pension.total;
+    unlocks.length = 0;
+    unlocks.push(...after.pension.unlocks);
+    requisitions.length = 0;
+    requisitions.push(...after.requisitions);
+    if (registry.unpaid) unpaidTicks += out.ticksResolved;
 
-    // Hiring is spending, so it belongs with the rest of the visit — and the
-    // officer modelled here spends as soon as they can.
-    if (STAFF) {
-      for (const spec of STAFF_CATALOGUE) {
-        if (isHired(registry, spec.role)) continue;
-        if (character.gold - spec.hire < 400) continue;
-        character = { ...character, gold: character.gold - spec.hire };
-        registry = {
-          ...registry,
-          staff: [...registry.staff, { role: spec.role, policy: spec.policyDefault }],
-          spent: registry.spent + spec.hire,
-        };
-        note(tick, `Hire: ${spec.title}`);
-      }
+    for (const id of after.boughtRequisitions) {
+      note(tick, `Requisition: ${REQUISITION_CATALOGUE.find((e) => e.id === id)!.label}`);
     }
-    for (;;) {
-      const rung = nextRequisition(requisitions);
-      if (!rung || character.gold - rung.cost < 200) break;
-      character = { ...character, gold: character.gold - rung.cost };
-      requisitions.push(rung.id);
-      note(tick, `Requisition: ${rung.label}`);
+    for (const id of after.boughtUnlocks) {
+      note(tick, `Unlock: ${UNLOCK_CATALOGUE.find((e) => e.id === id)!.label}`);
     }
-    for (;;) {
-      const rung = nextUnlock(unlocks);
-      if (!rung || pension < rung.cost) break;
-      pension -= rung.cost;
-      unlocks.push(rung.id);
-      note(tick, `Unlock: ${rung.label}`);
+    for (const role of after.hired) {
+      note(tick, `Hire: ${STAFF_CATALOGUE.find((e) => e.role === role)!.title}`);
     }
 
     if (!character.alive) {

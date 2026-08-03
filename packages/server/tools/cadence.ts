@@ -22,6 +22,7 @@
  */
 import {
   DEFAULT_ORDERS,
+  EMPTY_REGISTRY,
   pensionAward,
   statsOf,
   type CaseFile,
@@ -30,6 +31,23 @@ import {
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
+import { visit, type OfficerPolicy } from './officer.js';
+
+/**
+ * This probe's officer does nothing at all, and that is the measurement.
+ *
+ * Every field is off on purpose. The question is whether a *new* player, on the
+ * shipped defaults, with no unlocks and nothing bought, sees something move
+ * every check-in. An officer who sold, redeemed or hired would be answering a
+ * different question — and would answer it more flatteringly, since spending is
+ * itself a source of visible events.
+ *
+ * It goes through `tools/officer.ts` regardless, because an empty policy that
+ * someone wrote down is a decision, and a harness that simply never mentions
+ * the officer is an omission. Case files and then the Registry both shipped
+ * unmeasured through exactly that difference.
+ */
+const OFFICER: OfficerPolicy = {};
 
 const WINDOW = 720; // twelve hours, in ticks
 const DAYS = Number(process.env.DAYS ?? 14);
@@ -138,6 +156,20 @@ function runCareer(seed: number): Career {
     caseFiles = out.caseFiles;
     permitAppliedTick = out.permitAppliedTick;
     tick = character.lastResolvedTick;
+
+    const after = visit(
+      {
+        character, inventory, caseFiles, filings: [],
+        pension: { total: 0, spent: 0, unlocks: [] },
+        registry: EMPTY_REGISTRY,
+        requisitions: [],
+      },
+      OFFICER,
+      out.ticksResolved,
+    );
+    character = after.character;
+    inventory = after.inventory;
+    caseFiles = after.caseFiles;
 
     if (character.hp <= 0) {
       deaths += 1;

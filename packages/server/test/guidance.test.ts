@@ -20,13 +20,18 @@ const ALL: ScreenId[] = ['terminal', 'orders', 'ledger', 'bulletin', 'tavern', '
 function input(overrides: Partial<GuidanceInput> = {}): GuidanceInput {
   return {
     character: { name: 'WREN HALLAM', gold: 0, permitTier: 3 } as Character,
-    pension: { total: 0, spent: 0, unlocks: [] } as Pension,
-    office: { requisitions: [], spent: 0 } as unknown as Office,
+    // The tutorial outranks the situational guidance, so the default fixture is
+    // an officer who has finished it — orders filed, first equipment bought,
+    // first upgrade redeemed. Without that every assertion below would be
+    // silently checking step two.
+    office: { requisitions: ['bulk1'], spent: 900 } as unknown as Office,
+    pension: { total: 0, spent: 0, unlocks: ['permits1'] } as Pension,
     registry: EMPTY_REGISTRY,
     pendingPermit: null,
     retirement: null,
     ordersFiled: true,
     clearance: ALL,
+    predecessorName: null,
     ...overrides,
   };
 }

@@ -124,6 +124,14 @@ export interface Guidance {
   /** The nearest concrete thing arriving. Never empty. */
   aim: string;
   /**
+   * Which tutorial step this is, when one is running.
+   *
+   * Present only while the first three steps are outstanding. The client shows
+   * it as "1 of 3" so the player can see the end of the tutorial from the
+   * start — an unnumbered prompt that keeps reappearing reads as nagging.
+   */
+  step: { index: number; total: number } | null;
+  /**
    * The one most useful thing to do now, or null when nothing needs the player.
    *
    * Null is a supported, common and deliberate answer: absence is never

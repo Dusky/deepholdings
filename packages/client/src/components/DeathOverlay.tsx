@@ -38,9 +38,22 @@ export function DeathOverlay({ death }: DeathOverlayProps) {
           Reached Floor {death.depth}. Lifetime gold handled: {death.goldHandled}g.
         </div>
         <div className={styles.divider} />
-        <div className="text-bright">Pension awarded: +{death.pensionAwarded}</div>
+        <div className="text-bright">
+          Pension awarded: +{death.pensionAwarded.toLocaleString('en-GB')}
+        </div>
+        {/*
+          The one moment the death rule can be taught.
+          It was previously written as exposition on the Terminal — a card that
+          told a player on their first minute that recruits are supposed to die,
+          hours before one had. Read then it is a slogan. Read here, over the
+          body, with the number on it, it is a rule the player has just watched
+          happen. So the card is gone and the lesson lives at the event.
+          Both claims are checked against the resolver: the estate really does
+          fold into the award, and requisitions really are account-scoped.
+        */}
         <div className="text-dim">
-          Next of kin notified by form letter. A new recruit has been assigned.
+          Their purse and cabinet went into it. Your office equipment, staff and
+          pension upgrades carry over. A successor has already been assigned.
         </div>
         {error && <div className="text-dim">{error}</div>}
         <FileButton onClick={handleClaim}>

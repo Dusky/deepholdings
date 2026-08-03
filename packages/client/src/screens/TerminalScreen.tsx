@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
-import { OVERVIEW, caseFileTitle, journalLines, permitDepthLimit } from '@deepholdings/shared';
+import { caseFileTitle, journalLines, permitDepthLimit } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
@@ -116,38 +116,6 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       )}
 
       {/*
-        What the game is, shown once, unprompted.
-
-        The help panel behind the `?` covers this, and relying on it was the
-        mistake: a player who does not yet know what the game is has no reason
-        to suspect a help panel would tell them, and every study of this genre
-        says the first session is where they are lost. So the shape of the thing
-        is on screen before the first standing orders are filed, and disappears
-        the moment they are — it is orientation, not a tutorial to be endured,
-        and it stays in `?` forever after.
-      */}
-      {/*
-        Two exits, because filing orders is not the only way to stop needing
-        this. A player can run on the defaults for days, and gating on orders
-        alone left a four-beat explainer pinned above the game indefinitely —
-        visible in a day-seven screenshot, where it was still explaining that
-        recruits die to somebody who had by then buried one.
-        Having a predecessor means the loop has been lived rather than read
-        about, which is the better signal of the two.
-      */}
-      {!state.ordersFiled && !state.predecessor && (
-        <div className={styles.overview}>
-          <div className={`text-head ${styles.overviewTitle}`}>HOW THIS WORKS</div>
-          {OVERVIEW.map((beat) => (
-            <div key={beat.heading} className={styles.overviewBeat}>
-              <div className="text-body">{beat.heading}</div>
-              <div className="text-dim">{beat.body}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/*
         What you are working toward, and what to do about it.
 
         Placed directly under the stat line because it is the answer to the
@@ -159,22 +127,62 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       */}
       {state.guidance && (
         <div className={styles.guidance}>
-          <div className="text-dim">{state.guidance.aim}</div>
-          <div className={styles.guidanceAction}>
-            {state.guidance.action ? (
-              <button
-                type="button"
-                className={styles.link}
-                onClick={() => goTo(state.guidance.action!.screen)}
-              >
-                {state.guidance.action.text}
-              </button>
-            ) : (
-              /* The honest answer, most of the time, and it is not a failure to
-                 give it. Two check-ins a day should be plenty. */
-              <span className="text-dim">Nothing needs you right now.</span>
-            )}
-          </div>
+          {/*
+            Numbered while the tutorial runs, so the player can see the end of
+            it from the start. An unnumbered prompt that keeps reappearing in
+            the same place reads as nagging; "1 of 3" reads as a list being
+            worked through, and the number disappearing is itself the signal
+            that the game has stopped holding your hand.
+          */}
+          {state.guidance.step && (
+            <div className={`text-dim ${styles.stepMark}`}>
+              GETTING STARTED — {state.guidance.step.index} of {state.guidance.step.total}
+            </div>
+          )}
+
+          {/*
+            Order flips between the two modes, and it matters.
+
+            Situational guidance is context then action: "Permit D-2 clears in
+            40 minutes" earns the instruction that follows it. A tutorial step is
+            the other way round — its reason refers back to the instruction ("It
+            costs 700 gold", "GRIMWALD I paid for it by dying"), so printing the
+            reason first left a pronoun pointing at a line the player had not
+            reached yet.
+          */}
+          {state.guidance.step ? (
+            <>
+              <div className={styles.guidanceAction}>
+                <button
+                  type="button"
+                  className={styles.link}
+                  onClick={() => goTo(state.guidance.action!.screen)}
+                >
+                  {state.guidance.action!.text}
+                </button>
+              </div>
+              <div className="text-dim">{state.guidance.aim}</div>
+            </>
+          ) : (
+            <>
+              <div className="text-dim">{state.guidance.aim}</div>
+              <div className={styles.guidanceAction}>
+                {state.guidance.action ? (
+                  <button
+                    type="button"
+                    className={styles.link}
+                    onClick={() => goTo(state.guidance.action!.screen)}
+                  >
+                    {state.guidance.action.text}
+                  </button>
+                ) : (
+                  /* The honest answer, most of the time, and it is not a
+                     failure to give it. Two check-ins a day should be plenty. */
+                  <span className="text-dim">Nothing needs you right now.</span>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 

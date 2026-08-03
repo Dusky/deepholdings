@@ -71,55 +71,6 @@ export interface GlossaryEntry {
 
 const pct = (multiplier: number) => `${Math.round((multiplier - 1) * 100)}%`;
 
-/**
- * What the game is. Not what its words mean — what you are doing.
- *
- * ## The gap this closes
- *
- * The first legibility pass glossed every term, stated a next action and named
- * the nearest permit, and a player reading all of it still could not say what
- * the game *was*. Defining "pension" does not tell you that recruits are meant
- * to die, that dying is how you make permanent progress, or that the whole
- * shape of the thing is a series of short lives paying into one long career.
- * That is the actual answer to "what are my goals", and it was nowhere.
- *
- * ## Rules this copy has to obey
- *
- * Four beats, in the order a player needs them: who you are, why the deaths are
- * the point, which currency matters, and what you are climbing toward. No form
- * codes, and no word that is not ordinary English.
- *
- * The last beat matters most and is the one a glossary structurally cannot
- * give: an idle game whose player cannot name the long arc has no reason to
- * open tomorrow.
- *
- * **Kept ruthlessly short, and that is the second draft.** The first ran to a
- * paragraph a beat, which was accurate, and filled the entire first screen so
- * that a new player's opening view of the game was a wall of text with no game
- * behind it. Explaining too much at once fails the same way explaining nothing
- * does. A heading and a line each; the paragraphs live in the help panel's
- * glossary entries, which is what they are for.
- */
-export const OVERVIEW: readonly { heading: string; body: string }[] = [
-  {
-    heading: 'You are the case officer, not the recruit',
-    body: 'You write the orders. They work while the app is shut.',
-  },
-  {
-    heading: 'Your recruit will die, and that is the mechanic',
-    body: 'Dying pays a pension. A successor starts the same minute.',
-  },
-  {
-    heading: 'Gold is for now, pension is for good',
-    body: 'Gold buys equipment and dies with the recruit. Pension is permanent.',
-  },
-  {
-    heading: 'Deeper pays better and kills faster',
-    body:
-      'Bigger pensions buy upgrades that survive deeper floors. Eventually you ' +
-      'transfer postings and keep commendations, which nothing takes back.',
-  },
-];
 
 export const GLOSSARY = {
   // ---- The basics a first-session player meets ---------------------------
@@ -145,9 +96,9 @@ export const GLOSSARY = {
     term: 'Recruit',
     plain: 'The person who actually goes down. You never control them directly.',
     detail:
-      'You write the orders; they follow them while you are away, and they die ' +
-      'eventually. Their death pays your pension, so it is a step in the game ' +
-      'rather than a setback.',
+      'You write the orders; they follow them while you are away. They die ' +
+      'eventually, and their death pays out your pension — which is how you ' +
+      'come out of it ahead.',
     screen: 'basics',
   },
   level: {
@@ -199,9 +150,9 @@ export const GLOSSARY = {
     term: 'Pension',
     plain: 'Permanent progress. Paid out when a recruit dies, and never lost.',
     detail:
-      'This is the long game. A recruit dying is how pension is banked, which ' +
-      'is why the game says up front that they are not permanent and you are. ' +
-      'Pension buys unlocks that apply to every future recruit.',
+      'It accrues by the minute while a recruit serves, faster the deeper they ' +
+      'work, and is paid out in full when they die. Spend it on upgrades that ' +
+      'every recruit after them is assigned with.',
     screen: 'pension',
   },
   commendation: {
@@ -228,10 +179,10 @@ export const GLOSSARY = {
 
   standingOrders: {
     term: 'Standing Orders',
-    plain: 'The instructions your recruit follows while you are away. This is the main thing you do.',
+    plain: 'The instructions your recruit follows while you are away.',
     detail:
-      'Filed as Form SO-1. Four settings, changeable at any time, costing ' +
-      'nothing to amend. Everything else in the game feeds back into these.',
+      'Filed as Form SO-1. Four settings — how deep, when to turn back, what ' +
+      'to collect, what to buy — changeable at any time and free to amend.',
     screen: 'orders',
   },
   targetDepth: {
@@ -350,9 +301,9 @@ export const GLOSSARY = {
     term: 'Registry',
     plain: 'Staff you hire. They do jobs for you and take a wage every minute, forever.',
     detail:
-      'The only recurring cost in the game. If the purse cannot meet payroll ' +
-      'the staff stop working until it can — they are not dismissed and ' +
-      'nothing is lost.',
+      'Wages come out of the purse every minute, and nothing else does. If the ' +
+      'purse cannot cover them the staff stop working until it can — they are ' +
+      'not dismissed and nothing is lost.',
     screen: 'office',
   },
   payroll: {

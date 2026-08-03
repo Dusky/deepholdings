@@ -28,7 +28,6 @@ import {
   FORMS,
   GLOSSARY,
   GLOSSARY_SCREENS,
-  OVERVIEW,
   describeForm,
   glossaryFor,
   type GlossaryEntry,
@@ -137,6 +136,13 @@ test('no player-facing copy talks about the game as a project', () => {
   // The tell is the same every time: copy written to the reviewer of the change
   // rather than to the person holding the phone. Design notes belong in source
   // comments, where all of that history now lives.
+  // A second family, from a second review: not history this time but
+  // *exposition* — copy that narrates the design to the player instead of
+  // playing it. The card this replaced was headed "You are the case officer,
+  // not the recruit" and included "Your recruit will die, and that is the
+  // mechanic". Telling a player which parts of the world are mechanics is
+  // pointing at the camera; the X-not-Y headline is a design brief's way of
+  // making a correction, and a player has nothing to be corrected from.
   const banned = [
     /\bused to\b/i,
     /\bno longer\b/i,
@@ -144,6 +150,14 @@ test('no player-facing copy talks about the game as a project', () => {
     /\bthe genre\b/i,
     /\bpreviously\b/i,
     /\bwe (now|have|used)\b/i,
+    /\bthe mechanic\b/i,
+    /\bgame over\b/i,
+    /\bthis game\b/i,
+    /\bin the game\b/i,
+    /\bthe (whole|entire) game\b/i,
+    /\bfailure state\b/i,
+    /\bthe point (is|of)\b/i,
+    /\bby design\b/i,
   ];
 
   const copy: [string, string][] = [];
@@ -154,10 +168,6 @@ test('no player-facing copy talks about the game as a project', () => {
     if (entry.detail) copy.push([`GLOSSARY.${id}.detail`, entry.detail]);
   }
   for (const [code, form] of Object.entries(FORMS)) copy.push([`FORMS['${code}']`, form.plain]);
-  for (const [i, beat] of OVERVIEW.entries()) {
-    copy.push([`OVERVIEW[${i}].heading`, beat.heading]);
-    copy.push([`OVERVIEW[${i}].body`, beat.body]);
-  }
 
   for (const [where, text] of copy) {
     for (const pattern of banned) {
@@ -169,17 +179,6 @@ test('no player-facing copy talks about the game as a project', () => {
       );
     }
   }
-});
-
-test('the overview says what the game is, not what its words mean', () => {
-  // The gap a glossary cannot close. Every term could be defined perfectly and
-  // a player still not know that recruits are meant to die, which is the whole
-  // shape of the thing.
-  const all = OVERVIEW.map((beat) => `${beat.heading} ${beat.body}`).join(' ');
-  assert.match(all, /\bdie\b/i, 'must say the recruit dies');
-  assert.match(all, /permanent/i, 'must say what survives the death');
-  assert.match(all, /commendation/i, 'must name the long arc, not just the loop');
-  assert.deepEqual(formCodesIn(all), [], 'the overview may not lean on form codes');
 });
 
 test('the help panel has no empty sections', () => {

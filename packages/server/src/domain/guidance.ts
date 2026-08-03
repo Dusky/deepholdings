@@ -43,6 +43,7 @@ import {
   type RetirementOffer,
   type ScreenId,
 } from '@deepholdings/shared';
+import { tutorialStep } from './tutorial.js';
 
 export type { Guidance };
 
@@ -55,6 +56,8 @@ export interface GuidanceInput {
   retirement: RetirementOffer | null;
   ordersFiled: boolean;
   clearance: readonly ScreenId[];
+  /** Name of the last recruit to die, if any. Makes the third step concrete. */
+  predecessorName: string | null;
 }
 
 /** Cheapest rung on any track the officer has not bought yet. */
@@ -77,7 +80,45 @@ function hours(seconds: number): string {
 export function guidanceFor(input: GuidanceInput): Guidance {
   const { character, pension, office, registry, pendingPermit, retirement, clearance } = input;
 
-  return { aim: aimFor(input), action: actionFor(input) };
+  /*
+   * One thing outranks the tutorial: something actively going wrong.
+   *
+   * Unpaid staff have downed tools and are costing the officer value every
+   * minute, and the cause is invisible from every screen except the one that
+   * stopped working. A teaching step is the most useful thing to say to a new
+   * player right up until something is on fire, and then it is not.
+   *
+   * The overlap is admittedly narrow — you need a department before payroll can
+   * fail, and by then the tutorial is long finished — but the ordering is the
+   * claim being made, so it is made explicitly rather than left to whichever
+   * check happens to run first.
+   */
+  const onFire = registry.unpaid && clearance.includes('ledger');
+
+  /*
+   * Otherwise the tutorial outranks everything below while it runs.
+   *
+   * Not merely a different action — a different *aim*. During the first three
+   * steps the honest answer to "what am I working toward" is the step itself,
+   * and letting the situational logic talk over it about permit clocks was how
+   * the first version ended up saying two things at once on the busiest screen.
+   */
+  const step = onFire ? null : tutorialStep({
+    ordersFiled: input.ordersFiled,
+    office,
+    pension,
+    clearance,
+    predecessorName: input.predecessorName,
+  });
+  if (step) {
+    return {
+      aim: step.because,
+      step: { index: step.index, total: step.total },
+      action: { text: step.instruction, screen: step.screen },
+    };
+  }
+
+  return { aim: aimFor(input), step: null, action: actionFor(input) };
 
   function aimFor({ ordersFiled }: GuidanceInput): string {
     if (pendingPermit) {

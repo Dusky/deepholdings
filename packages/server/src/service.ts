@@ -369,6 +369,7 @@ export async function loadState(
         retirement,
         ordersFiled,
         clearance,
+        predecessorName: predecessor?.characterName ?? null,
       }),
       digest,
       ordersFiled,

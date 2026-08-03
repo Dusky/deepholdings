@@ -458,9 +458,9 @@ export const UNLOCK_CATALOGUE = [
   { id: 'permits2', track: 'permits', tier: 2, label: 'Expedited Permit Processing II', detail: 'Permits clear in 60 minutes.', cost: 7000 },
   { id: 'permits3', track: 'permits', tier: 3, label: 'Expedited Permit Processing III', detail: 'Permits clear in 35 minutes.', cost: 41000 },
 
-  { id: 'recruit1', track: 'recruit', tier: 1, label: 'Improved Intake I', detail: 'New recruits start at Grade 2.', cost: 1800 },
-  { id: 'recruit2', track: 'recruit', tier: 2, label: 'Improved Intake II', detail: 'New recruits start at Grade 4.', cost: 11500 },
-  { id: 'recruit3', track: 'recruit', tier: 3, label: 'Improved Intake III', detail: 'New recruits start at Grade 7.', cost: 62000 },
+  { id: 'recruit1', track: 'recruit', tier: 1, label: 'Improved Intake I', detail: 'New recruits start at Level 2.', cost: 1800 },
+  { id: 'recruit2', track: 'recruit', tier: 2, label: 'Improved Intake II', detail: 'New recruits start at Level 4.', cost: 11500 },
+  { id: 'recruit3', track: 'recruit', tier: 3, label: 'Improved Intake III', detail: 'New recruits start at Level 7.', cost: 62000 },
 
   { id: 'estate1', track: 'estate', tier: 1, label: 'Estate Settlement I', detail: 'Successors inherit 120 gold of effects.', cost: 2200 },
   { id: 'estate2', track: 'estate', tier: 2, label: 'Estate Settlement II', detail: 'Successors inherit 400 gold of effects.', cost: 13500 },

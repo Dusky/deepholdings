@@ -373,7 +373,7 @@ export function ArmouryScreen() {
               +{caps.vigour} health, {(caps.survival * 100).toFixed(0)}% less
               damage taken, or +{(caps.lootValue * 100).toFixed(0)}% loot value
             </span>{' '}
-            — the caps are there so a lucky find cannot end the game.
+            , however much you keep.
           </div>
         ) : (
           <>

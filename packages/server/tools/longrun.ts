@@ -77,6 +77,20 @@ function playOne(seed: number): {
   unpaidTicks: number;
   wages: number;
   hires: number;
+  /**
+   * The two halves of `pensionAward`, summed over every death.
+   *
+   * `pensionAward`'s own comment says the award "accrues with *service*", and
+   * that claim is what makes the anti-death-farming property hold — a recruit
+   * who lived forty minutes is supposed to be worth almost nothing. Nothing has
+   * ever checked it. Both terms are recorded before the Service Credit
+   * multiplier, which scales them equally and so cannot change the ratio.
+   */
+  fromService: number;
+  fromEstate: number;
+  /** Careers that died in under an hour, and what they were paid. */
+  shortDeaths: number;
+  shortPension: number;
 } {
   const accountId = `long-${seed}`;
   const total = DAYS * 1440;
@@ -103,6 +117,10 @@ function playOne(seed: number): {
   let filings: Filing[] = [];
   let registry: Registry = { staff: [], spent: 0, unpaid: false };
   let unpaidTicks = 0;
+  let fromService = 0;
+  let fromEstate = 0;
+  let shortDeaths = 0;
+  let shortPension = 0;
   let filingId = 0;
   let pension = 0;
   let deaths = 0;
@@ -189,14 +207,19 @@ function playOne(seed: number): {
       const window = Math.floor(tick / (14 * 1440));
       while (perFortnight.length <= window) perFortnight.push({ deaths: 0, earned: 0 });
       perFortnight[window].deaths += 1;
-      const award = pensionAward(
-        tick - character.bornTick,
-        deepest,
-        character.gold + inventory.reduce((a, i) => a + i.unitValue * i.quantity, 0),
-        unlocks,
-      );
+      const service = tick - character.bornTick;
+      const estate = character.gold + inventory.reduce((a, i) => a + i.unitValue * i.quantity, 0);
+      const award = pensionAward(service, deepest, estate, unlocks);
       perFortnight[window].earned += award;
       pension += award;
+
+      // The same two terms `pensionAward` adds together, kept apart.
+      fromService += service * 0.06 * (1 + deepest * 0.3);
+      fromEstate += estate * 0.4;
+      if (service < 60) {
+        shortDeaths += 1;
+        shortPension += award;
+      }
       n += 1;
       record = succeed({
         id: `${accountId}-${n}`, accountId, previous: character,
@@ -222,6 +245,10 @@ function playOne(seed: number): {
     unpaidTicks,
     wages: registry.spent,
     hires: registry.staff.length,
+    fromService,
+    fromEstate,
+    shortDeaths,
+    shortPension,
   };
 }
 
@@ -256,6 +283,22 @@ if (STAFF) {
   console.log(`hire + wages, total: ${med(runs.map((r) => r.wages))} gold`);
   const stalled = runs.map((r) => (r.unpaidTicks / (DAYS * 1440)) * 100);
   console.log(`time unpaid:         ${med(stalled).toFixed(1)}% of the run`);
+}
+
+console.log('\n--- where the pension actually comes from ---');
+{
+  const service = med(runs.map((r) => r.fromService));
+  const estate = med(runs.map((r) => r.fromEstate));
+  const share = (estate / (service + estate)) * 100;
+  console.log(`service term:        ${Math.round(service).toLocaleString()}`);
+  console.log(`estate term:         ${Math.round(estate).toLocaleString()}`);
+  console.log(`estate is            ${share.toFixed(1)}% of the award, before Service Credit`);
+  const short = med(runs.map((r) => r.shortDeaths));
+  const paid = med(runs.map((r) => r.shortPension));
+  console.log(
+    `deaths under an hour: ${short}, paid ${Math.round(paid).toLocaleString()} ` +
+      `(${short > 0 ? Math.round(paid / short).toLocaleString() : 0} each)`,
+  );
 }
 
 console.log('\n--- does the income hold up? deaths and pension per fortnight ---');

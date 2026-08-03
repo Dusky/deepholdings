@@ -171,6 +171,20 @@ export interface StateResponse {
   nextBeatInSeconds: number;
   /** Set when the recruit died and the pension has not been filed for yet. */
   pendingDeath: DeathRecord | null;
+  /**
+   * The last recruit to die on this account, if any.
+   *
+   * The journal is scoped to a character, which is right — it is their case
+   * file. But it means that the moment a recruit dies the Terminal empties, and
+   * a player returning after a week finds two lines and no trace of the week.
+   * That breaks the promise that absence is never punished at exactly the point
+   * where the most interesting thing happened.
+   *
+   * This is the officer's continuity rather than the recruit's: one line saying
+   * who went before, how deep they got and what they paid. The file starts
+   * fresh; the career does not.
+   */
+  predecessor: DeathRecord | null;
   /** Screens this officer has clearance for. The client shows no others. */
   clearance: ScreenId[];
   /**

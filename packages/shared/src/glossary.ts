@@ -71,6 +71,56 @@ export interface GlossaryEntry {
 
 const pct = (multiplier: number) => `${Math.round((multiplier - 1) * 100)}%`;
 
+/**
+ * What the game is. Not what its words mean — what you are doing.
+ *
+ * ## The gap this closes
+ *
+ * The first legibility pass glossed every term, stated a next action and named
+ * the nearest permit, and a player reading all of it still could not say what
+ * the game *was*. Defining "pension" does not tell you that recruits are meant
+ * to die, that dying is how you make permanent progress, or that the whole
+ * shape of the thing is a series of short lives paying into one long career.
+ * That is the actual answer to "what are my goals", and it was nowhere.
+ *
+ * ## Rules this copy has to obey
+ *
+ * Four beats, in the order a player needs them: who you are, why the deaths are
+ * the point, which currency matters, and what you are climbing toward. No form
+ * codes, and no word that is not ordinary English.
+ *
+ * The last beat matters most and is the one a glossary structurally cannot
+ * give: an idle game whose player cannot name the long arc has no reason to
+ * open tomorrow.
+ *
+ * **Kept ruthlessly short, and that is the second draft.** The first ran to a
+ * paragraph a beat, which was accurate, and filled the entire first screen so
+ * that a new player's opening view of the game was a wall of text with no game
+ * behind it. Explaining too much at once fails the same way explaining nothing
+ * does. A heading and a line each; the paragraphs live in the help panel's
+ * glossary entries, which is what they are for.
+ */
+export const OVERVIEW: readonly { heading: string; body: string }[] = [
+  {
+    heading: 'You are the case officer, not the recruit',
+    body: 'You write the orders. They work while the app is shut.',
+  },
+  {
+    heading: 'Your recruit will die, and that is the mechanic',
+    body: 'Dying pays a pension. A successor starts the same minute.',
+  },
+  {
+    heading: 'Gold is for now, pension is for good',
+    body: 'Gold buys equipment and dies with the recruit. Pension is permanent.',
+  },
+  {
+    heading: 'Deeper pays better and kills faster',
+    body:
+      'Bigger pensions buy upgrades that survive deeper floors. Eventually you ' +
+      'transfer postings and keep commendations, which nothing takes back.',
+  },
+];
+
 export const GLOSSARY = {
   // ---- The basics a first-session player meets ---------------------------
 
@@ -78,9 +128,8 @@ export const GLOSSARY = {
     term: 'Floor',
     plain: 'How deep underground your recruit is. Floor 1 is just below the surface.',
     detail:
-      'Deeper floors are worth more and are more likely to kill. This is the ' +
-      'single axis the whole game is arranged along, so it has exactly one ' +
-      'name — it used to have three.',
+      'Deeper floors pay better and kill faster. Floor 0 is the surface, where ' +
+      'a recruit rests and restocks; everything below it is work.',
     screen: 'basics',
   },
   permit: {
@@ -96,18 +145,17 @@ export const GLOSSARY = {
     term: 'Recruit',
     plain: 'The person who actually goes down. You never control them directly.',
     detail:
-      'You are a case officer. You file orders; the recruit follows them ' +
-      'while you are gone, and dies eventually. That is not a failure state — ' +
-      'see Pension.',
+      'You write the orders; they follow them while you are away, and they die ' +
+      'eventually. Their death pays your pension, so it is a step in the game ' +
+      'rather than a setback.',
     screen: 'basics',
   },
   level: {
     term: 'Level',
     plain: "Your recruit's experience. Higher means more health and better survival.",
     detail:
-      'Reset when a recruit dies, unless a pension unlock says otherwise. Not ' +
-      'to be confused with the Grade printed on a case file, which describes ' +
-      'an object rather than a person.',
+      'Levels are earned underground and are lost when the recruit is. A ' +
+      'pension upgrade can start their successor part-way up instead of at one.',
     screen: 'basics',
   },
   hp: {
@@ -130,9 +178,9 @@ export const GLOSSARY = {
     term: 'Clearance',
     plain: 'Which screens are open to you. More arrive as you advance.',
     detail:
-      'Everything at once on day one is the genre\'s most common fatal ' +
-      'mistake, so screens are released as they become relevant. Clearance ' +
-      'never goes backwards, including through a death.',
+      'Screens are released as they become useful rather than all at once, so ' +
+      'the first session is two tabs and not eight. Clearance never goes ' +
+      'backwards — not through a death, not through a transfer.',
     screen: 'basics',
   },
 
@@ -353,8 +401,8 @@ export const GLOSSARY = {
     term: 'Grade',
     plain: 'How good a case file is, I to V. Higher grades carry more clauses.',
     detail:
-      'This describes an object. The number beside your recruit is their ' +
-      'Level, which is a different thing that used to share this word.',
+      'A Grade V file is rare and carries up to five clauses; a Grade I ' +
+      'carries one. Grade describes the paperwork. Your recruit has a Level.',
     screen: 'armoury',
   },
   vigour: {

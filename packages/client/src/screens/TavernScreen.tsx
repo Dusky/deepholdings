@@ -41,6 +41,15 @@ export function TavernScreen() {
           : 'TAVERN CHANNEL — CONNECTING'}
       </div>
 
+      {/*
+        Nothing said this was other people. "TAVERN CHANNEL — 4 CASE OFFICERS
+        PRESENT" reads equally well as a flavour readout in a game with no
+        multiplayer at all, and a player who assumes that will never type in it.
+      */}
+      <div className="text-dim">
+        Live chat with other players. Nothing here affects the game.
+      </div>
+
       <div className={styles.stream} role="log">
         {loading && !data && <div className="text-dim">Opening channel...</div>}
         {data?.messages.length === 0 && (

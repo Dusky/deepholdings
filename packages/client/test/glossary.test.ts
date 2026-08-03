@@ -28,8 +28,10 @@ import {
   FORMS,
   GLOSSARY,
   GLOSSARY_SCREENS,
+  OVERVIEW,
   describeForm,
   glossaryFor,
+  type GlossaryEntry,
 } from '@deepholdings/shared';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
@@ -122,6 +124,62 @@ test('no gloss explains one invented word with another', () => {
         `someone who does not know what a form is; move it to \`detail\`.`,
     );
   }
+});
+
+test('no player-facing copy talks about the game as a project', () => {
+  // A real defect, caught by looking at a screenshot rather than by any test.
+  // The Floor entry shipped reading "...so it has exactly one name — it used to
+  // have three", which is a note about a bug I had just fixed, shown to a
+  // player who never saw the bug and cannot act on it. Elsewhere: a gloss
+  // citing "the genre's most common fatal mistake", and a "not to be confused
+  // with" that told the reader about a collision instead of the meaning.
+  //
+  // The tell is the same every time: copy written to the reviewer of the change
+  // rather than to the person holding the phone. Design notes belong in source
+  // comments, where all of that history now lives.
+  const banned = [
+    /\bused to\b/i,
+    /\bno longer\b/i,
+    /\bnot to be confused\b/i,
+    /\bthe genre\b/i,
+    /\bpreviously\b/i,
+    /\bwe (now|have|used)\b/i,
+  ];
+
+  const copy: [string, string][] = [];
+  // `GLOSSARY` is `as const satisfies`, so entries without a `detail` narrow to
+  // a shape that has no such key at all. Widen to the interface to read both.
+  for (const [id, entry] of Object.entries(GLOSSARY) as [string, GlossaryEntry][]) {
+    copy.push([`GLOSSARY.${id}.plain`, entry.plain]);
+    if (entry.detail) copy.push([`GLOSSARY.${id}.detail`, entry.detail]);
+  }
+  for (const [code, form] of Object.entries(FORMS)) copy.push([`FORMS['${code}']`, form.plain]);
+  for (const [i, beat] of OVERVIEW.entries()) {
+    copy.push([`OVERVIEW[${i}].heading`, beat.heading]);
+    copy.push([`OVERVIEW[${i}].body`, beat.body]);
+  }
+
+  for (const [where, text] of copy) {
+    for (const pattern of banned) {
+      assert.doesNotMatch(
+        text,
+        pattern,
+        `${where} is written to a reviewer, not a player: "${text}". Say what ` +
+          `the thing is now; put the history in a source comment.`,
+      );
+    }
+  }
+});
+
+test('the overview says what the game is, not what its words mean', () => {
+  // The gap a glossary cannot close. Every term could be defined perfectly and
+  // a player still not know that recruits are meant to die, which is the whole
+  // shape of the thing.
+  const all = OVERVIEW.map((beat) => `${beat.heading} ${beat.body}`).join(' ');
+  assert.match(all, /\bdie\b/i, 'must say the recruit dies');
+  assert.match(all, /permanent/i, 'must say what survives the death');
+  assert.match(all, /commendation/i, 'must name the long arc, not just the loop');
+  assert.deepEqual(formCodesIn(all), [], 'the overview may not lean on form codes');
 });
 
 test('the help panel has no empty sections', () => {

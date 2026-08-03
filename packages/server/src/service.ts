@@ -349,6 +349,9 @@ export async function loadState(
     );
 
     const clearance = clearanceFor(current.character, pension);
+    // Always, not only when a death is pending: this is the "who went before"
+    // line, and it has to survive the pension being filed for.
+    const predecessor = pendingDeath ?? (await tx.getLatestDeath(accountId));
     const registry = await tx.getRegistry(accountId);
     const ordersFiled = await tx.hasFiledOrders(accountId);
     const pendingPermit = pendingPermitOf(current, pension.unlocks, now);
@@ -388,6 +391,7 @@ export async function loadState(
       now: now.toISOString(),
       nextBeatInSeconds: secondsUntil(world.nextBeatAt, now),
       pendingDeath,
+      predecessor,
       devTools,
     };
   });

@@ -306,9 +306,10 @@ export function ArmouryScreen() {
         </div>
         {files.length === 0 ? (
           <div className={`text-dim ${styles.empty}`}>
-            The drawer is empty. Most of what a recruit hauls out is weighed and
-            sold; once in a while something turns up with contested ownership
-            and gets a case number. That is what is filed here.
+            Nothing filed yet. Most of what your recruit finds is sold for gold;
+            occasionally something is worth keeping instead, and it is kept here.
+            Kept items make your recruit tougher or richer, and are lost when
+            they die.
           </div>
         ) : (
           <>
@@ -366,10 +367,13 @@ export function ArmouryScreen() {
             decision about what to carry. */}
         {files.length === 0 ? (
           <div className={`text-dim ${styles.hint}`}>
-            Nothing carried, so nothing applied. The ceilings stand at{' '}
-            {caps.vigour} vigour, {(caps.survival * 100).toFixed(0)}% survival
-            and {(caps.lootValue * 100).toFixed(0)}% loot value however many
-            files the drawer holds.
+            Nothing kept, so nothing is being added. When you do keep something,
+            no amount of it can take your recruit past{' '}
+            <span className="text-body">
+              +{caps.vigour} health, {(caps.survival * 100).toFixed(0)}% less
+              damage taken, or +{(caps.lootValue * 100).toFixed(0)}% loot value
+            </span>{' '}
+            — the caps are there so a lucky find cannot end the game.
           </div>
         ) : (
           <>
@@ -415,29 +419,39 @@ export function ArmouryScreen() {
           </>
         )}
 
-        <div className={`text-head ${columns.headLater}`}>FORMS</div>
-        <div className={`text-dim ${styles.hint}`}>
-          <span className="text-body">12-C, Arbitration.</span> Contests one
-          clause. The panel sits two hours later and rules: the clause is
-          replaced, or the case is dismissed and the fee retained. The
-          replacement is drawn from what a file of that grade may carry, so it
-          may be worse than what it replaced. A wager, not an upgrade.
-        </div>
-        <div className={`text-dim ${styles.hint}`}>
-          <span className="text-body">19, Requisition.</span> Carries one clause
-          from one file onto another and strikes the first from the register.
-          Four hours, and it cannot be dismissed — the cost is the file, and a
-          form that expensive does not also gamble.
-        </div>
-        <div className={`text-dim ${styles.hint}`}>
-          Union Standing is earned at a grade review and is not inherited — a
-          successor starts at nothing, however senior the officer. Form 19 asks
-          for none of it.
-        </div>
-        <div className={`text-dim ${styles.hint}`}>
-          Forms 7-A, 3-B, N-1 and 44 — appraisal, amendment, notarisation and
-          provenance settlement — are not yet released to your desk.
-        </div>
+        {/*
+          Only shown once there is something to use them on.
+
+          These three paragraphs used to render on an empty drawer, so the first
+          view of this screen was several hundred words about rerolling clauses
+          on files the player did not have and could not yet get. Explaining a
+          mechanic before its inputs exist is indistinguishable from noise — the
+          reader has nothing to attach it to, and the density reads as "this
+          game is complicated" rather than "here is a choice".
+        */}
+        {files.length > 0 && (
+          <>
+            <div className={`text-head ${columns.headLater}`}>
+              WHAT YOU CAN DO WITH A KEPT ITEM
+            </div>
+            <div className={`text-dim ${styles.hint}`}>
+              <span className="text-body">Reroll one line (Form 12-C).</span>{' '}
+              Pays a fee to swap a single line for a different one, decided two
+              hours later. The new line may be worse, and the fee is kept either
+              way. A gamble, not an upgrade.
+            </div>
+            <div className={`text-dim ${styles.hint}`}>
+              <span className="text-body">Move one line (Form 19).</span> Takes
+              a line off one item and puts it on another, destroying the item it
+              came from. Four hours, and it always works.
+            </div>
+            <div className={`text-dim ${styles.hint}`}>
+              Rerolling costs Union Standing, which your recruit earns by
+              levelling up. A successor starts with none of it, however long you
+              have been an officer. Moving a line costs none.
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
-import { caseFileTitle, journalLines, permitDepthLimit } from '@deepholdings/shared';
+import { OVERVIEW, caseFileTitle, journalLines, permitDepthLimit } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
@@ -113,6 +113,38 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
 
       {state.digest && !digestDismissed && (
         <ShiftDigest digest={state.digest} onDismiss={() => setDigestDismissed(true)} />
+      )}
+
+      {/*
+        What the game is, shown once, unprompted.
+
+        The help panel behind the `?` covers this, and relying on it was the
+        mistake: a player who does not yet know what the game is has no reason
+        to suspect a help panel would tell them, and every study of this genre
+        says the first session is where they are lost. So the shape of the thing
+        is on screen before the first standing orders are filed, and disappears
+        the moment they are — it is orientation, not a tutorial to be endured,
+        and it stays in `?` forever after.
+      */}
+      {/*
+        Two exits, because filing orders is not the only way to stop needing
+        this. A player can run on the defaults for days, and gating on orders
+        alone left a four-beat explainer pinned above the game indefinitely —
+        visible in a day-seven screenshot, where it was still explaining that
+        recruits die to somebody who had by then buried one.
+        Having a predecessor means the loop has been lived rather than read
+        about, which is the better signal of the two.
+      */}
+      {!state.ordersFiled && !state.predecessor && (
+        <div className={styles.overview}>
+          <div className={`text-head ${styles.overviewTitle}`}>HOW THIS WORKS</div>
+          {OVERVIEW.map((beat) => (
+            <div key={beat.heading} className={styles.overviewBeat}>
+              <div className="text-body">{beat.heading}</div>
+              <div className="text-dim">{beat.body}</div>
+            </div>
+          ))}
+        </div>
       )}
 
       {/*
@@ -257,6 +289,28 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
         {!hasMore && journal.length > 0 && (
           <div className={`text-dim ${styles.fileStart}`}>
             Start of file. Nothing precedes this recruit's appointment.
+            {/*
+              The recruit's file starts here. Your career does not, and saying
+              only the first half is what made a returning player's Terminal
+              look like nothing had happened: the journal is scoped to a
+              character, so the minute one dies the screen empties and a week of
+              play vanishes with them.
+              One line of continuity fixes it, and it does a second job — it is
+              the clearest statement in the product that a death paid for
+              something, which is the mechanic new players most reliably read as
+              a failure.
+            */}
+            {state.predecessor && !state.pendingDeath && (
+              <>
+                {' '}
+                Before them, {state.predecessor.characterName} died on Floor{' '}
+                {state.predecessor.depth} and banked{' '}
+                <span className="text-body">
+                  {state.predecessor.pensionAwarded.toLocaleString('en-GB')} pension
+                </span>
+                , which you still have.
+              </>
+            )}
           </div>
         )}
         {earlierFailed && (

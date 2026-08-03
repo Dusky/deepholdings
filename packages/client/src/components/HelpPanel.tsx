@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import {
   FORMS,
   GLOSSARY_SCREENS,
+  OVERVIEW,
   glossaryFor,
   type GlossaryScreen,
 } from '@deepholdings/shared';
@@ -68,6 +69,24 @@ export function HelpPanel({ onClose }: HelpPanelProps) {
       </div>
 
       <div className={styles.body}>
+        {/*
+          What the game is, before what its words mean.
+          A glossary answers "what does this say"; it structurally cannot answer
+          "what am I doing", and that was the actual complaint. Somebody who
+          opens this panel confused needs the shape of the thing first — the
+          definitions are only useful once you know what they are definitions
+          for.
+        */}
+        <section>
+          <h2 className={styles.section}>How this works</h2>
+          {OVERVIEW.map((beat) => (
+            <div key={beat.heading} className={styles.entry}>
+              <div className={styles.term}>{beat.heading}</div>
+              <div className={styles.plain}>{beat.body}</div>
+            </div>
+          ))}
+        </section>
+
         {GLOSSARY_SCREENS.map((screen) => (
           <section key={screen}>
             <h2 className={styles.section}>{SECTION_TITLES[screen]}</h2>

@@ -205,6 +205,34 @@
   margin-top: 4px;
 }
 
+/*
+ * The first-session orientation card.
+ *
+ * Boxed, unlike the guidance rule above it, because this one *is* a thing that
+ * goes away — a border says "a panel, temporarily" where the guidance's left
+ * rule says "the top of the page, permanently".
+ */
+.overview {
+  margin: 12px 0 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-paper);
+}
+
+.overviewTitle {
+  margin-bottom: 10px;
+  letter-spacing: 0.06em;
+}
+
+.overviewBeat {
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+.overviewBeat:last-child {
+  margin-bottom: 0;
+}
+
 @media (pointer: coarse) {
   .link {
     min-height: 44px;

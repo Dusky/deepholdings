@@ -48,9 +48,25 @@ export function BulletinScreen() {
   return (
     <div className={columns.columns}>
       <div className={columns.column}>
-        <div className={`text-head ${columns.head}`}>WORLD EVENT</div>
+        <div className={`text-head ${columns.head}`}>THIS WEEK IN THE REGION</div>
+        {/* Printed alone, this was a sentence of scene-setting a player could
+            not tell from a mechanic. Saying which it is costs one line. */}
         <div className="text-body">{world.event}</div>
+        {/*
+          Verified before shipping the claim: `world.event` is written by
+          `domain/world.ts` and read by nothing in `resolve.ts`. It is
+          genuinely cosmetic today, and a player who assumes otherwise wastes
+          real time trying to respond to it. Making events mechanical is a
+          carried-forward item; when it lands, this line has to go with it.
+        */}
+        <div className="text-dim">Regional colour — it does not affect your recruit.</div>
+
         <div className={`text-head ${columns.headLater}`}>GUILD — {world.guildName}</div>
+        <div className="text-dim">
+          Every officer in your region shares one objective. You are in it
+          automatically, it moves when any of you play, and everyone who helped
+          is paid gold when it completes.
+        </div>
         <div className="text-body">{world.guildObjective}</div>
         <div className="text-body">
           <span className="text-bright">
@@ -65,17 +81,19 @@ export function BulletinScreen() {
         */}
         <div className="text-dim">
           {guild.contribution > 0
-            ? `This office has contributed ${guild.contribution.toLocaleString()}.`
-            : 'This office has contributed nothing to the current objective.'}
-          {guild.paid > 0 ? ` Paid to date: ${guild.paid.toLocaleString()} gold.` : ''}
+            ? `Of that, you have contributed ${guild.contribution.toLocaleString()}.`
+            : 'You have contributed nothing to this one yet.'}
+          {guild.paid > 0 ? ` Guild work has paid you ${guild.paid.toLocaleString()} gold so far.` : ''}
         </div>
       </div>
 
       <div className={columns.column}>
         <div className={`text-head ${columns.head}`}>SPECIAL ASSIGNMENTS</div>
         <div className="text-dim">
-          Optional postings under suspended conditions. Free to accept, free to
-          hand back, and nothing is lost by failing one.
+          Harder runs with a restriction attached — no staff, no upgrades, a
+          level cap. They pay commendations, the currency nothing ever takes
+          back. Free to accept, free to hand back, and failing one costs you
+          nothing.
         </div>
         {assignments.map((offer) => {
           const spec = assignmentSpec(offer.id);

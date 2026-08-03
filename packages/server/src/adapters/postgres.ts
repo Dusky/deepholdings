@@ -202,11 +202,12 @@ export class PostgresRepository implements Repository {
 
   async getOrders(accountId: string): Promise<StandingOrders> {
     const { rows } = await this.db.query(
-      'SELECT target_depth, retreat_pct, loot_priority, spend_policy FROM standing_orders WHERE account_id = $1',
+      'SELECT site, target_depth, retreat_pct, loot_priority, spend_policy FROM standing_orders WHERE account_id = $1',
       [accountId],
     );
     if (!rows[0]) return { ...DEFAULT_ORDERS };
     return {
+      site: rows[0].site ?? 'holdings',
       targetDepth: rows[0].target_depth,
       retreatPct: rows[0].retreat_pct,
       lootPriority: rows[0].loot_priority,
@@ -222,9 +223,10 @@ export class PostgresRepository implements Repository {
     const filed = options?.markFiled ?? false;
     await this.db.query(
       `INSERT INTO standing_orders
-         (account_id, target_depth, retreat_pct, loot_priority, spend_policy, updated_at, filed_at)
-       VALUES ($1, $2, $3, $4, $5, now(), CASE WHEN $6 THEN now() ELSE NULL END)
+         (account_id, target_depth, retreat_pct, loot_priority, spend_policy, site, updated_at, filed_at)
+       VALUES ($1, $2, $3, $4, $5, $7, now(), CASE WHEN $6 THEN now() ELSE NULL END)
        ON CONFLICT (account_id) DO UPDATE SET
+         site = EXCLUDED.site,
          target_depth = EXCLUDED.target_depth,
          retreat_pct = EXCLUDED.retreat_pct,
          loot_priority = EXCLUDED.loot_priority,
@@ -232,7 +234,8 @@ export class PostgresRepository implements Repository {
          updated_at = now(),
          -- Once filed, always filed.
          filed_at = COALESCE(standing_orders.filed_at, EXCLUDED.filed_at)`,
-      [accountId, orders.targetDepth, orders.retreatPct, orders.lootPriority, orders.spendPolicy, filed],
+      [accountId, orders.targetDepth, orders.retreatPct, orders.lootPriority, orders.spendPolicy, filed,
+       orders.site ?? 'holdings'],
     );
   }
 

@@ -307,19 +307,32 @@ export function visit(
     transferred = true;
   }
 
-  // 7. And spend them, cheapest rung first, the same way every other ladder in
-  //    this file is climbed.
+  /**
+   * 7. And spend them — cheapest rung first, with one exception.
+   *
+   * The Secondment jumps the queue. Every other Commendation moves a number;
+   * that one moves the *recruit*, to a site with its own bestiary, its own loot
+   * and its own hazard profile. An officer who has been reading the same
+   * fourteen encounter names for a month buys the new place before they buy
+   * another fifteen per cent, and modelling them otherwise is not conservatism
+   * — it left the entire second site unmeasured in the combined run, because
+   * cheapest-first reaches four other three-cost rungs before it and ninety
+   * days is not long enough to get past them.
+   */
   if (policy.transfers) {
     for (;;) {
-      const rung = COMMENDATION_CATALOGUE.filter(
+      const affordable = COMMENDATION_CATALOGUE.filter(
         (entry) =>
           !transfer.unlocks.includes(entry.id) &&
           commendationTier(transfer.unlocks, entry.track) === entry.tier - 1 &&
           entry.cost <= transfer.total,
-      ).reduce<(typeof COMMENDATION_CATALOGUE)[number] | null>(
-        (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
-        null,
       );
+      const rung =
+        affordable.find((entry) => entry.track === 'secondment') ??
+        affordable.reduce<(typeof COMMENDATION_CATALOGUE)[number] | null>(
+          (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
+          null,
+        );
       if (!rung) break;
       transfer = {
         ...transfer,

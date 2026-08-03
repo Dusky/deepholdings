@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { makeRng, tickSeed } from '@deepholdings/shared';
+import { makeRng, tickSeed, type SiteId } from '@deepholdings/shared';
 import {
   ALL_LOOT_NAMES,
   bandOf,
@@ -70,21 +70,48 @@ test('journal notes have enough variety to survive a long shift', () => {
  * liquidates everything at depot rates forever.
  */
 test('loot names are a bounded set', () => {
-  const drawn = new Set<string>();
-  for (const priority of ['gold', 'gear', 'relics', 'knowledge']) {
-    for (const depth of [1, 6, 7, 12]) {
-      for (const name of sample(500, (rng) => lootFor(priority, depth, rng))) {
-        drawn.add(name);
+  const perSite = new Map<SiteId, Set<string>>();
+  for (const site of ['holdings', 'annexe'] as const) {
+    const drawn = new Set<string>();
+    for (const priority of ['gold', 'gear', 'relics', 'knowledge']) {
+      for (const depth of [1, 6, 7, 12]) {
+        for (const name of sample(500, (rng) => lootFor(priority, depth, rng, site))) {
+          drawn.add(name);
+        }
       }
     }
+    perSite.set(site, drawn);
   }
 
-  assert.ok(drawn.size <= ALL_LOOT_NAMES.length, 'generated a name outside the catalogue');
-  for (const name of drawn) {
-    assert.ok(ALL_LOOT_NAMES.includes(name), `${name} is not in the loot catalogue`);
+  for (const drawn of perSite.values()) {
+    for (const name of drawn) {
+      assert.ok(ALL_LOOT_NAMES.includes(name), `${name} is not in the loot catalogue`);
+    }
+    /**
+     * Bounded **per site**, which is the number that governs the thing this
+     * test protects. A cabinet thrashes when acquisitions arrive as singletons,
+     * and a recruit only ever draws from the site they are working — so a
+     * second site's pool does not make the first officer's cabinet any less
+     * legible. (The pool actually in play at any moment is smaller still: six
+     * names, for one priority in one depth band.)
+     */
+    assert.ok(drawn.size <= 64, `${drawn.size} loot names at one site is too many`);
   }
-  // Small enough that one officer's cabinet stays legible.
-  assert.ok(ALL_LOOT_NAMES.length <= 64, `${ALL_LOOT_NAMES.length} loot names is too many`);
+
+  assert.notDeepEqual(
+    [...perSite.get('holdings')!].filter((name) => perSite.get('annexe')!.has(name)),
+    [...perSite.get('holdings')!],
+    'the two sites read identically, which is the one thing a second site must not do',
+  );
+});
+
+test('the Annexe shares no loot with Deep Holdings', () => {
+  // The whole argument for a separate pool rather than a re-weighted one: an
+  // officer who has read the same fourteen names for a month should find the
+  // journal unrecognisable at the new site.
+  const holdings = new Set(sample(400, (rng) => lootFor('relics', 9, rng, 'holdings')));
+  const annexe = new Set(sample(400, (rng) => lootFor('relics', 9, rng, 'annexe')));
+  assert.deepEqual([...holdings].filter((name) => annexe.has(name)), []);
 });
 
 test('deep floors yield different loot from shallow ones', () => {

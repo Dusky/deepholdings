@@ -8,7 +8,9 @@
  */
 import {
   MAX_CATCHUP_TICKS,
-  MAX_DEPTH,
+  authorisedSite,
+  permitDepthLimit,
+  siteSpec,
   GRIEVOUS_CHANCE,
   LOOT_EFFECT,
   GRIEVOUS_MAX_FRACTION,
@@ -153,16 +155,28 @@ const INSURANCE_PENSION_BONUS = 1.25;
  * recruit's maximum in one blow. Depth is meant to be a risk the officer
  * accepts, not a coin flip that ignores their retreat order.
  */
-function encounterDamage(
+export function encounterDamage(
   depth: number,
   level: number,
   roll: number,
   maxHp: number,
   grievous: boolean,
   survival = 0,
+  /**
+   * The site's hazard multiplier, applied *before* the cap.
+   *
+   * That placement is the whole safety argument. `MAX_HIT_FRACTION` is what
+   * stops a deep floor one-shotting a healthy recruit, and a site multiplier
+   * applied after it would raise the ceiling instead of the floor — which is
+   * how the retreat threshold stopped meaning anything the last time something
+   * was multiplied in the wrong order. A harder site should land more blows
+   * near the cap, never blows above it.
+   */
+  danger = 1,
 ): number {
   const raw =
     (2 + Math.pow(depth, 1.4) * 1.2) *
+    danger *
     gradeMismatchMultiplier(depth, level) *
     (0.6 + roll * 0.8) *
     (grievous ? GRIEVOUS_MULTIPLIER : 1) *
@@ -319,7 +333,17 @@ export function resolve(options: ResolveOptions): ResolveResult {
   const stipendPerTick = STIPEND_BY_TIER[unlockTier(unlocks, 'stipend')];
   const processingTicks = permitProcessingTicks(unlocks);
   const slots = cabinetSlots(unlocks);
-  const targetDepth = Math.min(Math.max(1, orders.targetDepth), MAX_DEPTH);
+  /**
+   * Where this recruit is working, and what it is like there.
+   *
+   * Read once per resolution rather than per tick: an officer cannot move a
+   * recruit mid-span, and the standing order is fixed for the whole replay.
+   * Falls back to the home site when the stored order names one the officer is
+   * no longer authorised for — a lapsed Commendation should send the recruit
+   * somewhere safe, not fail the read that noticed.
+   */
+  const site = siteSpec(authorisedSite(orders.site ?? 'holdings', commendations));
+  const targetDepth = Math.min(Math.max(1, orders.targetDepth), site.maxDepth);
   const retreatHp = () => Math.ceil((character.maxHp * orders.retreatPct) / 100);
 
   const log = (tick: number, text: string) => {
@@ -441,10 +465,10 @@ export function resolve(options: ResolveOptions): ResolveResult {
     // 3. Permit ceiling: the descent stalls, the paperwork begins. The recruit
     //    keeps working the floor they are cleared for — waiting on the permit
     //    office should not mean an hour of nothing happening.
-    const limit = permitLimit(character.permitTier);
+    const limit = permitDepthLimit(character.permitTier, site.id);
     // Where the recruit may actually work: the shallower of their permit, their
     // grade, and what the officer asked for.
-    const authorised = authorisedDepth(targetDepth, character.permitTier, character.level);
+    const authorised = authorisedDepth(targetDepth, character.permitTier, character.level, site.id);
     const gradeLimited = authorised < Math.min(targetDepth, limit);
     const stalled = character.depth >= limit && targetDepth > limit;
     if (stalled) {
@@ -484,16 +508,17 @@ export function resolve(options: ResolveOptions): ResolveResult {
     }
 
     // Deep floors are busier as well as harder, which is most of why they pay.
-    if (rngChance(rng, ENCOUNTER_CHANCE_BASE + character.depth * ENCOUNTER_CHANCE_PER_DEPTH)) {
+    if (rngChance(rng, (ENCOUNTER_CHANCE_BASE + character.depth * ENCOUNTER_CHANCE_PER_DEPTH) * site.traffic)) {
       counters.encounters += 1;
       const loot = LOOT_EFFECT[orders.lootPriority];
-      const creature = faunaFor(character.depth, prose);
+      const creature = faunaFor(character.depth, prose, site.id);
       const grievous = rngChance(rng, GRIEVOUS_CHANCE);
       const damage = encounterDamage(
         character.depth, character.level, rng(), character.maxHp, grievous, stats.survival,
+        site.danger,
       );
       character.hp -= damage;
-      character.xp += Math.round(encounterXp(character.depth) * loot.xp);
+      character.xp += Math.round(encounterXp(character.depth) * loot.xp * site.xp);
 
       if (character.hp <= 0) {
         const cause: string =
@@ -530,9 +555,9 @@ export function resolve(options: ResolveOptions): ResolveResult {
       );
 
       if (rngChance(rng, 0.45 * loot.findChance)) {
-        const item = lootFor(orders.lootPriority, character.depth, prose);
+        const item = lootFor(orders.lootPriority, character.depth, prose, site.id);
         const value = Math.round(
-          encounterReward(character.depth, rng()) * loot.value * (1 + stats.lootValue),
+          encounterReward(character.depth, rng()) * loot.value * (1 + stats.lootValue) * site.yield,
         );
         counters.acquisitions += 1;
 

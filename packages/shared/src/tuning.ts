@@ -9,6 +9,7 @@ import type {
   UnlockTrack,
 } from './domain.js';
 import { endowmentMultiplier, type CommendationId } from './transfer.js';
+import { siteSpec, type SiteId } from './sites.js';
 
 /** One resolution tick per minute of real time. */
 export const TICK_SECONDS = 60;
@@ -58,8 +59,16 @@ export const PERMIT_DEPTH_LIMIT: Record<number, number> = {
 
 export const MAX_DEPTH = 12;
 
-export function permitDepthLimit(permitTier: number): number {
-  return PERMIT_DEPTH_LIMIT[permitTier] ?? MAX_DEPTH;
+/**
+ * Permit D-{tier} authorises this depth, at this site.
+ *
+ * The site argument defaults to the home one so every existing caller keeps
+ * meaning what it meant. `PERMIT_DEPTH_LIMIT` above is now the home site's own
+ * table, kept as an exported constant because the balance document quotes it.
+ */
+export function permitDepthLimit(permitTier: number, site: SiteId = 'holdings'): number {
+  const spec = siteSpec(site);
+  return spec.permitLimits[permitTier] ?? spec.maxDepth;
 }
 
 /**
@@ -88,8 +97,18 @@ export const GRADE_STRETCH = 0;
  * stops a fresh recruit dying on arrival — the death spiral that made
  * aggressive play strictly worse than timid play.
  */
-export function authorisedDepth(targetDepth: number, permitTier: number, level: number): number {
-  return Math.min(targetDepth, permitDepthLimit(permitTier), level + GRADE_STRETCH, MAX_DEPTH);
+export function authorisedDepth(
+  targetDepth: number,
+  permitTier: number,
+  level: number,
+  site: SiteId = 'holdings',
+): number {
+  return Math.min(
+    targetDepth,
+    permitDepthLimit(permitTier, site),
+    level + GRADE_STRETCH,
+    siteSpec(site).maxDepth,
+  );
 }
 
 /**
@@ -358,6 +377,7 @@ export const MAX_HIT_FRACTION = 0.35;
  * sweep above is monotone in every column. See `docs/design/balance.md`.
  */
 export const DEFAULT_ORDERS = {
+  site: 'holdings',
   targetDepth: MAX_DEPTH,
   retreatPct: 35,
   lootPriority: 'gear',

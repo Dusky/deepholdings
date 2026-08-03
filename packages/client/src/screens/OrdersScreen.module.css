@@ -38,3 +38,10 @@
   gap: 14px;
   margin-top: 6px;
 }
+
+/* The site's one-line character note, under its chips. */
+.hint {
+  margin-top: 6px;
+  font-size: 0.85em;
+  line-height: 1.4;
+}

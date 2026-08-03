@@ -14,6 +14,8 @@ import {
   commendationAward,
   commendationTier,
   clampRetreatPct,
+  siteAuthorised,
+  SITE_CATALOGUE,
   clauseById,
   isHired,
   nextStaffRung,
@@ -670,6 +672,15 @@ export async function updateOrders(
 ): Promise<StandingOrders> {
   const clean = validateOrders(orders);
   await repo.transaction(async (tx) => {
+    // Refused rather than quietly downgraded. `authorisedSite` falls back to the
+    // home site on *read*, because a stored order that has stopped being valid
+    // must not fail the read that noticed — but an officer actively filing for a
+    // site they cannot work should be told, not silently sent somewhere else and
+    // left wondering why the journal never mentions the Annexe.
+    const transfer = await tx.getTransfer(accountId);
+    if (!siteAuthorised(clean.site ?? 'holdings', transfer.unlocks)) {
+      throw new ServiceError('not_authorised', 'that site is not open to you');
+    }
     // Resolve first: orders must not retroactively change ticks already lived.
     await loadStateInside(tx, accountId);
     await tx.saveOrders(accountId, clean, { markFiled: true });
@@ -682,8 +693,11 @@ function validateOrders(orders: StandingOrders): StandingOrders {
   const retreatPct = Math.round(Number(orders?.retreatPct));
   const lootOk = ['gold', 'gear', 'relics', 'knowledge'].includes(orders?.lootPriority);
   const spendOk = ['resupply', 'hoard', 'insure'].includes(orders?.spendPolicy);
+  const site = orders?.site ?? 'holdings';
+  const siteOk = SITE_CATALOGUE.some((entry) => entry.id === site);
 
   if (
+    !siteOk ||
     !Number.isFinite(targetDepth) || targetDepth < 1 || targetDepth > MAX_DEPTH ||
     !Number.isFinite(retreatPct) || retreatPct < 1 || retreatPct > 100 ||
     !lootOk || !spendOk
@@ -692,6 +706,7 @@ function validateOrders(orders: StandingOrders): StandingOrders {
   }
 
   return {
+    site,
     targetDepth,
     // Clamped rather than rejected: orders filed before the slider was narrowed
     // are stored anywhere in 5-80, and an old client putting one back should

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import {
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
+  SITE_CATALOGUE,
+  siteAuthorised,
+  siteSpec,
   type StandingOrders,
 } from '@deepholdings/shared';
 import { FileButton } from '../components/ui/FileButton';
@@ -18,6 +21,9 @@ const SPEND_OPTIONS: readonly SpendPolicy[] = ['resupply', 'hoard', 'insure'];
 /** Form SO-1: the four knobs the player actually controls (spec §4). */
 export function OrdersScreen() {
   const { state, fileOrders } = useServer();
+  const authorised = SITE_CATALOGUE.filter((spec) =>
+    siteAuthorised(spec.id, state?.transfer.unlocks ?? []),
+  );
   const filed = state?.orders;
 
   // The form is a draft until it is filed — nothing takes effect on the
@@ -59,6 +65,32 @@ export function OrdersScreen() {
   return (
     <div className={styles.paper}>
       <div className={`text-bright ${styles.title}`}>STANDING ORDERS — FORM SO-1</div>
+
+      {/*
+        Only shown once a second site exists to choose between. A control with
+        one option is not a choice — it is a permanent reminder that the game
+        has something you cannot have, on the screen the player uses most.
+      */}
+      {authorised.length > 1 && (
+        <div className={styles.row}>
+          <div className={`text-dim ${styles.label}`} id="site-label">
+            0. SITE
+          </div>
+          <div className={styles.options} role="group" aria-labelledby="site-label">
+            {authorised.map((spec) => (
+              <OptionChip
+                key={spec.id}
+                label={spec.id === 'holdings' ? 'HOLDINGS' : 'ANNEXE'}
+                selected={(draft.site ?? 'holdings') === spec.id}
+                onSelect={() => update({ site: spec.id })}
+              />
+            ))}
+          </div>
+          <div className={`text-dim ${styles.hint}`}>
+            {siteSpec(draft.site ?? 'holdings').detail}
+          </div>
+        </div>
+      )}
 
       <div className={styles.row}>
         <label className={`text-dim ${styles.label}`} htmlFor="target-depth">

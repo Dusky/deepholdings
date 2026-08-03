@@ -36,6 +36,7 @@ import {
   type UnlockId,
   STAFF_LADDER,
   COMMENDATION_CATALOGUE,
+  type SiteId,
   type Transfer,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
@@ -73,6 +74,15 @@ const STAFF = args.includes('--staff');
  * nineteen rungs the officer has already read?
  */
 const TRANSFER = args.includes('--transfer');
+/**
+ * `--annexe` files standing orders for the second site from the first minute.
+ *
+ * Deliberately *not* gated on the Commendation here, and the reason is that
+ * this measures the site rather than the route to it: what does a career look
+ * like at 1.35 danger and 1.7 yield. Whether an officer can reach it is the
+ * transfer layer's question, and `--transfer` answers that one.
+ */
+const ANNEXE = args.includes('--annexe');
 
 interface Milestone {
   tick: number;
@@ -108,6 +118,15 @@ function playOne(seed: number): {
   /** Careers that died in under an hour, and what they were paid. */
   shortDeaths: number;
   shortPension: number;
+  /**
+   * Gold realised over the whole run, cabinet included.
+   *
+   * Added when the Annexe went in, because the two sites trade in different
+   * currencies now: pension is service and depth, gold is yield, and a site
+   * that pays 1.7x cannot be judged on a pension figure alone.
+   */
+  goldEarned: number;
+  deepestFloor: number;
 } {
   const accountId = `long-${seed}`;
   const total = DAYS * 1440;
@@ -155,22 +174,41 @@ function playOne(seed: number): {
   /** Deaths and pension earned per fortnight, to see whether income holds. */
   const perFortnight: { deaths: number; earned: number }[] = [];
   let deepest = 0;
+  let goldEarned = 0;
+  /**
+   * Where the recruit is working right now.
+   *
+   * `--annexe` pins it from the first minute to measure the site in isolation.
+   * Otherwise the officer moves the moment the Commendation is bought, which is
+   * the sequence a player actually experiences: exhaust Holdings, transfer,
+   * spend, and find that the floors are unfamiliar again.
+   */
+  let site: SiteId = ANNEXE ? 'annexe' : 'holdings';
   let tick = 0;
 
   while (tick < total) {
     const to = Math.min(tick + 240, total);
     const out = resolve({
-      character, inventory, orders: DEFAULT_ORDERS, unlocks,
+      character, inventory, unlocks,
+      orders: { ...DEFAULT_ORDERS, site },
       toTick: to, permitAppliedTick, caseFiles, filings,
+      commendations: ANNEXE ? ['secondment1'] : transfer.unlocks,
     });
 
     for (const entry of out.journal) {
       const permit = /Permit D-(\d+) approved/.exec(entry.text);
-      if (permit) note(entry.tick, `Permit D-${permit[1]}`);
+      if (permit) {
+        note(entry.tick, site === 'holdings' ? `Permit D-${permit[1]}` : `Annexe Permit D-${permit[1]}`);
+      }
       const floor = /Down to Floor (\d+)/.exec(entry.text);
       if (floor && Number(floor[1]) > deepest) {
         deepest = Number(floor[1]);
-        note(entry.tick, `Floor ${deepest}`);
+        // Tagged with the site, because re-climbing the ladder somewhere with a
+        // different bestiary, different loot and a different hazard profile is
+        // new content — and an untagged name would dedupe against the floor of
+        // the same number the officer walked a month ago, hiding the whole
+        // re-climb from the timeline this tool exists to print.
+        note(entry.tick, site === 'holdings' ? `Floor ${deepest}` : `Annexe Floor ${deepest}`);
       }
     }
 
@@ -210,6 +248,7 @@ function playOne(seed: number): {
       () => `f${(filingId += 1)}`,
     );
 
+    goldEarned += after.realised;
     character = after.character;
     inventory = after.inventory;
     caseFiles = after.caseFiles;
@@ -235,6 +274,14 @@ function playOne(seed: number): {
     }
     for (const id of after.boughtCommendations) {
       note(tick, `Commendation: ${COMMENDATION_CATALOGUE.find((e) => e.id === id)!.label}`);
+    }
+    // The Secondment is the only Commendation that moves the recruit. Taking it
+    // means the floors start again somewhere else, so the deepest-floor
+    // watermark has to start again with them.
+    if (!ANNEXE && site === 'holdings' && after.transfer.unlocks.includes('secondment1')) {
+      site = 'annexe';
+      deepest = 0;
+      note(tick, 'Seconded to the Annexe');
     }
     /**
      * A transfer issues a fresh posting, which `visit` cannot do — it has no
@@ -313,6 +360,8 @@ function playOne(seed: number): {
     fromEstate,
     shortDeaths,
     shortPension,
+    goldEarned,
+    deepestFloor: deepest,
   };
 }
 
@@ -322,7 +371,8 @@ const med = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length
 
 console.log(
   `${RUNS} careers x ${DAYS} days, an officer who spends as soon as they can` +
-    `${STAFF ? ', with a department' : ''}${TRANSFER ? ', who transfers when the ladder runs out' : ''}\n`,
+    `${STAFF ? ', with a department' : ''}${TRANSFER ? ', who transfers when the ladder runs out' : ''}` +
+    `${ANNEXE ? ', working the Annexe' : ''}\n`,
 );
 
 console.log('--- when the last new thing happens ---');
@@ -356,6 +406,9 @@ if (TRANSFER) {
     `commendation rungs:  ${med(runs.map((r) => r.commendations))} of ${COMMENDATION_CATALOGUE.length}`,
   );
 }
+
+console.log(`gold realised:       ${med(runs.map((r) => r.goldEarned)).toLocaleString()}`);
+console.log(`deepest floor:       ${med(runs.map((r) => r.deepestFloor))}`);
 
 console.log('\n--- where the pension actually comes from ---');
 {

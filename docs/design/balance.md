@@ -1382,3 +1382,90 @@ Nothing failed. The run simply reported a prestige layer that barely pays, with
 a coherent timeline to back it up. That is now four instrument bugs in one
 session, all of the same shape: a plausible number, no error, and only a
 disagreement with an expectation to reveal it.
+
+## A second site, because the ceiling is load-bearing
+
+The obvious way to add late-game depth is to raise `MAX_DEPTH`, and it is the
+one change this codebase cannot make cheaply. Twelve appears in
+`authorisedDepth`, in the shape of the damage curve, and in `maxHpForLevel` —
+the last of which exists because the game was measured *self-terminating*.
+Grade used to buy survivability without limit; the worst blow at Floor 12 is
+about 97 damage; a Grade 30 recruit's retreat threshold sits above that. Recruits
+stopped dying and progression halted on day fourteen, permanently.
+
+So the Annexe is a parallel site rather than deeper floors. Both cap at twelve,
+which means every number above still describes the site it was measured on. It
+differs in the things that are cheap to change and interesting to play against:
+
+|            | Deep Holdings | Annexe |
+| ---------- | ------------- | ------ |
+| danger     | 1.0           | 1.2    |
+| yield      | 1.0           | 1.7    |
+| traffic    | 1.0           | 1.15   |
+| experience | 1.0           | 1.5    |
+| D-5 reaches| Floor 7       | Floor 6 |
+
+It has its own bestiary and its own loot tables — separate pools, not a
+re-weighting. Sharing the species and biasing them would produce the same
+fourteen names the officer has read for a month, which is the opposite of new
+content on the line a player sees more often than any other.
+
+### It shipped its first measurement strictly worse than the free site
+
+At 1.35 danger and 1.7 yield, over ninety days:
+
+| ninety days      | Holdings  | Annexe (first try) |
+| ---------------- | --------- | ------------------ |
+| gold realised    | 1,098,514 | 1,016,291          |
+| lifetime pension | 1,589,820 | 1,480,738          |
+| deaths           | 89        | 137                |
+| final grade      | 16        | 8                  |
+
+Less of both currencies, for a place you spend a Commendation to reach. The
+mechanism is the oldest failure in this document, the one the opening section
+calls "depth was a trap": danger causes deaths, deaths reset grade,
+`authorisedDepth` clamps depth to *grade*, and both gold and pension scale
+superlinearly with depth. A harder site spirals its own recruits into the
+shallows and then pays them shallow-floor rates.
+
+Training faster is the counterweight — a recruit who survives the Annexe is
+worth more than one who survives Holdings, which is also what the fiction would
+say. At 1.2 danger and 1.5 experience:
+
+| ninety days      | Holdings  | Annexe    |
+| ---------------- | --------- | --------- |
+| gold realised    | 1,098,514 | 1,427,218 |
+| lifetime pension | 1,589,820 | 1,683,411 |
+| deaths           | 89        | 133       |
+| final grade      | 16        | 10        |
+
+Better on both currencies, at half again the funerals. That is a posting rather
+than a tier.
+
+### Where the whole programme now stands
+
+An engaged officer with a department, filing transfers, moving to the Annexe
+when the Secondment is bought:
+
+| a hundred and eighty days | before this session | now       |
+| ------------------------- | ------------------- | --------- |
+| last new thing            | day 39.5            | day 178.7 |
+| empty days                | ~140                | **1.3**   |
+| deaths                    | —                   | 222       |
+| gold realised             | —                   | 1,646,705 |
+| lifetime pension          | —                   | 2,632,744 |
+
+The Annexe's re-climb lands at days 65–72: a whole permit ladder and twelve
+floors of unfamiliar fauna, arriving at the point the previous layers had run
+dry.
+
+### One thing the harness had to be told
+
+Cheapest-first buying reaches four other three-cost Commendations before the
+Secondment, so the first combined run never opened the site at all and reported
+the slice as having no effect. The officer model now takes the Secondment ahead
+of price order, and the reason is not a fudge: it is the only rung in the
+catalogue that changes what the player *looks at* rather than a number, and
+somebody who has read the same bestiary for a month buys the new place first.
+Modelling them as a pure price-optimiser left an entire site unmeasured — which
+is the fifth instrument bug of this session and the same shape as the other four.

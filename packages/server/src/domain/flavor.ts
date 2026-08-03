@@ -46,7 +46,7 @@
  * Everything here takes an rng so the same tick always reads the same way. A
  * journal that rewrites itself on refresh is a bug report.
  */
-import { rngChance, rngInt, rngPick, type JournalKind } from '@deepholdings/shared';
+import { rngChance, rngInt, rngPick, type JournalKind, type SiteId } from '@deepholdings/shared';
 
 type Rng = () => number;
 
@@ -112,6 +112,39 @@ const QUALIFIERS: readonly string[] = [
   'Unlicensed', 'Pensioned', 'Load-Bearing',
 ];
 
+/**
+ * The Annexe's own bestiary.
+ *
+ * A separate pool rather than a bias on the one above, because the point of a
+ * second site is that the journal reads differently there. Sharing the species
+ * and re-weighting them would produce the same fourteen names an officer has
+ * been reading for a month, which is the opposite of new content — and this is
+ * the line a player sees more often than any other in the game.
+ *
+ * Where Deep Holdings is municipal and bored, the Annexe is *ecclesiastical and
+ * cold*: it was somebody's records office long before the Authority filed a
+ * claim on it, and whatever is still working down there was not hired.
+ */
+const ANNEXE_SPECIES: readonly (readonly string[])[] = [
+  [
+    'Verger', 'Frost Mite', 'Choirboy', 'Draught', 'Censer-Bearer',
+    'Moth', 'Sexton', 'Lamplighter', 'Novice', 'Pale Hound',
+  ],
+  [
+    'Cantor', 'Reliquary Beetle', 'Penitent', 'Ice Wight', 'Bell-Ringer',
+    'Ossuary Rat', 'Deacon', 'Snow Golem', 'Anchorite', 'Cold Thing',
+  ],
+  [
+    'Abbot', 'Glacier Wyrm', 'Confessor', 'Bone Choir', 'Reliquary Guard',
+    'Hoarfrost Knight', 'Prior', 'Winter Automaton', 'Flagellant', 'Silent Bell',
+  ],
+  [
+    'Cardinal of the Lower Registry', 'Thing in the Reliquary', 'Bishop, Interred',
+    'The Cold Below', 'Ossuary Warden', 'Frozen Founder', 'Antiphon',
+    'Last Verger', 'Sepulchral Committee', 'What the Bells Were For',
+  ],
+];
+
 /** Bands where a grade suffix reads as menace rather than noise. */
 const GRADE_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
 
@@ -121,9 +154,9 @@ const GRADE_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as con
  * Deeper floors carry a grade more often and a higher one — a Grade VII
  * anything is the Authority admitting it is out of its depth.
  */
-export function faunaFor(depth: number, rng: Rng): string {
+export function faunaFor(depth: number, rng: Rng, site: SiteId = 'holdings'): string {
   const band = bandOf(depth);
-  const species = rngPick(rng, SPECIES[band]);
+  const species = rngPick(rng, (site === 'annexe' ? ANNEXE_SPECIES : SPECIES)[band]);
   const qualifier = rngPick(rng, QUALIFIERS);
   const graded = rngChance(rng, 0.25 + band * 0.15);
   if (!graded) return `${species}, ${qualifier}`;
@@ -184,14 +217,81 @@ const LOOT: Record<string, readonly (readonly string[])[]> = {
   ],
 };
 
+/**
+ * What the Annexe has lying about.
+ *
+ * Same four priorities, so Loot Priority still means what it means — but the
+ * pools read cold and consecrated rather than municipal, which is what makes
+ * choosing `relics` at the Annexe feel like a different order from choosing it
+ * at Holdings even though the multiplier is identical.
+ */
+const ANNEXE_LOOT: Record<string, readonly (readonly string[])[]> = {
+  gold: [
+    [
+      'Offering Plate, Skimmed', 'Alms Box, Forced', 'Tithe, Uncollected',
+      'Coin, Placed on Eyes', 'Chantry Fund, Lapsed', 'Grave-Goods, Petty',
+    ],
+    [
+      'Endowment, In Perpetuity', 'Bullion, Consecrated', 'Reliquary Fee, Compounded',
+      'Sepulchre Deed, Bearer', 'Indulgence, Prepaid', 'The Cardinal\u2019s Float',
+    ],
+  ],
+  gear: [
+    [
+      'Censer, Still Swinging', 'Habit, Frostbitten', 'Crozier, Chipped',
+      'Bell, Cracked', 'Sandals, Impractical', 'Mail, Under Vestments',
+    ],
+    [
+      'Vestment, Warden-Pattern', 'Blade of the Last Verger', 'Reliquary Gauntlets',
+      'Cope, Load-Bearing', 'Thurible, Weaponised', 'Mitre, Reinforced',
+    ],
+  ],
+  relics: [
+    [
+      'Finger-Bone, Labelled', 'Ampulla, Sealed', 'Ossuary Tag, Legible',
+      'Icon, Frozen Over', 'Rosary, Miscounted', 'Splinter, Alleged',
+    ],
+    [
+      'Heart of the Interred Bishop', 'Bell That Was Not Rung', 'Reliquary, Breathing',
+      'Sepulchral Seal, Unbroken', 'The Antiphon, Written Down', 'Class A, Consecrated',
+    ],
+  ],
+  knowledge: [
+    [
+      'Register of the Interred', 'Hymnal, Annotated', 'Confession, Partial',
+      'Inventory of Bones', 'Calendar of Feasts, Wrong', 'Marginalia, Frantic',
+    ],
+    [
+      'The Original Claim', 'Census of the Interred', 'Correspondence with the Founder',
+      'Plan of a Building That Is Not This One', 'Recantation, Notarised',
+      'What the Bells Were For, Transcribed',
+    ],
+  ],
+};
+
 /** Deep loot starts at Floor 7 — the same line the third depth band starts on. */
-export function lootFor(priority: string, depth: number, rng: Rng): string {
-  const bands = LOOT[priority] ?? LOOT.gear;
+export function lootFor(
+  priority: string,
+  depth: number,
+  rng: Rng,
+  site: SiteId = 'holdings',
+): string {
+  const table = site === 'annexe' ? ANNEXE_LOOT : LOOT;
+  const bands = table[priority] ?? table.gear;
   return rngPick(rng, bands[depth >= 7 ? 1 : 0]);
 }
 
-/** Every loot name in the game. Bounded, and a test asserts it stays that way. */
-export const ALL_LOOT_NAMES: readonly string[] = Object.values(LOOT).flat(2);
+/**
+ * Every loot name in the game. Bounded, and a test asserts it stays that way.
+ *
+ * Both sites, because the bound this protects is on the *cabinet*: a name that
+ * is not in this list is a name that cannot be stacked against anything, and
+ * where it came from does not change that.
+ */
+export const ALL_LOOT_NAMES: readonly string[] = [
+  ...Object.values(LOOT).flat(2),
+  ...Object.values(ANNEXE_LOOT).flat(2),
+];
 
 /**
  * Form references. The Authority has a form for it, and the number is the part

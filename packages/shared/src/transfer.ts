@@ -44,13 +44,14 @@
  */
 import type { LadderEntry } from './tuning.js';
 
-export type CommendationTrack = 'intake' | 'endowment' | 'patronage' | 'dispensation';
+export type CommendationTrack = 'intake' | 'endowment' | 'patronage' | 'dispensation' | 'secondment';
 
 export type CommendationId =
   | 'intake1' | 'intake2' | 'intake3'
   | 'endowment1' | 'endowment2' | 'endowment3'
   | 'patronage1' | 'patronage2' | 'patronage3'
-  | 'dispensation1' | 'dispensation2' | 'dispensation3';
+  | 'dispensation1' | 'dispensation2' | 'dispensation3'
+  | 'secondment1';
 
 /** Account-level and permanent. Nothing here is ever spent by a reset. */
 export interface Transfer {
@@ -125,6 +126,12 @@ export const COMMENDATION_CATALOGUE: readonly LadderEntry<CommendationId, Commen
     detail: 'A new posting begins with Permit D-4.' },
   { id: 'dispensation3', track: 'dispensation', tier: 3, cost: 4, label: 'Transferred Dispensation III',
     detail: 'A new posting begins with Permit D-6.' },
+
+  // One rung, and the only thing in this catalogue that unlocks a *place*
+  // rather than a number. Priced above the tier-1 rungs so it is not simply the
+  // first thing an officer buys — it is worth reaching a second posting for.
+  { id: 'secondment1', track: 'secondment', tier: 1, cost: 3, label: 'Secondment to the Annexe',
+    detail: 'Form SO-1 may name the Annexe. It pays better and kills faster.' },
 ];
 
 export function commendationTier(

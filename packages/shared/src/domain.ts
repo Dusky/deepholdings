@@ -1,4 +1,5 @@
 /** Domain model. Shared verbatim between server and client. */
+import type { SiteId } from './sites.js';
 
 export type LootPriority = 'gold' | 'gear' | 'relics' | 'knowledge';
 
@@ -69,6 +70,18 @@ export interface ShiftDigest {
 
 /** The four knobs a case officer actually controls (spec §4). */
 export interface StandingOrders {
+  /**
+   * Where the recruit works.
+   *
+   * A fifth field on the form the officer already files rather than a screen of
+   * its own — choosing a site is the same *kind* of decision as choosing a
+   * depth, and putting it anywhere else would imply it is a bigger one.
+   *
+   * Optional on the way in: orders were stored before sites existed, and a row
+   * saved then has no column for it. Every read goes through `siteOf`, which
+   * treats a missing site as the home one. Migration 012 backfills.
+   */
+  site?: SiteId;
   targetDepth: number;
   retreatPct: number;
   lootPriority: LootPriority;

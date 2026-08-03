@@ -93,10 +93,18 @@ export function rollCaseFile(input: {
 /**
  * Files the case file, dropping the weakest if the drawer is full.
  *
- * Full means full — a seventh find replaces the least valuable of the six
+ * Full means full — a fourth find replaces the least valuable of the three
  * rather than being refused, because a system that silently stops giving you
  * things reads as broken. The displaced file is returned so the caller can
  * say what happened; nothing a player earned should vanish without a line.
+ *
+ * **What it replaces on is invisible to the player, and that is a known gap.**
+ * `worth()` below weighs vigour, survival and loot value on a fixed formula the
+ * officer can neither see nor change, so an officer who wants a survival build
+ * cannot keep one — the quartermaster will discard it for something that scores
+ * higher. `docs/design/crafting.md` designs the fix (Equipment Policy as the
+ * fifth standing order, with Direct Issue and countersigned slots); it is
+ * unbuilt.
  */
 export function file(
   held: readonly CaseFile[],

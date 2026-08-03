@@ -115,7 +115,8 @@ export const NO_STATS: StatBlock = { vigour: 0, survival: 0, lootValue: 0 };
  * Ceilings on the whole carried set.
  *
  * **These are load-bearing, and the first version did not have them.** With
- * six files of up to four clauses each and nothing but a survival clamp, a
+ * six files of up to four clauses each — the drawer holds three now, see
+ * `CASE_FILE_SLOTS` — and nothing but a survival clamp, a
  * fortnight of default play carried +254 vigour, survival pinned at its cap
  * and +160% loot — and the balance harness reported *zero deaths in thirty of
  * thirty careers* and zero pension in all thirty. That is the "default orders

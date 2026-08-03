@@ -130,8 +130,8 @@ obligation.
 
 > **Rule for us:** standing orders are already an automation system. Deeper
 > automation (conditional orders, more slots) is the natural upgrade ladder.
-> **Open question:** an extra standing-order slot is convenience *and* power.
-> Selling it edges toward pay-to-win; earning it does not. Default to earning.
+> An extra standing-order slot is convenience *and* power. Selling it edges
+> toward pay-to-win; earning it does not. **Settled: earned only.**
 
 ---
 
@@ -160,9 +160,13 @@ From this note and `idle-hacking.md`:
 - **M5** — catch-up never sold; automation earned by default.
 - **Cross-cutting** — numbers stay human; never ship scientific notation.
 
-Still open: whether to build gear/affix crafting (Idle Hacking's most-praised
-system, and our biggest structural gap), and whether standing-order slots are
-ever purchasable.
+Both questions this note left open have since been decided, and are recorded in
+`ROADMAP.md`'s Settled table rather than here:
+
+- **Gear/affix crafting** — build it, as Requisition & Arbitration. Shipped:
+  items, clauses and Forms 12-C, 19 and 4-E.
+- **Standing-order slots** — earned only, never purchasable. More concurrent
+  policy is power, not convenience.
 
 ## Caveats
 

@@ -69,13 +69,13 @@ The things every decision gets checked against.
 | Milestone | State | In v1? |
 | --- | --- | --- |
 | M0 — Playable loop, end to end | ✅ Done | yes |
-| M1 — On your phone | **Next** | yes |
+| M1 — On your phone | **Next.** Image, runbook and restore drill done; needs a host | yes |
 | M2 — The first session | Built; needs a stranger to verify | yes |
 | M3 — It calls you back | Push verified on device; deep-link tap not | yes |
-| M4 — It has direction | | yes |
-| M4.5 — It has a department | Registry shipped: 3 posts, wages, policies | yes |
-| M5 — It has depth (crafting) | Items, clauses, Forms 12-C and 19 | *candidate cut* |
-| M6 — An inhabited world | | *candidate cut* |
+| M4 — It has direction | Transfer, a second site, assignments; day 178.7. Needs a tester | yes |
+| M4.5 — It has a department | Three posts, three tiers each, with edges | yes |
+| M5 — It has depth (crafting) | Items, clauses, Forms 12-C and 19 | *partly shipped* |
+| M6 — An inhabited world | Guild bar fed by real play; the rest not started | *partly shipped* |
 | M7 — Able to take money | | yes |
 | M8 — Store-ready | | yes |
 | M9 — Launch and learn | | yes |
@@ -143,14 +143,37 @@ CRT shell, server-authoritative resolution, client wired to the API.
       CRT sequence and a photograph ahead of it is a cut between two media in
       the first second of the game — plus five densities of photo in the APK
       for something on screen under a second.
-- [ ] **Deploy the server.** Managed Postgres + a small container host. Set
+- [~] **Deploy the server.** Managed Postgres + a small container host. Set
       `TOKEN_SECRET`, `DATABASE_URL`, `CORS_ORIGINS` (must include
       `capacitor://localhost`). TLS.
+      **Everything that does not need a credential is built:** a three-stage
+      `Dockerfile` on `node:22-bookworm-slim` running non-root, `GET /ready`
+      beside `GET /health`, `scripts/smoke.sh` (the same script CI runs, so it
+      can be run during an incident on a machine that is not a runner), and
+      [`docs/ops/deploy.md`](docs/ops/deploy.md). The three settings that are
+      fatal to get wrong now refuse to boot rather than warn — `DATABASE_URL`
+      absent would have run production on the in-memory adapter and discarded
+      every account on each deploy, logging one line at *warn*.
+      What remains is the part that is the owner's: choosing the host, holding
+      the credentials, pointing DNS at it. The image is host-agnostic and wants
+      nothing but environment variables and a port.
 - [x] **Migration tooling.** Numbered migrations in `schema_migrations`, each
       applied in its own transaction. Production refuses to boot against a
       schema that is behind rather than silently serving an old shape.
-- [ ] **Backups.** Automated, plus one restore drill. Before real players, not
+- [~] **Backups.** Automated, plus one restore drill. Before real players, not
       after.
+      **Drill run 2026-08-03**, which is the half that was worth having: an
+      8.4 MB dump restored into a throwaway database, the migrator run against
+      it (so a dump whose schema predates the code is caught now rather than
+      during the incident), and the tables asserted non-empty — 1,300 accounts,
+      2,247 characters, 552,076 journal rows. `scripts/backup.sh` and
+      `scripts/restore-drill.sh` are the two halves; the second is the only one
+      that proves anything, because "we have backups" and "we have restored one"
+      are different claims.
+      Still open, and it needs the host: Supabase's own automated backups and
+      PITR turned on, and the off-platform dump put on a timer somewhere that is
+      not the database's own account. Every platform backup lives inside the
+      thing that would be gone.
 
 **Exit:** the APK runs on your phone against the hosted API for seven days
 without a crash or a data loss.
@@ -414,6 +437,40 @@ always knows what they are working toward.
       balance number taken through the endpoint has been re-measured on a
       harness that drives the resolver directly.
 
+- [x] **The officer's own prestige.** Form T-1 surrenders the pension and every
+      rung bought with it, restarts the permit ladder and opens a fresh posting,
+      keeping the department, the equipment and the Commendations. One
+      Commendation per 150,000 pension ever banked, **linear** — filing early
+      and filing late pay the same rate, so there is no optimal moment to work
+      out and no way to find out afterwards you got it wrong, which is the
+      standing complaint about prestige in this genre.
+- [x] **A second site.** The Annexe: 1.2 danger, 1.7 yield, 1.15 traffic, 1.5
+      experience, a permit ladder that reads the same clearance more grudgingly,
+      and its own bestiary and loot tables. Both sites cap at twelve, so every
+      number measured before it still describes the site it was measured on —
+      `MAX_DEPTH` is load-bearing in three places and raising it would re-open
+      all of them. Gated behind a Commendation.
+- [x] **Special Assignments.** Six restrictions on the game you have already
+      beaten — entitlements suspended, department stood down, no successor
+      issued, a grade freeze, a forced site, a forced priority — each paying
+      Commendations. Free to accept, free to hand back, **nothing lost by
+      failing**, each completes once, no timers. This is the answer to the
+      research note's constraint that whatever fills month two has to be *new*,
+      not slower: a restriction is new without being longer.
+- [x] **Form 4-E.** Halves what is left of a permit wait, once per application,
+      for gold. Everything an officer did was worth the same now as in six
+      hours; this is the one thing attention buys. Additive rather than
+      protective — the permit clears either way, so missing it costs nothing and
+      no hour of the day wants you.
+- [x] **The two currencies separated.** `pensionAward` claimed to accrue with
+      *service* and measured 96.3% estate, which made **every gold sink a
+      pension tax** and priced systems nobody had designed yet. Gold is the
+      economy now, pension is time and depth.
+
+**Where the curve landed.** Over 180 days, with a department, transfers and the
+Annexe: the last new thing happens on **day 178.7, with 1.3 empty days**. It was
+day 39.5 with roughly 140 empty when this milestone's balance work started.
+
 **Exit:** a tester plays for two weeks and can explain their strategy to you.
 
 ---
@@ -448,18 +505,26 @@ purchasable game was 26 items across two ladders.
       **Every recurring sink in this game is a pension tax at that rate** —
       requisitions never showed it because they are bought once. See
       [`docs/design/balance.md`](docs/design/balance.md).
-- [ ] **More posts, with an edge.** Three is a department, not a hierarchy. But
-      the next post needs a genuine advantage rather than only a chore removed:
-      the measurement says convenience alone reads as a tax, and automation
-      that decelerates is backwards for the genre. A senior clerk who realises
-      above depot rates, not a fourth chore.
-- [ ] **One officer's visit, in one place.** Two systems have now shipped that
-      the harnesses could not see, both times because each tool rebuilds the
-      visit loop itself. Fix the duplication before a third lands in it.
+- [x] **More posts, with an edge.** Three tiers per post, and every tier past
+      appointment buys an *edge* rather than another chore: the clerk realises
+      8% then 18% over book value, the officer clears more rungs a visit and at
+      a discount, the archivist files more forms for lower fees and less Union
+      Standing. Appointment-tier throughput is a deliberate **nerf** — the
+      Junior Officer used to redeem everything affordable the moment it was
+      hired, which left its own upper tiers nothing to sell. Rungs land on days
+      0.7, 1.3, 2.7, 3.4, 7.2, 13.8, 18.1, 46.6 and 86.2, and the 140,000-gold
+      top rung is the first sink a late purse has any reason to want.
+- [x] **One officer's visit, in one place.**
+      `packages/server/tools/officer.ts`. Each harness passes a policy saying
+      which parts of a visit it models, so an abstention is a decision somebody
+      wrote down rather than an omission nobody notices. The extraction was not
+      inert twice and neither failure failed — it published a different game
+      each time. See [`docs/design/balance.md`](docs/design/balance.md).
 
 **Exit:** an officer who has played a fortnight is running a department rather
-than doing the filing. **Met for the three chores above; not for the shape** —
-one tier of staff is a ladder with one rung.
+than doing the filing. **Met.** The ladder has nine rungs, the top one arrives
+in month three, and the department survives a transfer — staff are yours, not
+the posting's.
 
 ---
 
@@ -516,14 +581,29 @@ cannot yet fill a vacant slot, lock a roll, or settle a provenance.
 **Goal:** other case officers are visible and matter. Cuttable if time is short
 — but the tavern is a lot of the charm.
 
+> **No longer wholly cuttable.** The guild bar shipped, so part of this
+> milestone is in the product and the cut-line entry below is stale on its face.
+> What remains cuttable is the *social* half — tavern realtime, leaderboards,
+> the death feed — and the chat-safety carve-out still stands: either the tavern
+> launches moderated or it does not launch.
+
 - [ ] **Realtime tavern.** WebSocket instead of the 10s poll, with presence.
 - [ ] **Chat safety — non-negotiable.** Rate limiting, length caps (done), a
       report path, and a block list. A competitor has negative reviews from a
       451-hour player written purely about other players.
 - [ ] **No public wealth display.** Visible spending hierarchies are what
       produced "whale overlords" in a comparable game's chat.
-- [ ] **Guild objectives fed by real play.** Contribution should come from
-      resolution, not a fixture.
+- [x] **Guild objectives fed by real play.** Four objectives rotate — floors
+      surveyed, case files opened, encounters logged, permits cleared — counted
+      off the resolver's own counters. The bar used to advance `rngInt(0, 9)`
+      per heartbeat regardless of whether anybody played, and stopped dead on
+      reaching its target. Measured on a live server: one officer playing 2.5
+      days moved the survey objective to 1,369 of 4,000 while an idle second
+      officer contributed nothing.
+      `addGuildProgress` is one `UPDATE ... RETURNING` because this is the first
+      number many accounts write at once, and the purse is a *rate* rather than
+      a pot — shares do not divide it, so another officer's work never reduces
+      yours. A fixed pot turns a cooperative bar into a competitive one.
 - [ ] **Leaderboards.** Depth reached, pension banked, most creative death.
 - [ ] **Death feed detail.** Tap a death, read the last ten lines of that
       officer's log. Free content from data you already store.
@@ -621,6 +701,14 @@ you back, and it has direction), plus M7–M8 (money and store compliance).
 
 **v1 could ship without:** M5 (crafting) and M6 (the social layer).
 
+> **Both have since shipped in part, so this is now a question about the
+> remainder rather than the milestone.** M5's items, clauses, drawer, ARMOURY
+> screen and two forms are in the product and are not coming back out; what is
+> cuttable is the rest of the form catalogue, the second half of the clause
+> pool, and Equipment Policy. M6's guild bar is in; what is cuttable is the
+> social half. The argument below still holds for those remainders — it just no
+> longer describes a launch with no crafting in it.
+
 That is not a demotion. Shipping M5 as the first major post-launch update is
 arguably *better* than launching with it:
 
@@ -675,7 +763,18 @@ Not a milestone; pick these up as they start to hurt.
       Android project had never compiled anywhere, and a device build found it
       rather than CI. Parsing every XML in `packages/client/android` needs no
       SDK and would have caught it on the commit that introduced it.
-- [ ] Idempotency keys on mutations — a retried purchase must not double-charge
+- [x] Idempotency keys on mutations — a retried purchase must not double-charge.
+      **Four routes, not thirteen.** Nine mutations are already safe because the
+      game's own rules refuse a repeat (`already_owned` on a rung, a zeroed
+      pension on a second transfer, an equal `permitExpeditedTick` on a second
+      Form 4-E), where a duplicate is a confusing message rather than a loss.
+      The four that lose something are the two sells, `armoury/file` — which
+      spends Union Standing, the scarcest thing an officer has — and
+      `registry/hire`, which is the sharp one: it climbs a *ladder*, so a retry
+      buys the next tier nobody asked for, six thousand gold instead of eight
+      hundred. Claiming is one `INSERT … ON CONFLICT DO NOTHING RETURNING`,
+      because two requests arriving together is the whole case and a
+      read-then-write loses that race by construction. `src/idempotency.ts`.
 - [x] Rate limiting on write endpoints. Token bucket, per account and per
       route, in `src/rateLimit.ts`. A fixed window would let someone spend a
       whole allowance at one boundary and the next immediately after — twice
@@ -691,8 +790,23 @@ Not a milestone; pick these up as they start to hurt.
       instead of re-authenticating, which is the one action that would fix it.
       In-process, so two instances multiply the effective limit. Written down
       in the module rather than discovered later.
-- [ ] Structured logging and error tracking (Sentry or equivalent)
-- [ ] Heartbeat health metric and an alert when beats stop
+- [~] Structured logging and error tracking. **The seam, not the vendor.**
+      `src/errors.ts` is a one-method port with a structured logging default,
+      routed from the error handler and the heartbeat and sweep callbacks, plus
+      `uncaughtException`/`unhandledRejection` which had nowhere to go before.
+      `ServiceError` is deliberately never reported: a tracker that fires on
+      "not enough gold" is muted within a day. Choosing a vendor means taking a
+      dependency and holding a credential, which is an owner decision — the
+      place it plugs in is named in the module.
+- [x] Heartbeat health metric and an alert when beats stop. Derived from the
+      world row in **both directions** — `overdueSeconds` for beats that
+      stopped, `aheadSeconds` for the failure that actually happened, where the
+      row pointed seventeen days into the future and nothing was late. Reported
+      as a field on `GET /ready` rather than a 503, because resolution is lazy
+      and per-player: a frozen shared clock does not stop an instance serving,
+      and failing readiness on it would pull the fleet out of rotation over a
+      background job. The alert is an external probe on that field — see
+      [`docs/ops/deploy.md`](docs/ops/deploy.md).
 - [x] Load check: `npm run load -w @deepholdings/server`. 500 accounts on
       Postgres 16, staleness spread across the whole catch-up window, single
       connection: **read path p50 11.7ms, p99 36.9ms — about 86 reads/sec.**

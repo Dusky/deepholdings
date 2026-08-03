@@ -16,7 +16,7 @@ and the whole thing is presented as text rather than art.
 | Progression | Offline up to 12h | Offline, clamped at 12h catch-up |
 | Social | Syndicates, marketplace, global chat | Guilds, market, tavern channel |
 | Platform | Steam (Win/Mac/Linux) + browser | Android first |
-| Model | Free to play + IAP + ~$5/mo premium | TBD |
+| Model | Free to play + IAP + ~$5/mo premium | Free to play; convenience and cosmetics only |
 
 **Performance:** released 18 March 2026; ~223 reviews at 82% positive ("Very
 Positive") about four months in. Retention in the reviews themselves is

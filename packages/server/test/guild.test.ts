@@ -188,18 +188,23 @@ for (const { name, make } of adapters) {
     // Somebody else finishes it.
     await repo.addGuildProgress(objective.target);
 
-    const before = (await app.inject({ method: 'GET', url: '/v1/state', headers })).json();
-    // Time has to pass for the resolution path — and the settle — to run.
+    /**
+     * The purse is read from storage rather than through `/v1/state`, because
+     * that request *is* a settling read — it resolves ticks, and settling is
+     * now on the shared post-resolution path. Bracketing the advance with two
+     * GETs would have the first one pay out and the second show no change,
+     * which is what this test originally asserted and why it caught the
+     * refactor rather than the behaviour.
+     */
+    const goldBefore = (await repo.getActiveCharacterForUpdate(account.id))!.character.gold;
     await app.inject({
       method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 2 },
     });
     const after = (await app.inject({ method: 'GET', url: '/v1/state', headers })).json();
+    const goldAfter = (await repo.getActiveCharacterForUpdate(account.id))!.character.gold;
 
     const owed = guildShare(contribution, objective.target, objective.purse);
-    assert.ok(
-      after.character.gold > before.character.gold,
-      'the share never reached the purse',
-    );
+    assert.ok(goldAfter > goldBefore, `the share never reached the purse (${goldBefore} -> ${goldAfter})`);
     const journal: { text: string }[] = after.journal;
     const line = journal.find((entry) => /Regional objective met/.test(entry.text));
     assert.ok(line, 'the officer was paid and not told');

@@ -191,10 +191,16 @@ export function permitLimit(permitTier: number): number {
   return PERMIT_DEPTH_LIMIT[permitTier] ?? MAX_DEPTH;
 }
 
-/** Applies any pending level-ups; returns the number gained. */
-export function applyLevelUps(character: Character): number {
+/**
+ * Applies any pending level-ups; returns the number gained.
+ *
+ * `cap` is a Special Assignment's grade freeze. Experience still accrues — it
+ * simply stops being spent — so an officer who abandons the assignment gets the
+ * promotions they earned rather than discovering the hours were deleted.
+ */
+export function applyLevelUps(character: Character, cap = Number.POSITIVE_INFINITY): number {
   let gained = 0;
-  while (character.xp >= xpForLevel(character.level)) {
+  while (character.level < cap && character.xp >= xpForLevel(character.level)) {
     character.xp -= xpForLevel(character.level);
     character.level += 1;
     character.maxHp = maxHpForLevel(character.level);

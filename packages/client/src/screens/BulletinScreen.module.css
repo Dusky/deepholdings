@@ -1,0 +1,32 @@
+/* Assignment rows: the same affordance as an unlock, because it is the same
+   gesture — read a thing, decide, commit. */
+.assignment {
+  display: block;
+  width: 100%;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hairline);
+  text-align: left;
+}
+
+.assignmentHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.assignment[data-state='owned'],
+.assignment[data-state='locked']:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.abandon {
+  text-decoration: underline;
+}
+
+@media (pointer: coarse) {
+  .assignment,
+  .abandon {
+    min-height: 44px;
+  }
+}

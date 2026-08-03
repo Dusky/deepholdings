@@ -1,6 +1,8 @@
 import type {
   AdvanceTimeResponse,
   ApiError,
+  AssignmentId,
+  AssignmentState,
   BulkSellRequest,
   BulkSellResponse,
   BulletinResponse,
@@ -209,6 +211,14 @@ export class ApiClient {
 
   claimPension(): Promise<ClaimPensionResponse> {
     return this.request('POST', '/v1/pension/claim', {});
+  }
+
+  acceptAssignment(id: AssignmentId): Promise<AssignmentState> {
+    return this.request('POST', '/v1/assignments/accept', { id });
+  }
+
+  abandonAssignment(): Promise<AssignmentState> {
+    return this.request('POST', '/v1/assignments/abandon', {});
   }
 
   /** Form T-1. Surrenders the pension; the department comes with you. */

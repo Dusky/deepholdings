@@ -26,6 +26,7 @@ import {
   TICK_SECONDS,
   makeRng,
   pensionAward,
+  type AssignmentRestriction,
   type CommendationId,
   RETIREMENT_REMINDER_TICKS,
   rngChance,
@@ -134,6 +135,15 @@ export interface ResolveOptions {
   toTick: number;
   /** Permit application watermark, carried between resolutions. */
   permitAppliedTick: number | null;
+  /**
+   * A Special Assignment's restrictions, if one is being worked.
+   *
+   * Applied here rather than by the caller mangling its own arguments, because
+   * a restriction that the caller has to remember to impose is one that gets
+   * imposed in three places and forgotten in a fourth — which is precisely how
+   * every unmeasured system in this project shipped.
+   */
+  restriction?: AssignmentRestriction;
   /**
    * Commendations held by the officer, for the Service Endowment multiplier.
    *
@@ -250,7 +260,19 @@ export function resolve(options: ResolveOptions): ResolveResult {
   const character: Character = { ...options.character };
   const inventory: InventoryItem[] = options.inventory.map((item) => ({ ...item }));
   let caseFiles: CaseFile[] = (options.caseFiles ?? []).map((f) => ({ ...f }));
-  const { orders, unlocks } = options;
+  const restriction = options.restriction ?? {};
+  /**
+   * Every restriction lands here, at the top, where it is one line each and
+   * visibly exhaustive. `noUnlocks` is the hardest of them and costs nothing to
+   * implement: the pension catalogue is already a parameter, so suspending it
+   * is passing an empty list.
+   */
+  const orders: StandingOrders = {
+    ...options.orders,
+    ...(restriction.site ? { site: restriction.site } : {}),
+    ...(restriction.lootPriority ? { lootPriority: restriction.lootPriority } : {}),
+  };
+  const unlocks = restriction.noUnlocks ? [] : options.unlocks;
   const commendations = options.commendations ?? [];
 
   /**
@@ -618,7 +640,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
         log(tick, emptyHandedNote(orders.lootPriority, prose));
       }
 
-      const levels = applyLevelUps(character);
+      const levels = applyLevelUps(character, restriction.gradeCap ?? Number.POSITIVE_INFINITY);
       // applyLevelUps recomputes maxHp from level alone, so carried vigour has
       // to be folded back in immediately or a promotion silently strips it.
       // The stat block is recomputed as well and not merely re-applied: the

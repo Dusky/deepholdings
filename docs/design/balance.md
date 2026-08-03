@@ -1537,3 +1537,56 @@ lost.
 carries this office's own contribution, and a shared bar with no personal number
 on it is a bar you cannot tell whether you are affecting — which is the defect
 the bar itself was fixed for.
+
+## Special Assignments, and the read path that was doing half a job
+
+Antimatter Dimensions' challenges are the best content-per-authored-line
+mechanic in the genre: replay the game you have beaten with one rule changed,
+for a permanent reward. Nothing new is simulated; a restriction changes which
+decisions are good, so systems the player stopped thinking about become
+interesting again.
+
+That is precisely what `mobile-incrementals.md` demanded — *"whatever answers
+month two has to be new, not slower"* — and it is the only mechanic that gets it
+without authoring another catalogue.
+
+Six assignments, each a restriction the resolver already branches on:
+
+| assignment | suspended | goal | pays |
+| ---------- | --------- | ---- | ---- |
+| Unassisted Survey | pension rungs | Floor 10 | 1 |
+| Skeleton Staff | the department | 40 case files | 1 |
+| Sole Charge | successors | 3 days' service | 2 |
+| Cold Start | rungs, department; Annexe only | Floor 8 | 3 |
+| Narrow Remit | all loot but knowledge | Grade 12 | 1 |
+| Junior Officer's Burden | promotion past Grade 6 | 300 floors | 2 |
+
+They pay **Commendations**, which does something the design had no answer for:
+it gives an engaged officer something a patient one does not get. Until now
+attention bought the same curve slightly sooner. Ten Commendations against a
+catalogue costing thirty-six is a real second source that is earned by playing
+differently rather than by waiting — and nothing is sold.
+
+Rules that keep them off the daily-obligation list `genre-cues.md` warns about:
+free to accept, free to hand back, **nothing lost by failing**, each completes
+once, and no timers.
+
+### The bug it turned up
+
+`loadState` and `loadStateInside` both resolve ticks, and each carried its own
+idea of what happened next. The guild contribution shipped into the second one
+only — so **a player whose ticks resolved through a plain `GET /v1/state`, which
+is most of them, moved the regional bar not at all.** Nothing failed. The bar
+simply advanced for people who happened to sell something.
+
+That is the fourth time this exact shape has cost something here: a system added
+beside the resolver rather than inside one shared place, and a second copy of
+the loop that never heard about it. `tools/officer.ts` fixed it for the three
+harnesses in slice 1; `applyAfterResolve` now fixes it for the server's two read
+paths. Both are covered by a test that resolves a span through a bare read and
+asserts the contribution landed.
+
+Worth stating as a rule, because it has now been learned four times: **anything
+that must happen when time passes goes in one function that every path that
+passes time calls.** Two callers is not a duplication smell in this codebase, it
+is a defect waiting for a release.

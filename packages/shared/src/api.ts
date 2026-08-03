@@ -9,6 +9,7 @@ import type { CaseFile } from './items.js';
 import type { FormId } from './forms.js';
 import type { Registry, StaffRole } from './staff.js';
 import type { CommendationId, CommendationTrack, Transfer } from './transfer.js';
+import type { AssignmentId, AssignmentMetric } from './assignments.js';
 import type {
   Account,
   Character,
@@ -391,9 +392,28 @@ export interface PurchaseRequisitionResponse {
 }
 
 /** GET /v1/bulletin */
+/** One row of the assignment board. */
+export interface AssignmentOffer {
+  id: AssignmentId;
+  name: string;
+  brief: string;
+  reward: number;
+  target: number;
+  metric: AssignmentMetric;
+  completed: boolean;
+  active: boolean;
+  progress: number;
+}
+
 export interface BulletinResponse {
   world: WorldState;
   deaths: DeathRecord[];
+  /**
+   * Special Assignments, on the Bulletin because the Authority is the one
+   * offering them — and because it gives that screen a second reason to be
+   * open, which it did not have.
+   */
+  assignments: AssignmentOffer[];
   /**
    * What this office has put in, and been paid.
    *

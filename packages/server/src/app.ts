@@ -7,6 +7,7 @@ import {
   type FileFormRequest,
   type HireStaffRequest,
   type StaffPolicyRequest,
+  type AssignmentId,
   type CommendationId,
   type RequisitionId,
   type UnlockId,
@@ -23,6 +24,8 @@ import {
   devMakeAway,
   authenticateDevice,
   bulkSell,
+  acceptAssignment,
+  abandonAssignment,
   fileTransfer,
   purchaseCommendation,
   claimPension,
@@ -295,6 +298,18 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     await requireAccount(request, reply);
     const { token } = (request.body ?? {}) as { token?: unknown };
     return unregisterPushToken(repo, token);
+  });
+
+  app.post('/v1/assignments/accept', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { id } = (request.body ?? {}) as { id?: AssignmentId };
+    if (!id) throw new ServiceError('invalid_request', 'id required');
+    return acceptAssignment(repo, accountId, id);
+  });
+
+  app.post('/v1/assignments/abandon', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    return abandonAssignment(repo, accountId);
   });
 
   app.post('/v1/career/transfer', async (request, reply) => {

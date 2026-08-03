@@ -14,6 +14,10 @@ import {
   commendationAward,
   commendationTier,
   clampRetreatPct,
+  ASSIGNMENT_CATALOGUE,
+  assignmentComplete,
+  assignmentProgress,
+  assignmentSpec,
   contributionOf,
   guildShare,
   objectiveForCycle,
@@ -64,6 +68,9 @@ import {
   type TransferResponse,
   type PurchaseRequisitionResponse,
   type RequisitionId,
+  type AssignmentId,
+  type AssignmentRestriction,
+  type AssignmentState,
   type SiteId,
   type StandingOrders,
   type WorldState,
@@ -226,6 +233,10 @@ export async function loadState(
     const office = await tx.getOffice(accountId);
     const orders = await tx.getOrders(accountId);
     const world = await tx.getWorld();
+    const assignment = await tx.getAssignments(accountId);
+    const restriction: AssignmentRestriction = assignment.active
+      ? assignmentSpec(assignment.active)?.restriction ?? {}
+      : {};
 
     let pendingDeath: DeathRecord | null = null;
     let current = existing;
@@ -247,6 +258,7 @@ export async function loadState(
         caseFiles: record.caseFiles,
         filings: record.filings,
         commendations: transfer.unlocks,
+        restriction,
       });
 
       if (result.journal.length > 0) {
@@ -260,7 +272,7 @@ export async function loadState(
         );
       }
 
-      const worked = await applyStaff(
+      const after = await applyAfterResolve(
         tx,
         accountId,
         {
@@ -271,10 +283,13 @@ export async function loadState(
           filings: result.filings,
         },
         pension,
-        result.ticksResolved,
+        result,
+        restriction,
+        orders,
+        transfer.unlocks,
       );
-      current = worked.record;
-      pension = worked.pension;
+      current = after.record;
+      pension = after.pension;
 
       if (result.ticksResolved > 0) {
         await tx.saveCharacter(current);
@@ -804,6 +819,10 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
   const orders = await tx.getOrders(accountId);
   const pension = await tx.getPension(accountId);
   const transfer = await tx.getTransfer(accountId);
+  const assignment = await tx.getAssignments(accountId);
+  const restriction = assignment.active
+    ? assignmentSpec(assignment.active)?.restriction ?? {}
+    : {};
   const result = resolve({
     character: record.character,
     inventory: record.inventory,
@@ -814,6 +833,7 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     caseFiles: record.caseFiles,
     filings: record.filings,
     commendations: transfer.unlocks,
+    restriction,
   });
 
   if (result.ticksResolved === 0) return record;
@@ -837,7 +857,12 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
     filings: result.filings,
   };
 
-  updated = (await applyStaff(tx, accountId, updated, pension, result.ticksResolved)).record;
+  // Skeleton Staff stands the department down: no work, and no wages either.
+  // Suspending the work but still charging for it would be a punishment
+  // wearing a restriction's clothes.
+  if (!restriction.noDepartment) {
+    updated = (await applyStaff(tx, accountId, updated, pension, result.ticksResolved)).record;
+  }
 
   /**
    * The regional effort, after the department and before the save.
@@ -847,6 +872,19 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
    * of it in the same breath, which is true but makes the log unreadable. And
    * before the save, so the share and the wages land in one write.
    */
+  const assignmentOutcome = await applyAssignment(
+    tx,
+    accountId,
+    updated.character,
+    result.counters,
+    Boolean(result.death),
+  );
+  if (assignmentOutcome.notes.length > 0) {
+    await tx.appendJournal(
+      assignmentOutcome.notes.map((text) => entry_(updated.character, text)),
+    );
+  }
+
   const guild = await applyGuild(
     tx,
     accountId,
@@ -1495,9 +1533,11 @@ export async function getBulletin(
   const world = await repo.getWorld();
   const deaths = await repo.listDeaths(12);
   const standing = await repo.getGuildStanding(accountId);
+  const assignments = await repo.getAssignments(accountId);
   return {
     world,
     deaths,
+    assignments: assignmentBoard(assignments),
     // Zeroed when the standing is stale: the contribution belongs to an
     // objective that has already closed, and showing it against the current
     // bar would credit this office with somebody else's work.
@@ -1533,6 +1573,130 @@ function secondsUntil(iso: string, now: Date): number {
 }
 
 export { HEARTBEAT_SECONDS };
+
+/**
+ * Everything that happens to an *account* after a span resolves.
+ *
+ * ## Why this exists
+ *
+ * `loadState` and `loadStateInside` both resolve ticks, and until now each
+ * carried its own idea of what happens next. The guild contribution shipped
+ * into `loadStateInside` only — so a player whose ticks resolved through a
+ * plain `GET /v1/state`, which is most of them, moved the regional bar not at
+ * all. Nothing failed; the bar simply advanced for people who happened to sell
+ * something.
+ *
+ * That is the fourth time this exact shape has cost something in this codebase:
+ * a system added beside the resolver rather than inside one shared place, and a
+ * second copy of the loop that never heard about it. `tools/officer.ts` fixed
+ * it for the harnesses. This fixes it for the server.
+ *
+ * The order is load-bearing and matches what a reader would expect: the
+ * department works the span, then the assignment is assessed on what happened,
+ * then the regional effort is settled and contributed to. Staff last would have
+ * them arriving at a cabinet the officer already emptied; the guild first would
+ * pay a share into a purse the payroll then takes back out of.
+ */
+async function applyAfterResolve(
+  tx: Repository,
+  accountId: string,
+  record: CharacterRecord,
+  pension: Pension,
+  result: { counters: ResolveCounters; ticksResolved: number; death: unknown },
+  restriction: AssignmentRestriction,
+  orders: StandingOrders,
+  commendations: readonly CommendationId[],
+): Promise<{ record: CharacterRecord; pension: Pension }> {
+  let updated = record;
+  let banked = pension;
+
+  // Skeleton Staff stands the department down: no work, and no wages either.
+  // Suspending the work and still charging for it would be a punishment
+  // wearing a restriction's clothes.
+  if (!restriction.noDepartment) {
+    const worked = await applyStaff(tx, accountId, updated, banked, result.ticksResolved);
+    updated = worked.record;
+    banked = worked.pension;
+  }
+
+  const assignment = await applyAssignment(
+    tx, accountId, updated.character, result.counters, Boolean(result.death),
+  );
+
+  const guild = await applyGuild(
+    tx,
+    accountId,
+    updated.character,
+    result.counters,
+    authorisedSite(restriction.site ?? orders.site ?? 'holdings', commendations),
+  );
+  updated = { ...updated, character: guild.character };
+
+  const notes = [...assignment.notes, ...guild.notes];
+  if (notes.length > 0) {
+    await tx.appendJournal(notes.map((text) => entry_(updated.character, text)));
+  }
+
+  return { record: updated, pension: banked };
+}
+
+/**
+ * Special Assignments, on the resolution path.
+ *
+ * Progress, completion and failure in one place, after the span is resolved and
+ * before it is saved. Deliberately *not* inside `resolve()`: the resolver is a
+ * pure function of one recruit's span, and an assignment is account state that
+ * outlives recruits — the same reason `runStaff` sits outside it.
+ */
+async function applyAssignment(
+  tx: Repository,
+  accountId: string,
+  character: Character,
+  counters: ResolveCounters,
+  died: boolean,
+): Promise<{ notes: string[]; failed: boolean }> {
+  const state = await tx.getAssignments(accountId);
+  if (!state.active) return { notes: [], failed: false };
+  const spec = assignmentSpec(state.active);
+  if (!spec) return { notes: [], failed: false };
+
+  // A death under Sole Charge closes the file. Nothing else is lost — no
+  // penalty state, because a challenge you can lose something on is one people
+  // stop taking.
+  if (died && spec.restriction.singleRecruit) {
+    await tx.saveAssignments(accountId, { ...state, active: null, progress: 0, startedTick: 0 });
+    return {
+      notes: [
+        `${spec.name} closed: the recruit was lost and no replacement was authorised. ` +
+          'The file is returned without prejudice.',
+      ],
+      failed: true,
+    };
+  }
+
+  const progress = assignmentProgress(spec, state.progress, counters, character, state.startedTick);
+  if (!assignmentComplete(spec, progress)) {
+    if (progress !== state.progress) await tx.saveAssignments(accountId, { ...state, progress });
+    return { notes: [], failed: false };
+  }
+
+  await tx.saveAssignments(accountId, {
+    active: null,
+    progress: 0,
+    startedTick: 0,
+    completed: [...state.completed, spec.id],
+  });
+  const transfer = await tx.getTransfer(accountId);
+  await tx.saveTransfer(accountId, { ...transfer, total: transfer.total + spec.reward });
+  return {
+    notes: [
+      `${spec.name} completed. ${spec.reward} ` +
+        `${spec.reward === 1 ? 'Commendation' : 'Commendations'} entered on your record. ` +
+        'Ordinary conditions resume.',
+    ],
+    failed: false,
+  };
+}
 
 /**
  * The regional effort, on the resolution path.
@@ -1697,6 +1861,90 @@ export async function fileTransfer(
       commendations: ladderOffers(COMMENDATION_CATALOGUE, transfer.unlocks, transfer.total),
     };
   });
+}
+
+/**
+ * Accepting a Special Assignment.
+ *
+ * Free to take and free to abandon, because the whole value of the mechanic is
+ * that a player tries one. Anything charged at the door turns "let's see what
+ * that's like" into a decision to research first, and the assignment *is* the
+ * research.
+ */
+export async function acceptAssignment(
+  repo: Repository,
+  accountId: string,
+  id: AssignmentId,
+): Promise<AssignmentState> {
+  const spec = assignmentSpec(id);
+  if (!spec) throw new ServiceError('invalid_request', 'no such assignment');
+
+  return repo.transaction(async (tx) => {
+    // Resolve first, so the span already lived does not count toward an
+    // assignment accepted after the fact.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+
+    const state = await tx.getAssignments(accountId);
+    if (state.active) throw new ServiceError('invalid_request', 'an assignment is already open');
+    if (state.completed.includes(id)) {
+      throw new ServiceError('already_owned', 'that assignment is closed');
+    }
+
+    const updated: AssignmentState = {
+      active: id,
+      progress: 0,
+      startedTick: record.character.lastResolvedTick,
+      completed: state.completed,
+    };
+    await tx.saveAssignments(accountId, updated);
+    await tx.appendJournal([
+      entry_(record.character, `${spec.name} accepted. ${spec.brief}`),
+    ]);
+    return updated;
+  });
+}
+
+/** Handing one back. Costs the progress and nothing else. */
+export async function abandonAssignment(
+  repo: Repository,
+  accountId: string,
+): Promise<AssignmentState> {
+  return repo.transaction(async (tx) => {
+    const state = await tx.getAssignments(accountId);
+    if (!state.active) throw new ServiceError('invalid_request', 'no assignment is open');
+    const spec = assignmentSpec(state.active);
+
+    const updated: AssignmentState = { ...state, active: null, progress: 0, startedTick: 0 };
+    await tx.saveAssignments(accountId, updated);
+    const record = await tx.getActiveCharacterForUpdate(accountId);
+    if (record && spec) {
+      await tx.appendJournal([
+        entry_(
+          record.character,
+          `${spec.name} handed back at your own request. Ordinary conditions resume. ` +
+            'No note has been made on your file. There is always a note.',
+        ),
+      ]);
+    }
+    return updated;
+  });
+}
+
+/** The board: what is on offer, what is open, what is finished. */
+export function assignmentBoard(state: AssignmentState) {
+  return ASSIGNMENT_CATALOGUE.map((spec) => ({
+    id: spec.id,
+    name: spec.name,
+    brief: spec.brief,
+    reward: spec.reward,
+    target: spec.target,
+    metric: spec.metric,
+    completed: state.completed.includes(spec.id),
+    active: state.active === spec.id,
+    progress: state.active === spec.id ? state.progress : 0,
+  }));
 }
 
 /** Spending a Commendation. Priced in the one currency a transfer cannot touch. */

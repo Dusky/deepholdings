@@ -8,10 +8,16 @@ import type {
   Registry,
   StandingOrders,
   TavernMessage,
+  AssignmentState,
   Transfer,
   WorldState,
 } from '@deepholdings/shared';
-import { DEFAULT_ORDERS, EMPTY_TRANSFER, objectiveForCycle } from '@deepholdings/shared';
+import {
+  DEFAULT_ORDERS,
+  EMPTY_ASSIGNMENTS,
+  EMPTY_TRANSFER,
+  objectiveForCycle,
+} from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
 import type { CharacterRecord, GuildStanding, NewJournalEntry, Repository } from '../ports.js';
 
@@ -195,6 +201,16 @@ export class MemoryRepository implements Repository {
       guildProgress: 0,
     };
     return { cycle: world.guildCycle, completed: true };
+  }
+
+  private readonly assignments = new Map<string, AssignmentState>();
+
+  async getAssignments(accountId: string): Promise<AssignmentState> {
+    return this.assignments.get(accountId) ?? { ...EMPTY_ASSIGNMENTS, completed: [] };
+  }
+
+  async saveAssignments(accountId: string, state: AssignmentState): Promise<void> {
+    this.assignments.set(accountId, { ...state, completed: [...state.completed] });
   }
 
   async getTransfer(accountId: string): Promise<Transfer> {

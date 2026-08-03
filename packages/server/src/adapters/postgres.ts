@@ -10,6 +10,7 @@ import type {
   Office,
   Pension,
   Registry,
+  AssignmentState,
   Transfer,
   RequisitionId,
   StandingOrders,
@@ -404,6 +405,31 @@ export class PostgresRepository implements Repository {
     const cycle: number = rows[0].guild_cycle;
     const completed = Boolean(rows[0].rolled);
     return { cycle: completed ? cycle - 1 : cycle, completed };
+  }
+
+  async getAssignments(accountId: string): Promise<AssignmentState> {
+    const { rows } = await this.db.query(
+      'SELECT active, progress, started_tick, completed FROM assignments WHERE account_id = $1',
+      [accountId],
+    );
+    if (!rows[0]) return { active: null, progress: 0, startedTick: 0, completed: [] };
+    return {
+      active: rows[0].active,
+      progress: rows[0].progress,
+      startedTick: rows[0].started_tick,
+      completed: (rows[0].completed ?? []) as AssignmentState['completed'],
+    };
+  }
+
+  async saveAssignments(accountId: string, state: AssignmentState): Promise<void> {
+    await this.db.query(
+      `INSERT INTO assignments (account_id, active, progress, started_tick, completed)
+       VALUES ($1, $2, $3, $4, $5::jsonb)
+       ON CONFLICT (account_id) DO UPDATE SET
+         active = EXCLUDED.active, progress = EXCLUDED.progress,
+         started_tick = EXCLUDED.started_tick, completed = EXCLUDED.completed`,
+      [accountId, state.active, state.progress, state.startedTick, JSON.stringify(state.completed)],
+    );
   }
 
   async getTransfer(accountId: string): Promise<Transfer> {

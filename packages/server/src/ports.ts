@@ -8,6 +8,7 @@ import type {
   JournalEntry,
   Office,
   Pension,
+  AssignmentState,
   Transfer,
   Registry,
   StandingOrders,
@@ -98,6 +99,9 @@ export interface Repository {
 
   getTransfer(accountId: string): Promise<Transfer>;
   saveTransfer(accountId: string, transfer: Transfer): Promise<void>;
+
+  getAssignments(accountId: string): Promise<AssignmentState>;
+  saveAssignments(accountId: string, state: AssignmentState): Promise<void>;
 
   getGuildStanding(accountId: string): Promise<GuildStanding>;
   saveGuildStanding(accountId: string, standing: GuildStanding): Promise<void>;

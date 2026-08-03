@@ -20,6 +20,14 @@ import type {
 export interface CharacterRecord {
   character: Character;
   permitAppliedTick: number | null;
+  /**
+   * The application Form 4-E was filed against, or null.
+   *
+   * Compared against `permitAppliedTick` to enforce "once per application".
+   * A tick rather than a flag so the reset is implicit: a new application has a
+   * new tick, and the comparison fails without anybody having to remember.
+   */
+  permitExpeditedTick?: number | null;
   inventory: InventoryItem[];
   /** Case files the recruit is carrying. Lost with them, by design. */
   caseFiles: CaseFile[];

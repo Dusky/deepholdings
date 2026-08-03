@@ -217,6 +217,13 @@ export interface RetirementOffer {
 
 export interface PendingPermit {
   tier: number;
+  /**
+   * Gold to file Form 4-E against this application, and whether it is still
+   * available. Quoted continuously so the officer can decide without a round
+   * trip that might tell them they were too late.
+   */
+  expediteCost: number;
+  expedited: boolean;
   /** Depth this permit will authorise. */
   authorisesDepth: number;
   readyAt: string;

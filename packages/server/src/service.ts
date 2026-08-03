@@ -14,6 +14,7 @@ import {
   commendationAward,
   commendationTier,
   clampRetreatPct,
+  expediteCost,
   ASSIGNMENT_CATALOGUE,
   assignmentComplete,
   assignmentProgress,
@@ -278,6 +279,11 @@ export async function loadState(
         {
           character: result.character,
           permitAppliedTick: result.permitAppliedTick,
+          // Carried, not rebuilt. Dropping it here wiped the Form 4-E marker on
+          // every resolving read, so the fee could be paid again on the next
+          // one — a once-per-application rule that held only for as long as no
+          // time passed between the two attempts.
+          permitExpeditedTick: record.permitExpeditedTick ?? null,
           inventory: result.inventory,
           caseFiles: result.caseFiles,
           filings: result.filings,
@@ -432,7 +438,70 @@ function pendingPermitOf(
     authorisesDepth: permitDepthLimit(tier),
     readyAt: readyAt.toISOString(),
     secondsRemaining: Math.max(0, Math.round((readyAt.getTime() - now.getTime()) / 1000)),
+    expediteCost: expediteCost(record.character.permitTier),
+    expedited: record.permitExpeditedTick === record.permitAppliedTick,
   };
+}
+
+/**
+ * Form 4-E: Application for Expedited Handling.
+ *
+ * Halves what is left of the wait, once per application, for gold. The one
+ * thing an officer at their desk can do that a standing order cannot — and the
+ * only place in the game where paying attention is worth more than patience.
+ *
+ * Halves the *remaining* wait rather than a share of the total, so it is never
+ * wasted: an officer who files it with ten minutes left saves five. Filing it
+ * early saves more, which is both the obvious incentive and true to how
+ * chasing a form actually works.
+ */
+export async function expeditePermit(
+  repo: Repository,
+  accountId: string,
+): Promise<{ character: Character; pendingPermit: PendingPermit | null }> {
+  return repo.transaction(async (tx) => {
+    // Resolve first. Without this an officer could expedite an application that
+    // the unreplayed span has already cleared, and pay for nothing.
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+    if (record.permitAppliedTick === null) {
+      throw new ServiceError('invalid_request', 'no application is being processed');
+    }
+    if (record.permitExpeditedTick === record.permitAppliedTick) {
+      throw new ServiceError('already_owned', 'that application has already been expedited');
+    }
+
+    const cost = expediteCost(record.character.permitTier);
+    if (record.character.gold < cost) throw new ServiceError('insufficient_gold', 'not enough gold');
+
+    const pension = await tx.getPension(accountId);
+    const total = permitProcessingTicks(pension.unlocks);
+    const elapsed = record.character.lastResolvedTick - record.permitAppliedTick;
+    const remaining = Math.max(1, total - elapsed);
+    // Moving the application *earlier* is how the wait shortens: the resolver
+    // compares against this watermark and knows nothing about gold.
+    const applied = record.permitAppliedTick - Math.floor(remaining / 2);
+
+    const character = { ...record.character, gold: record.character.gold - cost };
+    const updated: CharacterRecord = {
+      ...record,
+      character,
+      permitAppliedTick: applied,
+      permitExpeditedTick: applied,
+    };
+    await tx.saveCharacter(updated);
+    await tx.appendJournal([
+      entry_(
+        character,
+        `Form 4-E filed against the Permit D-${character.permitTier + 1} application. ` +
+          `${cost} gold to the expediting clerk, who did not look up. ` +
+          `Processing time halved.`,
+      ),
+    ]);
+
+    return { character, pendingPermit: pendingPermitOf(updated, pension.unlocks, worldNow()) };
+  });
 }
 
 /**
@@ -852,6 +921,9 @@ async function loadStateInside(tx: Repository, accountId: string): Promise<Chara
   let updated: CharacterRecord = {
     character: result.character,
     permitAppliedTick: result.permitAppliedTick,
+    // See the note on the same field in `loadState`: rebuilding the record
+    // without it silently reset the once-per-application rule.
+    permitExpeditedTick: record.permitExpeditedTick ?? null,
     inventory: result.inventory,
     caseFiles: result.caseFiles,
     filings: result.filings,

@@ -1590,3 +1590,46 @@ Worth stating as a rule, because it has now been learned four times: **anything
 that must happen when time passes goes in one function that every path that
 passes time calls.** Two callers is not a duplication smell in this codebase, it
 is a defect waiting for a release.
+
+## Form 4-E: the one thing attention buys
+
+Everything an officer does in this game was worth the same whether they did it
+now or in six hours. That is the async premise and it is right — but it left
+attention with nothing to buy. An engaged player got the same curve slightly
+sooner and no more, which is a thin answer to "why open the app".
+
+Chasing paperwork is the one thing a case officer at their desk can do that a
+standing order cannot, so that is where the reward goes. **Form 4-E halves what
+is left of a permit wait, once per application, for gold** — quadratic in the
+tier, so it is a real decision at D-2 on a hundred-gold purse and still worth a
+thought at D-8.
+
+It is additive, never protective: the permit clears on its own either way, so
+missing it costs nothing and there is no hour of the day it wants you. It halves
+the *remaining* wait rather than a share of the total, so it is never wasted.
+
+Two alternatives were rejected for the same reason — they reward *being present*
+rather than *deciding*:
+
+- **A passive bonus while recently seen.** Rewards leaving the app open, which
+  is fake engagement and costs the player battery for nothing.
+- **A temporary "overtime" buff.** Becomes mandatory optimal play, and mandatory
+  optimal play on a timer is the daily obligation `genre-cues.md` says not to
+  copy.
+
+### And the bug the browser found
+
+The once-per-application rule is enforced by comparing a stored tick against
+`permitAppliedTick` — a tick rather than a flag, so a new application resets it
+implicitly and no code has to remember. Both read paths then rebuilt the
+character record from the resolver's output *without carrying that field*, so
+the marker was wiped by the next resolving read and the fee could be paid again.
+
+The server tests passed, because the second attempt happened with no time in
+between — `loadStateInside` returns early when nothing resolved, which preserved
+the marker by accident. It took thirty seconds in a browser to see it: the
+button was still there after paying. The test now advances the clock between the
+two attempts.
+
+That is the seventh finding this session that only a real client, or a
+harness driving the real code, could produce.

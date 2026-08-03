@@ -25,6 +25,7 @@ import {
   authenticateDevice,
   bulkSell,
   acceptAssignment,
+  expeditePermit,
   abandonAssignment,
   fileTransfer,
   purchaseCommendation,
@@ -298,6 +299,11 @@ export function buildApp({ repo, config, sender: injected }: AppDeps): FastifyIn
     await requireAccount(request, reply);
     const { token } = (request.body ?? {}) as { token?: unknown };
     return unregisterPushToken(repo, token);
+  });
+
+  app.post('/v1/permits/expedite', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    return expeditePermit(repo, accountId);
   });
 
   app.post('/v1/assignments/accept', async (request, reply) => {

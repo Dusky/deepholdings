@@ -6,11 +6,13 @@ import type {
   BulkSellRequest,
   BulkSellResponse,
   BulletinResponse,
+  Character,
   ClaimPensionResponse,
   CommendationId,
   DeviceAuthResponse,
   JournalResponse,
   LedgerResponse,
+  PendingPermit,
   PurchaseRequisitionResponse,
   PurchaseUnlockResponse,
   FileFormRequest,
@@ -211,6 +213,11 @@ export class ApiClient {
 
   claimPension(): Promise<ClaimPensionResponse> {
     return this.request('POST', '/v1/pension/claim', {});
+  }
+
+  /** Form 4-E. Halves what is left of a permit wait, once per application. */
+  expeditePermit(): Promise<{ character: Character; pendingPermit: PendingPermit | null }> {
+    return this.request('POST', '/v1/permits/expedite', {});
   }
 
   acceptAssignment(id: AssignmentId): Promise<AssignmentState> {

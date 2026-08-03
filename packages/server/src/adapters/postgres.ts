@@ -191,6 +191,7 @@ export class PostgresRepository implements Repository {
          permit_tier = $9, gold = $10, supplies = $11, alive = $12, last_resolved_tick = $13,
          permit_applied_tick = $14, inventory = $15::jsonb, born_tick = $16,
          case_files = $17::jsonb, filings = $18::jsonb, standing = $19,
+         permit_expedited_tick = $20,
          died_at = CASE WHEN $12 THEN died_at ELSE COALESCE(died_at, now()) END
        WHERE id = $1`,
       [
@@ -198,6 +199,7 @@ export class PostgresRepository implements Repository {
         c.gold, c.supplies, c.alive, c.lastResolvedTick, record.permitAppliedTick,
         JSON.stringify(record.inventory), c.bornTick, JSON.stringify(record.caseFiles ?? []),
         JSON.stringify(record.filings ?? []), c.standing ?? 0,
+        record.permitExpeditedTick ?? null,
       ],
     );
   }
@@ -710,6 +712,10 @@ function toCharacterRecord(row: Record<string, unknown>): CharacterRecord {
     },
     permitAppliedTick:
       row.permit_applied_tick === null ? null : Number(row.permit_applied_tick),
+    permitExpeditedTick:
+      row.permit_expedited_tick === null || row.permit_expedited_tick === undefined
+        ? null
+        : Number(row.permit_expedited_tick),
     inventory: (row.inventory ?? []) as InventoryItem[],
     caseFiles: (row.case_files ?? []) as CaseFile[],
     filings: (row.filings ?? []) as Filing[],

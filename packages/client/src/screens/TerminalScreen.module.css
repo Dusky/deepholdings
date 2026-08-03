@@ -168,3 +168,20 @@
   color: var(--log-death);
   text-shadow: var(--fx-glow-sm);
 }
+
+/* Form 4-E sits inline in the permit line, so it is underlined text rather
+   than a block — a button that size beside a sentence reads as a nag. */
+.expedite {
+  text-decoration: underline;
+}
+
+.expedite:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (pointer: coarse) {
+  .expedite {
+    min-height: 44px;
+  }
+}

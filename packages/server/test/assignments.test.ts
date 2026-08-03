@@ -11,8 +11,10 @@ import { test } from 'node:test';
 import {
   ASSIGNMENT_CATALOGUE,
   DEFAULT_ORDERS,
+  GUILD_OBJECTIVES,
   assignmentProgress,
   assignmentSpec,
+  objectiveForCycle,
   type AssignmentRestriction,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
@@ -279,6 +281,19 @@ for (const { name, make } of adapters) {
     const { token, account } = auth.json() as { token: string; account: { id: string } };
     const headers = { authorization: `Bearer ${token}` };
 
+    /**
+     * Roll the regional objective to one an eight-hour span can actually
+     * satisfy. The world is a single shared row, so whichever objective the
+     * guild suite left in force carries over — and "clear 300 permit
+     * applications" is not something one recruit does before lunch. Without
+     * this the test passes alone and fails in suite, which is the worst kind.
+     */
+    for (let i = 0; i < GUILD_OBJECTIVES.length; i += 1) {
+      const world = await repo.getWorld();
+      if (objectiveForCycle(world.guildCycle).metric === 'floors') break;
+      await repo.addGuildProgress(objectiveForCycle(world.guildCycle).target);
+    }
+
     // Move the clock without touching the account, so the only thing that
     // resolves the span is the GET.
     await app.inject({ method: 'POST', url: '/v1/dev/away', headers, payload: { hours: 8 } });
@@ -290,6 +305,103 @@ for (const { name, make } of adapters) {
       after.contribution > before.contribution,
       'a plain read resolved ticks and contributed nothing',
     );
+    await app.close();
+  });
+}
+
+// ---- Form 4-E ---------------------------------------------------------------
+//
+// The one thing an officer at their desk can do that a standing order cannot,
+// and the only place in the game where attention beats patience.
+
+for (const { name, make } of adapters) {
+  test(`expediting halves the wait, once per application (${name})`, async () => {
+    const repo = make();
+    await repo.init();
+    const app = buildApp({ repo, config });
+    const auth = await app.inject({
+      method: 'POST', url: '/v1/auth/device',
+      payload: { deviceId: `expedite-${name}-${randomUUID()}` },
+    });
+    const { token, account } = auth.json() as { token: string; account: { id: string } };
+    const headers = { authorization: `Bearer ${token}` };
+
+    // Run until an application is actually in processing, and fund it.
+    let permit = null;
+    for (let i = 0; i < 40 && !permit; i += 1) {
+      await app.inject({ method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 1 } });
+      const state = (await app.inject({ method: 'GET', url: '/v1/state', headers })).json();
+      if (state.pendingDeath) {
+        await app.inject({ method: 'POST', url: '/v1/pension/claim', headers, payload: {} });
+        continue;
+      }
+      permit = state.pendingPermit;
+    }
+    assert.ok(permit, 'no application ever reached the permit office');
+    assert.equal(permit.expedited, false);
+
+    const record = (await repo.getActiveCharacterForUpdate(account.id))!;
+    await repo.saveCharacter({
+      ...record,
+      character: { ...record.character, gold: permit.expediteCost + 500 },
+    });
+    const before = (await app.inject({ method: 'GET', url: '/v1/state', headers })).json();
+    assert.ok(before.pendingPermit, 'the application cleared before it could be chased');
+    const waitBefore = before.pendingPermit.secondsRemaining;
+
+    const out = await app.inject({ method: 'POST', url: '/v1/permits/expedite', headers });
+    assert.equal(out.statusCode, 200, out.body);
+    const body = out.json();
+
+    assert.equal(
+      body.character.gold,
+      before.character.gold - permit.expediteCost,
+      'the fee was not taken',
+    );
+    assert.ok(
+      body.pendingPermit === null || body.pendingPermit.secondsRemaining < waitBefore,
+      `the wait did not shorten: ${waitBefore} -> ${body.pendingPermit?.secondsRemaining}`,
+    );
+
+    /**
+     * Once per application — and specifically, *across a resolving read*.
+     *
+     * Both read paths rebuild the character record from the resolver's output,
+     * and the first version of this dropped the marker while doing it. The rule
+     * then held only for as long as no time passed between two attempts, which
+     * is exactly the case a test written without this advance would cover. The
+     * live UI showed it immediately: the button was still there afterwards.
+     */
+    await app.inject({ method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 1 } });
+    const stillOpen = (await app.inject({ method: 'GET', url: '/v1/state', headers })).json();
+    if (stillOpen.pendingPermit) {
+      assert.equal(stillOpen.pendingPermit.expedited, true, 'the marker did not survive a read');
+    }
+
+    const goldAfter = (await repo.getActiveCharacterForUpdate(account.id))!.character.gold;
+    const again = await app.inject({ method: 'POST', url: '/v1/permits/expedite', headers });
+    assert.equal(again.statusCode, 409);
+    assert.equal(
+      (await repo.getActiveCharacterForUpdate(account.id))!.character.gold,
+      goldAfter,
+      'a refused filing must not charge',
+    );
+    await app.close();
+  });
+
+  test(`expediting is refused when nothing is being processed (${name})`, async () => {
+    const repo = make();
+    await repo.init();
+    const app = buildApp({ repo, config });
+    const auth = await app.inject({
+      method: 'POST', url: '/v1/auth/device',
+      payload: { deviceId: `expedite-none-${name}-${randomUUID()}` },
+    });
+    const { token } = auth.json() as { token: string };
+    const headers = { authorization: `Bearer ${token}` };
+
+    const out = await app.inject({ method: 'POST', url: '/v1/permits/expedite', headers });
+    assert.equal(out.statusCode, 400);
     await app.close();
   });
 }

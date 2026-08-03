@@ -573,6 +573,38 @@ export const HOARD_SALE_BONUS = 1.15;
 export const MARKET_DEMAND_FLOOR = 0.8;
 export const MARKET_DEMAND_SPREAD = 0.4;
 
+/**
+ * Form 4-E: what it costs to walk a permit application down the corridor.
+ *
+ * ## Why this exists at all
+ *
+ * Everything an officer does in this game is worth the same whether they do it
+ * now or in six hours. That is the async premise and it is right — but it left
+ * attention with nothing to buy. An engaged player got the same curve slightly
+ * sooner and no more, which is a thin answer to "why open the app".
+ *
+ * Chasing paperwork is the one thing a case officer at their desk can do that a
+ * standing order cannot, so it is the natural place to put the reward. It is
+ * additive rather than protective: the permit clears on its own either way, so
+ * missing it costs nothing and there is no hour of the day it wants you.
+ *
+ * Rejected alternatives, both for the same reason — they reward *being present*
+ * rather than *deciding*: a passive bonus while recently seen (which rewards
+ * leaving the app open, and costs the player battery for nothing), and a
+ * temporary "overtime" buff (which becomes mandatory optimal play, and
+ * mandatory optimal play on a timer is the daily obligation `genre-cues.md`
+ * says not to copy).
+ *
+ * ## The price
+ *
+ * Quadratic in the tier, so it is a real decision at D-2 on a hundred-gold
+ * purse and still worth a thought at D-8. Flat pricing would have made it
+ * reflexive by the second day, and a reflex is not a decision.
+ */
+export function expediteCost(permitTier: number): number {
+  return 120 * Math.max(1, permitTier) ** 2;
+}
+
 /** Ticks a permit application spends "processing" before it clears. */
 export function permitProcessingTicks(unlocks: readonly UnlockId[]): number {
   return PERMIT_TICKS_BY_TIER[unlockTier(unlocks, 'permits')];

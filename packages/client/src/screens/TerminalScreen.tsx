@@ -6,6 +6,7 @@ import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
 import { useServerClock } from '../hooks/useServerClock';
 import { clockOf, currentActivity, secondsToNextTick, tickProgress } from '../lib/activity';
+import { api } from '../api/client';
 import { useServer } from '../state/serverContext';
 import { useSettings } from '../state/settingsContext';
 import styles from './TerminalScreen.module.css';
@@ -40,7 +41,22 @@ function formatWait(seconds: number): string {
 
 /** Default screen: who you have, what they are doing, what they filed. */
 export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
-  const { state, receivedAt } = useServer();
+  const { state, receivedAt, refresh } = useServer();
+  const [expediting, setExpediting] = useState(false);
+  const [expediteNotice, setExpediteNotice] = useState<string | null>(null);
+
+  const expedite = async () => {
+    setExpediting(true);
+    setExpediteNotice(null);
+    try {
+      await api.expeditePermit();
+      await refresh();
+    } catch {
+      setExpediteNotice('The clerk was unmoved. Nothing was charged.');
+    } finally {
+      setExpediting(false);
+    }
+  };
   const { effectsOn, reducedMotion, highContrast } = useSettings();
   const serverNow = useServerClock(state?.now, receivedAt);
   const [digestDismissed, setDigestDismissed] = useState(false);
@@ -98,6 +114,29 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
           Permit D-{state.pendingPermit.tier} in processing — authorises Depth{' '}
           {state.pendingPermit.authorisesDepth}. Estimated{' '}
           {formatWait(state.pendingPermit.secondsRemaining)}.
+          {/*
+            Form 4-E. The only thing on this screen that rewards being here
+            rather than coming back later — so it lives beside the wait it
+            shortens, and says nothing when there is nothing to chase.
+          */}
+          {!state.pendingPermit.expedited && (
+            <>
+              {' '}
+              <button
+                type="button"
+                className={styles.expedite}
+                disabled={
+                  expediting || state.character.gold < state.pendingPermit.expediteCost
+                }
+                onClick={() => void expedite()}
+              >
+                {expediting
+                  ? 'FILING 4-E...'
+                  : `FILE FORM 4-E — ${state.pendingPermit.expediteCost}g TO HALVE IT`}
+              </button>
+            </>
+          )}
+          {expediteNotice && <span className="text-dim"> {expediteNotice}</span>}
         </div>
       )}
 

@@ -91,6 +91,7 @@ import {
 } from '@deepholdings/shared';
 import { succeed } from './domain/character.js';
 import { clearanceFor, clearanceGrantedText } from './domain/clearance.js';
+import { guidanceFor } from './domain/guidance.js';
 import { journalKind } from './domain/flavor.js';
 import { resolve, tickOf, type ResolveCounters } from './domain/resolve.js';
 import { runStaff } from './domain/staff.js';
@@ -345,21 +346,37 @@ export async function loadState(
       await tx.listJournal(current.character.id, -1, journalLines(office.requisitions)),
     );
 
+    const clearance = clearanceFor(current.character, pension);
+    const registry = await tx.getRegistry(accountId);
+    const ordersFiled = await tx.hasFiledOrders(accountId);
+    const pendingPermit = pendingPermitOf(current, pension.unlocks, now);
+    const retirement = retirementOffer(current, pension.unlocks, transfer.unlocks);
+
     return {
       account,
-      clearance: clearanceFor(current.character, pension),
+      clearance,
+      guidance: guidanceFor({
+        character: current.character,
+        pension,
+        office,
+        registry,
+        pendingPermit,
+        retirement,
+        ordersFiled,
+        clearance,
+      }),
       digest,
-      ordersFiled: await tx.hasFiledOrders(accountId),
+      ordersFiled,
       caseFiles: current.caseFiles ?? [],
       filings: pendingFilings(current, now),
-      registry: await tx.getRegistry(accountId),
+      registry,
       transfer,
       // Quoted continuously, like the retirement offer, because the decision is
       // "is this posting worth more continued than banked" and it cannot be
       // made without the number.
       transferAward: commendationAward(pension.total + pension.spent),
-      pendingPermit: pendingPermitOf(current, pension.unlocks, now),
-      retirement: retirementOffer(current, pension.unlocks, transfer.unlocks),
+      pendingPermit,
+      retirement,
       character: current.character,
       orders,
       pension,

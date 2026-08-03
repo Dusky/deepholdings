@@ -113,6 +113,26 @@ export interface DeviceAuthResponse {
 }
 
 /** GET /v1/state — one round trip for a cold client. */
+/**
+ * The answer to "what am I doing, and what should I do now?"
+ *
+ * Neither question was answered anywhere in the product before this existed.
+ * Computed server-side in `domain/guidance.ts`; see there for the ordering
+ * argument and for why `action` is allowed to be null.
+ */
+export interface Guidance {
+  /** The nearest concrete thing arriving. Never empty. */
+  aim: string;
+  /**
+   * The one most useful thing to do now, or null when nothing needs the player.
+   *
+   * Null is a supported, common and deliberate answer: absence is never
+   * punished here, so a line that invented a chore to avoid being empty would
+   * be a daily obligation wearing a hint's clothes.
+   */
+  action: { text: string; screen: ScreenId } | null;
+}
+
 export interface StateResponse {
   account: Account;
   character: Character;
@@ -153,6 +173,18 @@ export interface StateResponse {
   pendingDeath: DeathRecord | null;
   /** Screens this officer has clearance for. The client shows no others. */
   clearance: ScreenId[];
+  /**
+   * What the officer is working toward, and the one thing worth doing now.
+   *
+   * Derived on the server beside clearance, because answering it needs the
+   * permit clock, the pension, the payroll and the catalogues at once — and
+   * because a client that worked it out itself would be a second opinion about
+   * the game's state, which is what product goal #6 exists to prevent.
+   *
+   * `action` is null when nothing needs the player, and that is a real answer
+   * rather than a gap to fill.
+   */
+  guidance: Guidance;
   /** Present when enough happened since the last visit to be worth summarising. */
   digest: ShiftDigest | null;
   /** False until Form SO-1 has been filed at least once. */

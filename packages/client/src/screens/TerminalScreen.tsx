@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
 import { useCallback, useState } from 'react';
-import { caseFileTitle, journalLines } from '@deepholdings/shared';
+import { caseFileTitle, journalLines, permitDepthLimit } from '@deepholdings/shared';
 import { ProgressBar } from '../components/ui/ProgressBar';
 import { ShiftDigest } from '../components/ShiftDigest';
 import { useEarlierJournal } from '../hooks/useEarlierJournal';
 import { useServerClock } from '../hooks/useServerClock';
 import { clockOf, currentActivity, secondsToNextTick, tickProgress } from '../lib/activity';
 import { api } from '../api/client';
+import { useScreen } from '../state/screenContext';
 import { useServer } from '../state/serverContext';
 import { useSettings } from '../state/settingsContext';
 import styles from './TerminalScreen.module.css';
@@ -84,26 +85,80 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
   const animate = effectsOn && !highContrast && !reducedMotion;
   const revealed = revealSkipped || !animate;
 
+  const { goTo } = useScreen();
+
   if (!state) return null;
   const { character, orders } = state;
   const clearance = state.clearance ?? [];
 
   return (
     <>
+      {/*
+        Four facts, each in one vocabulary.
+        - `Lvl` was the only place in the product that said "Lvl"; everything
+          else said Grade, which is also what a case file's quality is called.
+          It is Level here and Grade means the thing on a case file.
+        - `Depth 7` sat two lines above "Descending to Floor 8" and beside
+          "Permit D-6", which was three names for one axis. It is Floor now.
+        - The permit says what it authorises. Standing alone, `Permit D-6` is
+          a number a player cannot act on; what they want to know is how deep
+          it lets them go, and that was only ever stated while the *next* one
+          was being processed.
+      */}
       <div className={`text-bright ${styles.statLine}`}>
-        {character.name} — Lvl {character.level} — HP {character.hp}/{character.maxHp} — Depth{' '}
-        {character.depth} — Permit D-{character.permitTier}
+        {character.name} — Level {character.level} — HP {character.hp}/{character.maxHp} — Floor{' '}
+        {character.depth} — Permit D-{character.permitTier} (to Floor{' '}
+        {permitDepthLimit(character.permitTier, orders.site ?? 'holdings')})
       </div>
 
       {state.digest && !digestDismissed && (
         <ShiftDigest digest={state.digest} onDismiss={() => setDigestDismissed(true)} />
       )}
 
-      {/* The first session's only nudge: the recruit is descending on defaults
-          until the officer says otherwise. */}
+      {/*
+        What you are working toward, and what to do about it.
+
+        Placed directly under the stat line because it is the answer to the
+        first two questions anybody has on opening the app, and neither was
+        answered anywhere in the product before now. It is deliberately plain
+        prose rather than a styled call to action: this is orientation, not a
+        prompt, and an idle game that shouts at its player has misunderstood
+        what it is for.
+      */}
+      {state.guidance && (
+        <div className={styles.guidance}>
+          <div className="text-dim">{state.guidance.aim}</div>
+          <div className={styles.guidanceAction}>
+            {state.guidance.action ? (
+              <button
+                type="button"
+                className={styles.link}
+                onClick={() => goTo(state.guidance.action!.screen)}
+              >
+                {state.guidance.action.text}
+              </button>
+            ) : (
+              /* The honest answer, most of the time, and it is not a failure to
+                 give it. Two check-ins a day should be plenty. */
+              <span className="text-dim">Nothing needs you right now.</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/*
+        The first session's only nudge, and it used to name a problem without
+        naming the fix: "Form SO-1 has not been filed" told a new player that
+        something was wrong, in a vocabulary they had not been taught, and did
+        not say where to go about it. It is a sentence and a destination now.
+      */}
       {!state.ordersFiled && (
         <div className={`text-dim ${styles.nudge}`}>
-          Form SO-1 has not been filed. Descent proceeds on default orders.
+          You have not set your standing orders yet — your recruit is working to
+          the defaults.{' '}
+          <button type="button" className={styles.link} onClick={() => goTo('orders')}>
+            Set orders
+          </button>
         </div>
       )}
 
@@ -111,9 +166,9 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
           genre's hundred-hour churn is "nothing is ahead of me". */}
       {state.pendingPermit && (
         <div className={`text-dim ${styles.ladder}`}>
-          Permit D-{state.pendingPermit.tier} in processing — authorises Depth{' '}
-          {state.pendingPermit.authorisesDepth}. Estimated{' '}
-          {formatWait(state.pendingPermit.secondsRemaining)}.
+          Permit D-{state.pendingPermit.tier} being processed — it will let you
+          work down to Floor {state.pendingPermit.authorisesDepth}. About{' '}
+          {formatWait(state.pendingPermit.secondsRemaining)} to go.
           {/*
             Form 4-E. The only thing on this screen that rewards being here
             rather than coming back later — so it lives beside the wait it
@@ -143,11 +198,30 @@ export function TerminalScreen({ revealSkipped }: TerminalScreenProps) {
       {/* Death is not the only way to bank a pension, and for a recruit who
           is not dying it is the only one they would ever discover. Quiet and
           standing, like the permit clock — not a nag. */}
+      {/*
+        The line that made the case for all of this. It read:
+          "Form R-1 available — GRIMWALD I has served 32 hours. Separation
+           assessed at 3056."
+        Three invented terms and a bare number. The number is pension, and the
+        word "pension" was not in the sentence — so the one line telling a
+        player how to bank permanent progress was unreadable, and it is the
+        mechanic the whole game is built to teach.
+      */}
       {state.retirement?.eligible && state.retirement.award > 0 && (
         <div className={`text-dim ${styles.ladder}`}>
-          Form R-1 available — {character.name} has served{' '}
-          {Math.round(state.retirement.serviceTicks / 60)} hours. Separation assessed at{' '}
-          {state.retirement.award}.
+          {character.name} has served{' '}
+          {Math.round(state.retirement.serviceTicks / 60)} hours. Retiring them
+          now banks{' '}
+          <span className="text-bright">
+            {state.retirement.award.toLocaleString('en-GB')} pension
+          </span>{' '}
+          — permanent, kept through every future recruit — and a successor
+          starts immediately.{' '}
+          {clearance.includes('ledger') && (
+            <button type="button" className={styles.link} onClick={() => goTo('ledger')}>
+              Retire (Form R-1)
+            </button>
+          )}
         </div>
       )}
 

@@ -180,6 +180,44 @@
   opacity: 0.5;
 }
 
+/*
+ * Inline destinations, same reasoning as Form 4-E above.
+ *
+ * These exist because two lines on this screen used to name a problem without
+ * naming where to fix it — "Form SO-1 has not been filed" and the retirement
+ * notice. A player who does not already know the game cannot act on either, and
+ * telling somebody they have a problem while withholding the door is worse than
+ * silence.
+ */
+.link {
+  color: var(--phosphor-bright);
+  text-decoration: underline;
+}
+
+/*
+ * Orientation, sat under the stat line.
+ *
+ * Ruled off rather than boxed: this is the first thing read on opening the app
+ * and it should feel like the top of the page, not a notification pinned over
+ * it. A panel here would read as something to dismiss.
+ */
+.guidance {
+  margin: 10px 0 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--phosphor-dim);
+  line-height: 1.5;
+}
+
+.guidanceAction {
+  margin-top: 4px;
+}
+
+@media (pointer: coarse) {
+  .link {
+    min-height: 44px;
+  }
+}
+
 @media (pointer: coarse) {
   .expedite {
     min-height: 44px;

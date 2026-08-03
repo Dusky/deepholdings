@@ -3,6 +3,7 @@ import {
   RETREAT_MAX_PCT,
   RETREAT_MIN_PCT,
   SITE_CATALOGUE,
+  authorisedDepth,
   forecast,
   gloss,
   permitDepthLimit,
@@ -61,16 +62,18 @@ const SPEND_GLOSS: Record<SpendPolicy, string> = {
  */
 function Forecast({
   orders,
-  permitFloor,
+  reachable,
 }: {
   orders: StandingOrders;
-  permitFloor: number;
+  /** Floor the recruit can actually work — permit *and* level, whichever binds. */
+  reachable: number;
 }) {
-  // Forecast what will actually happen, not what the slider says: the recruit
-  // cannot work deeper than the permit allows, so quoting the slider's depth
-  // would overstate every figure for exactly the new players who most need it
-  // to be true.
-  const effective = Math.min(orders.targetDepth, permitFloor);
+  // Forecast what will actually happen, not what the slider says. Quoting the
+  // slider's depth would overstate every figure for exactly the new players who
+  // most need it to be true — and quoting the *permit's* depth, which is what
+  // this did first, overstated them for the same people, because a Level 1
+  // recruit on Permit D-1 reaches Floor 1 and not the 2 the permit allows.
+  const effective = reachable;
   const { goldPerHour, pensionPerHour, hoursPerDeath } = forecast({
     ...orders,
     targetDepth: effective,
@@ -108,8 +111,8 @@ function Forecast({
       <div className={`text-dim ${styles.hint}`}>
         Measured for a bare recruit with no staff, unlocks or case files, so a
         settled office does better.
-        {orders.targetDepth > permitFloor &&
-          ` Quoted for Floor ${effective}, which is as deep as your permit allows.`}
+        {orders.targetDepth > effective &&
+          ` Quoted for Floor ${effective}, which is as deep as this recruit can currently work.`}
         {onAnnexe && ' Figures describe the Holdings; the Annexe pays and kills harder.'}
       </div>
     </div>
@@ -143,7 +146,28 @@ export function OrdersScreen() {
     draft.lootPriority !== filed.lootPriority ||
     draft.spendPolicy !== filed.spendPolicy;
 
+  /*
+   * The floor the recruit can actually reach, which is not the permit's floor.
+   *
+   * `authorisedDepth` clamps to the *tightest* of target, permit, recruit level
+   * and the site's own bottom — and in the early game the binding one is almost
+   * always level, because a recruit may not work deeper than their own Level.
+   * At Level 1 on Permit D-1 the reachable floor is 1, not the 2 the permit
+   * authorises.
+   *
+   * This screen previously said "Your permit authorises Floor 2" and quoted
+   * Floor 2's income in the forecast, both of which were wrong for every new
+   * player — the exact species of confidently-quoted falsehood the forecast
+   * exists to avoid. It names whichever limit is actually binding now.
+   */
   const permitFloor = permitDepthLimit(state.character.permitTier, draft.site ?? 'holdings');
+  const reachable = authorisedDepth(
+    draft.targetDepth,
+    state.character.permitTier,
+    state.character.level,
+    draft.site ?? 'holdings',
+  );
+  const cappedByLevel = state.character.level < permitFloor;
 
   const update = (patch: Partial<StandingOrders>) => {
     setDraft({ ...draft, ...patch });
@@ -212,10 +236,20 @@ export function OrdersScreen() {
           broken. It is a fact about the player's own file, so it is stated
           where the confusion happens rather than left to be discovered.
         */}
-        {draft.targetDepth > permitFloor && (
+        {draft.targetDepth > reachable && (
           <div className={`text-dim ${styles.hint}`}>
-            Your permit authorises Floor {permitFloor}. Anything deeper is an
-            aspiration until D-{state.character.permitTier + 1} clears.
+            {cappedByLevel ? (
+              <>
+                {state.character.name} is Level {state.character.level}, and a
+                recruit does not work below their own Level — so they will reach
+                Floor {reachable}. Levelling up is what takes them deeper.
+              </>
+            ) : (
+              <>
+                Your permit authorises Floor {permitFloor}, so they will stop
+                there until D-{state.character.permitTier + 1} clears.
+              </>
+            )}
           </div>
         )}
       </div>
@@ -272,7 +306,7 @@ export function OrdersScreen() {
         <div className={`text-dim ${styles.hint}`}>{SPEND_GLOSS[draft.spendPolicy]}</div>
       </div>
 
-      <Forecast orders={draft} permitFloor={permitFloor} />
+      <Forecast orders={draft} reachable={reachable} />
 
       <div className={styles.fileRow}>
         <FileButton onClick={handleFile}>{saving ? 'FILING...' : 'FILE ORDERS'}</FileButton>

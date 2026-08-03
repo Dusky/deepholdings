@@ -12,6 +12,7 @@ import {
   clampRetreatPct,
   clauseById,
   isHired,
+  nextStaffRung,
   staffSpec,
   formGoldCost,
   formSpec,
@@ -562,13 +563,18 @@ export async function fileForm(
 }
 
 /**
- * Hiring.
+ * Filling a post, and promoting the person in it.
+ *
+ * One endpoint for both, because from the officer's side they are the same
+ * decision made repeatedly: pay gold now, carry a larger wage afterwards, get
+ * more done. Splitting them would mean the client had to know which of two
+ * calls applied to a post it is already rendering as one ladder.
  *
  * The cost is gold and it is not refundable, like every other thing the office
- * buys. There is deliberately no way to dismiss staff: the interesting decision
- * is whether you can carry the wage, and an undo turns that into a free trial.
- * A department that has outgrown its income downs tools until it is paid, which
- * is a state the officer can read and recover from.
+ * buys. There is deliberately no way to dismiss staff or demote them: the
+ * interesting decision is whether you can carry the wage, and an undo turns
+ * that into a free trial. A department that has outgrown its income downs tools
+ * until it is paid, which is a state the officer can read and recover from.
  */
 export async function hireStaff(
   repo: Repository,
@@ -584,15 +590,21 @@ export async function hireStaff(
     if (!record) throw new ServiceError('character_dead', 'no living recruit');
 
     const registry = await tx.getRegistry(accountId);
-    if (isHired(registry, role)) throw new ServiceError('already_owned', 'the post is filled');
-    if (record.character.gold < spec.hire) {
+    const rung = nextStaffRung(registry, role);
+    if (!rung) throw new ServiceError('already_owned', 'the post is at its highest tier');
+    if (record.character.gold < rung.cost) {
       throw new ServiceError('insufficient_gold', 'not enough gold');
     }
 
-    const character = { ...record.character, gold: record.character.gold - spec.hire };
+    const character = { ...record.character, gold: record.character.gold - rung.cost };
+    const appointing = rung.tier === 1;
     const updated: Registry = {
-      staff: [...registry.staff, { role, policy: spec.policyDefault }],
-      spent: registry.spent + spec.hire,
+      staff: appointing
+        ? [...registry.staff, { role, policy: spec.policyDefault, tier: 1 }]
+        : registry.staff.map((member) =>
+            member.role === role ? { ...member, tier: rung.tier } : member,
+          ),
+      spent: registry.spent + rung.cost,
       unpaid: registry.unpaid,
     };
     await tx.saveCharacter({ ...record, character });
@@ -600,7 +612,9 @@ export async function hireStaff(
     await tx.appendJournal([
       entry_(
         character,
-        `${spec.title} appointed to the registry. ${spec.hire} gold, and ${spec.upkeep} gold a minute thereafter.`,
+        appointing
+          ? `${rung.label} appointed to the registry. ${rung.cost} gold, and ${rung.upkeep} gold a minute thereafter.`
+          : `Promoted to ${rung.label}. ${rung.cost} gold, and the wage rises to ${rung.upkeep} a minute.`,
       ),
     ]);
 

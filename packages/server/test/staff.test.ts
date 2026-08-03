@@ -4,8 +4,11 @@ import {
   EMPTY_REGISTRY,
   UNLOCK_CATALOGUE,
   clampPolicy,
+  formSpec,
   payrollPerTick,
+  staffRung,
   staffSpec,
+  staffTier,
   type CaseFile,
   type Filing,
   type InventoryItem,
@@ -18,11 +21,12 @@ import { runStaff, type StaffInput } from '../src/domain/staff.js';
 
 const NO_PENSION: Pension = { total: 0, spent: 0, unlocks: [] };
 
-function registryOf(...roles: { role: StaffRole; policy?: number }[]): Registry {
+function registryOf(...roles: { role: StaffRole; policy?: number; tier?: number }[]): Registry {
   return {
-    staff: roles.map(({ role, policy }) => ({
+    staff: roles.map(({ role, policy, tier }) => ({
       role,
       policy: policy ?? staffSpec(role)!.policyDefault,
+      tier: tier ?? 1,
     })),
     spent: 0,
     unpaid: false,
@@ -61,7 +65,7 @@ test('an empty registry costs nothing and does nothing', () => {
 test('wages are charged per minute resolved', () => {
   const registry = registryOf({ role: 'clerk' }, { role: 'officer' });
   const rate = payrollPerTick(registry);
-  assert.equal(rate, staffSpec('clerk')!.upkeep + staffSpec('officer')!.upkeep);
+  assert.equal(rate, staffRung('clerk', 1)!.upkeep + staffRung('officer', 1)!.upkeep);
 
   const out = runStaff(input({ registry, ticksResolved: 100 }));
   assert.equal(out.character.gold, 5000 - rate * 100);
@@ -116,7 +120,7 @@ test('the Filing Clerk liquidates under the threshold and leaves the rest', () =
   assert.equal(out.inventory.length, 1, 'the valuable stack stays');
   assert.equal(out.inventory[0].name, 'Amulet');
   // 3 x 40 at depot rates, minus one minute-hour of wages.
-  const wages = staffSpec('clerk')!.upkeep * 60;
+  const wages = staffRung('clerk', 1)!.upkeep * 60;
   assert.equal(out.character.gold, 5000 - wages + 120);
   assert.match(out.notes.at(-1)!, /liquidated 3 items across 1 stack/);
 });
@@ -149,11 +153,26 @@ test('the Junior Officer buys in ladder order and honours the reserve', () => {
   assert.equal(spent.pension.spent, cheapest.cost);
 });
 
-test('the Junior Officer keeps buying while it can afford to', () => {
+test('throughput is what the promotion ladder sells', () => {
+  /**
+   * The post used to redeem *everything* affordable the moment it was hired,
+   * which left its own upper tiers with nothing to offer. One rung a visit at
+   * appointment, three at the second tier, uncapped at the third.
+   */
   const pension: Pension = { total: 100_000, spent: 0, unlocks: [] };
-  const out = runStaff(input({ registry: registryOf({ role: 'officer', policy: 0 }), pension }));
-  assert.ok(out.pension.unlocks.length > 3, `bought ${out.pension.unlocks.length}`);
-  // And never past the ladder: every purchase's tier follows its predecessor.
+  const at = (tier: number) =>
+    runStaff(input({ registry: registryOf({ role: 'officer', policy: 0, tier }), pension }));
+
+  assert.equal(at(1).pension.unlocks.length, 1, 'appointment clears one rung a visit');
+  assert.equal(at(2).pension.unlocks.length, 3);
+  assert.ok(at(3).pension.unlocks.length > 3, `bought ${at(3).pension.unlocks.length}`);
+});
+
+test('the Junior Officer never buys past the ladder', () => {
+  const pension: Pension = { total: 100_000, spent: 0, unlocks: [] };
+  const out = runStaff(
+    input({ registry: registryOf({ role: 'officer', policy: 0, tier: 3 }), pension }),
+  );
   for (const id of out.pension.unlocks) {
     const entry = UNLOCK_CATALOGUE.find((e) => e.id === id)!;
     if (entry.tier === 1) continue;
@@ -269,4 +288,96 @@ test('policies are clamped to their own range', () => {
   assert.equal(clampPolicy('archivist', 99), staffSpec('archivist')!.policyMax);
   assert.equal(clampPolicy('archivist', -5), staffSpec('archivist')!.policyMin);
   assert.equal(clampPolicy('clerk', Number.NaN), staffSpec('clerk')!.policyDefault);
+});
+
+// ---- What the promotion ladder buys ---------------------------------------
+//
+// Each of these is the whole reason its tier exists. The department shipped as
+// three flat posts that only saved the officer taps, which read as a tax in any
+// simulation that cannot value the officer's time — so a tier that does not
+// move a number here is a tier that should not be in the catalogue.
+
+test('a senior clerk realises over book value', () => {
+  const inventory = [stack('Boots, Serviceable', 40, 3)];
+  const goldAt = (tier: number) =>
+    runStaff(input({ registry: registryOf({ role: 'clerk', policy: 100, tier }), inventory }))
+      .character.gold;
+
+  const wages = (tier: number) => staffRung('clerk', tier)!.upkeep * 60;
+  // Book is 120. Appointment sells at depot rates; the promotions do not.
+  assert.equal(goldAt(1) + wages(1), 5000 + 120);
+  assert.equal(goldAt(2) + wages(2), 5000 + Math.floor(120 * 1.08));
+  assert.equal(goldAt(3) + wages(3), 5000 + Math.floor(120 * 1.18));
+});
+
+test('a promoted officer redeems at a discount, and the reserve respects it', () => {
+  const cheapest = [...UNLOCK_CATALOGUE].sort((a, b) => a.cost - b.cost)[0];
+  // Priced so the rung is out of reach at full price and inside it at 12% off.
+  const pension: Pension = { total: Math.round(cheapest.cost * 0.95), spent: 0, unlocks: [] };
+
+  const junior = runStaff(input({ registry: registryOf({ role: 'officer', tier: 1 }), pension }));
+  assert.deepEqual(junior.pension.unlocks, [], 'it should not have been affordable');
+
+  const senior = runStaff(input({ registry: registryOf({ role: 'officer', tier: 3 }), pension }));
+  assert.deepEqual(senior.pension.unlocks, [cheapest.id]);
+  assert.equal(senior.pension.spent, Math.round(cheapest.cost * 0.88));
+});
+
+test('a senior archivist files more forms for less', () => {
+  const caseFiles = [
+    file({ clauseIds: ['r-contested', 'r-heavy'] }),
+    file({ id: '#5000-A', clauseIds: ['r-cursed'] }),
+  ];
+  const at = (tier: number) =>
+    runStaff(input({ registry: registryOf({ role: 'archivist', policy: 1, tier }), caseFiles }));
+
+  assert.equal(at(1).filings.length, 1, 'appointment files one a visit');
+  assert.equal(at(2).filings.length, 2);
+
+  // And the fee falls — *per form*. Comparing totals would say the opposite,
+  // because a senior archivist files twice as many of them.
+  const perForm = (tier: number) => {
+    const out = at(tier);
+    const wages = staffRung('archivist', tier)!.upkeep * 60;
+    return (5000 - wages - out.character.gold) / out.filings.length;
+  };
+  assert.ok(
+    perForm(3) * 2 < perForm(1),
+    `tier 3 paid ${perForm(3)} a form against tier 1's ${perForm(1)}`,
+  );
+});
+
+test('the Keeper of the Rolls pays one less standing, never zero', () => {
+  const out = runStaff(
+    input({
+      registry: registryOf({ role: 'archivist', policy: 1, tier: 3 }),
+      caseFiles: [file()],
+    }),
+  );
+  const spent = 10 - out.character.standing;
+  assert.ok(spent >= 1, 'a free form stops Union Standing rationing anything');
+  assert.equal(spent, formSpec('12-C')!.standing - 1);
+});
+
+test('wages rise with the tier', () => {
+  const flat = payrollPerTick(registryOf({ role: 'clerk', tier: 1 }));
+  const senior = payrollPerTick(registryOf({ role: 'clerk', tier: 3 }));
+  assert.ok(senior > flat, `${senior} should exceed ${flat}`);
+});
+
+test('a registry saved before promotions existed reads as tier 1', () => {
+  // Migration 010 backfills the stored rows, but the fallback has to hold on
+  // its own — a restored backup or a hand-repaired row is exactly where it
+  // would be leaned on, and silently treating a post as vacant would stop the
+  // department working with nothing in the log to say why.
+  const legacy: Registry = {
+    staff: [{ role: 'clerk', policy: 100 } as Registry['staff'][number]],
+    spent: 0,
+    unpaid: false,
+  };
+  assert.equal(staffTier(legacy, 'clerk'), 1);
+  assert.equal(payrollPerTick(legacy), staffRung('clerk', 1)!.upkeep);
+
+  const out = runStaff(input({ registry: legacy, inventory: [stack('Boots', 40, 3)] }));
+  assert.equal(out.inventory.length, 0, 'the post did no work');
 });

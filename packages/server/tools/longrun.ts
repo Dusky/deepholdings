@@ -34,7 +34,7 @@ import {
   type Registry,
   type RequisitionId,
   type UnlockId,
-  STAFF_CATALOGUE,
+  STAFF_LADDER,
 } from '@deepholdings/shared';
 import { succeed } from '../src/domain/character.js';
 import { resolve } from '../src/domain/resolve.js';
@@ -201,8 +201,8 @@ function playOne(seed: number): {
     for (const id of after.boughtUnlocks) {
       note(tick, `Unlock: ${UNLOCK_CATALOGUE.find((e) => e.id === id)!.label}`);
     }
-    for (const role of after.hired) {
-      note(tick, `Hire: ${STAFF_CATALOGUE.find((e) => e.role === role)!.title}`);
+    for (const id of after.hired) {
+      note(tick, `Registry: ${STAFF_LADDER.find((e) => e.id === id)!.label}`);
     }
 
     if (!character.alive) {
@@ -247,7 +247,9 @@ function playOne(seed: number): {
     perFortnight,
     unpaidTicks,
     wages: registry.spent,
-    hires: registry.staff.length,
+    // Rungs, not members: there are only ever three posts, so counting rows
+    // would report a full department the moment each was appointed.
+    hires: registry.staff.reduce((total, member) => total + (member.tier ?? 1), 0),
     fromService,
     fromEstate,
     shortDeaths,
@@ -282,7 +284,7 @@ console.log(`final grade:         ${med(runs.map((r) => r.finalLevel))}`);
 
 if (STAFF) {
   console.log('\n--- the department ---');
-  console.log(`posts filled:        ${med(runs.map((r) => r.hires))} of ${STAFF_CATALOGUE.length}`);
+  console.log(`registry rungs:      ${med(runs.map((r) => r.hires))} of ${STAFF_LADDER.length}`);
   console.log(`hire + wages, total: ${med(runs.map((r) => r.wages))} gold`);
   const stalled = runs.map((r) => (r.unpaidTicks / (DAYS * 1440)) * 100);
   console.log(`time unpaid:         ${med(stalled).toFixed(1)}% of the run`);

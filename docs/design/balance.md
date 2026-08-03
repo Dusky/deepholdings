@@ -1257,3 +1257,65 @@ things fed by compounding income exhausts; a flat income against exponentially
 priced generated tiers is a curve that never closes, which is exactly the
 structure the formulaic tail needs. The seven days are bought back in slice 3
 and after, from content rather than from friction.
+
+## The department gets a ladder, and the ladder has edges
+
+Three flat posts whose only benefit was saving the officer taps. That was
+defensible while a wage cost 16% of lifetime pension — "convenience you pay for"
+is a real bargain — but once the pension formula stopped taxing every sink, the
+wage fell to 4.8% and a post that only saves taps became thin rather than
+expensive.
+
+It was also backwards. In this genre automation *accelerates*; here every rung
+was a pure cost against a harness that cannot value the officer's time, so the
+only thing it could report was the department making the game slower. It did, by
+ten days, and that was written down as if it were content.
+
+So each post is now three tiers, and every tier past appointment buys something
+the officer cannot do by hand:
+
+| post      | tier 1                | tier 2                          | tier 3                            |
+| --------- | --------------------- | ------------------------------- | --------------------------------- |
+| Clerk     | sells at depot rates  | realises 8% over book           | 18% over book                     |
+| Officer   | one rung a visit      | three a visit, 5% off           | unlimited, 12% off                |
+| Archivist | one Form 12-C a visit | two a visit, fees 30% lower     | fees 55% lower, one less standing |
+
+Appointment-tier throughput is a **nerf**, and deliberately. The Junior Officer
+used to redeem everything affordable the moment it was hired, which left its own
+upper tiers with nothing to sell.
+
+### What ninety days says
+
+| ninety days, an engaged officer | no department | flat posts | the ladder |
+| ------------------------------- | ------------- | ---------- | ---------- |
+| last new thing                  | day 32.6      | day 34.7   | day 36.6   |
+| rungs bought                    | —             | 3 of 3     | 8 of 9     |
+| lifetime pension                | 1,589,820     | 1,513,623  | 1,418,172  |
+| cost of the department          | —             | 4.8%       | 10.8%      |
+| time unpaid                     | —             | 0.7%       | 0.9%       |
+
+The median moves four days, which is not the headline. The **spread** is: rungs
+land on days 0.7, 1.3, 2.7, 3.4, 7.2, 13.8, 18.1, 46.6 and 86.2. That is the
+first thing in this game that is still handing out something new in month three,
+and the 140,000-gold top rung is the first sink large enough for a late purse to
+want. Seven requisitions cost 26,700 between them and are finished by day four.
+
+The cost doubles to 10.8% because upkeep tops out at nine gold a minute against
+a measured peak income of 16.77. That is intended — a maxed department should be
+felt — and it is roughly offset: the officer's 12% off every pension rung is
+worth about what the wage takes, so the department is close to paying for itself
+and the decision is *which* posts to promote rather than whether to bother.
+
+### A note on what this measurement does not cover
+
+Driving the real client to a state with a promoted department takes sixty
+simulated days, and three attempts to do it produced three probe bugs — a
+`sell-bulk` call that needs a requisition the account did not own, a `stacks`
+field that is called `inventory`, and a claim POST with a JSON content-type and
+no body. Each failed quietly and left a plausible-looking number.
+
+The Registry column is therefore verified by stubbing `/v1/state` and
+`/v1/ledger` with the server's own response shapes and asserting on what
+renders. That covers the three cases the column has — a post mid-ladder, a post
+at the top, a vacancy — plus overflow and touch targets. It does not cover the
+sixty days.

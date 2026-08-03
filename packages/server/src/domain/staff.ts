@@ -1,10 +1,18 @@
 import {
   UNLOCK_CATALOGUE,
+  archivistFeeShare,
+  archivistStandingRelief,
+  archivistThroughput,
   clauseById,
+  clerkRealisation,
   formGoldCost,
   formSpec,
+  officerDiscount,
+  officerThroughput,
   payrollPerTick,
   policyOf,
+  staffTier,
+  staffTitle,
   unlockTier,
   type CaseFile,
   type Character,
@@ -119,13 +127,18 @@ export function runStaff(input: StaffInput): StaffOutcome {
   if (under !== null && under > 0) {
     const junk = inventory.filter((item) => item.unitValue < under);
     if (junk.length > 0) {
-      const gold = junk.reduce((total, item) => total + item.unitValue * item.quantity, 0);
+      const book = junk.reduce((total, item) => total + item.unitValue * item.quantity, 0);
+      // A senior clerk knows which depot is paying. Rounded down, so the
+      // promotion never invents a coin the book value cannot account for.
+      const rate = clerkRealisation(staffTier(registry, 'clerk'));
+      const gold = Math.floor(book * rate);
       const units = junk.reduce((total, item) => total + item.quantity, 0);
       inventory = inventory.filter((item) => item.unitValue >= under);
       character = { ...character, gold: character.gold + gold };
       notes.push(
-        `Filing Clerk liquidated ${units} ${plural(units, 'item')} across ` +
-          `${junk.length} ${plural(junk.length, 'stack')} at depot rates for ${gold} gold.`,
+        `${staffTitle(registry, 'clerk')} liquidated ${units} ${plural(units, 'item')} across ` +
+          `${junk.length} ${plural(junk.length, 'stack')} for ${gold} gold` +
+          `${gold > book ? `, ${gold - book} over book` : ' at depot rates'}.`,
       );
     }
   }
@@ -133,16 +146,27 @@ export function runStaff(input: StaffInput): StaffOutcome {
   // ---- Junior Officer -----------------------------------------------------
   const reserve = policyOf(registry, 'officer');
   if (reserve !== null) {
-    for (;;) {
-      const rung = cheapestAffordable(pension, reserve);
+    const officerAt = staffTier(registry, 'officer');
+    const discount = officerDiscount(officerAt);
+    // Appointment clears one rung a visit. Uncapped, the post redeemed
+    // everything affordable the moment it was hired, which left its own ladder
+    // with nothing to sell and made the first tier the only one worth buying.
+    let left = officerThroughput(officerAt);
+    while (left > 0) {
+      const rung = cheapestAffordable(pension, reserve, discount);
       if (!rung) break;
+      const price = Math.round(rung.cost * discount);
       pension = {
         ...pension,
-        total: pension.total - rung.cost,
-        spent: pension.spent + rung.cost,
+        total: pension.total - price,
+        spent: pension.spent + price,
         unlocks: [...pension.unlocks, rung.id as UnlockId],
       };
-      notes.push(`Junior Officer redeemed ${rung.label}. Pension ${pension.total} remaining.`);
+      notes.push(
+        `${staffTitle(registry, 'officer')} redeemed ${rung.label} for ${price}` +
+          `${price < rung.cost ? ` of ${rung.cost}` : ''}. Pension ${pension.total} remaining.`,
+      );
+      left -= 1;
     }
   }
 
@@ -150,50 +174,67 @@ export function runStaff(input: StaffInput): StaffOutcome {
   const fromGrade = policyOf(registry, 'archivist');
   if (fromGrade !== null) {
     const spec = formSpec('12-C');
-    // One filing per visit, not one per eligible clause. An archivist who
-    // emptied the purse and the standing in a single pass would be indist-
-    // inguishable from a bug, and the officer would never see the decision.
-    const target = firstContestable(caseFiles, filings, fromGrade);
-    if (spec && target) {
-      const fee = formGoldCost(spec, target.file.grade);
-      if (character.gold >= fee && character.standing >= spec.standing) {
-        const filedTick = character.lastResolvedTick;
-        filings = [
-          ...filings,
-          {
-            id: newId(),
-            form: spec.id,
-            caseFileId: target.file.id,
-            clauseIndex: target.index,
-            filedTick,
-            resolvesTick: filedTick + spec.ticks,
-            wasClauseId: target.clauseId,
-          },
-        ];
-        character = {
-          ...character,
-          gold: character.gold - fee,
-          standing: character.standing - spec.standing,
-        };
-        notes.push(
-          `Archivist filed Form 12-C against case ${target.file.id}, contesting ` +
-            `"${clauseById(target.clauseId)?.text ?? target.clauseId}". Fee ${fee} gold, ` +
-            `Union Standing ${spec.standing}.`,
-        );
-      }
+    const archivistAt = staffTier(registry, 'archivist');
+    const feeShare = archivistFeeShare(archivistAt);
+    // Never below one, whatever the relief: a form that costs no standing at
+    // all would make the Union Standing budget stop being a constraint, and
+    // that budget is the only thing rationing the crafting layer.
+    const standing = Math.max(1, spec ? spec.standing - archivistStandingRelief(archivistAt) : 0);
+    // A bounded number of filings per visit, not one per eligible clause. An
+    // archivist who emptied the purse and the standing in a single pass would
+    // be indistinguishable from a bug, and the officer would never see the
+    // decision being made.
+    let forms = archivistThroughput(archivistAt);
+    while (spec && forms > 0) {
+      const target = firstContestable(caseFiles, filings, fromGrade);
+      if (!target) break;
+      const fee = Math.round(formGoldCost(spec, target.file.grade) * feeShare);
+      if (character.gold < fee || character.standing < standing) break;
+      const filedTick = character.lastResolvedTick;
+      filings = [
+        ...filings,
+        {
+          id: newId(),
+          form: spec.id,
+          caseFileId: target.file.id,
+          clauseIndex: target.index,
+          filedTick,
+          resolvesTick: filedTick + spec.ticks,
+          wasClauseId: target.clauseId,
+        },
+      ];
+      character = {
+        ...character,
+        gold: character.gold - fee,
+        standing: character.standing - standing,
+      };
+      notes.push(
+        `${staffTitle(registry, 'archivist')} filed Form 12-C against case ${target.file.id}, ` +
+          `contesting "${clauseById(target.clauseId)?.text ?? target.clauseId}". ` +
+          `Fee ${fee} gold, Union Standing ${standing}.`,
+      );
+      forms -= 1;
     }
   }
 
   return { character, inventory, caseFiles, filings, pension, registry, notes, changed };
 }
 
-/** The cheapest rung the ladder allows next, if it clears the reserve. */
-function cheapestAffordable(pension: Pension, reserve: number) {
+/**
+ * The cheapest rung the ladder allows next, if it clears the reserve.
+ *
+ * `discount` is applied to the affordability test as well as the price, so a
+ * promoted officer can reach a rung the reserve would otherwise have put out
+ * of range. Anything else would take the discount off the price and leave it
+ * on the gate, which is the sort of thing a player notices and nobody can
+ * explain.
+ */
+function cheapestAffordable(pension: Pension, reserve: number, discount = 1) {
   return UNLOCK_CATALOGUE.filter(
     (entry) =>
       !pension.unlocks.includes(entry.id as UnlockId) &&
       unlockTier(pension.unlocks, entry.track) === entry.tier - 1 &&
-      pension.total - entry.cost >= reserve,
+      pension.total - Math.round(entry.cost * discount) >= reserve,
   ).reduce<(typeof UNLOCK_CATALOGUE)[number] | null>(
     (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
     null,

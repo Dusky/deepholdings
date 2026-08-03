@@ -12,6 +12,7 @@ import {
   EMPTY_REGISTRY,
   REQUISITION_CATALOGUE,
   STAFF_CATALOGUE,
+  STAFF_LADDER,
   UNLOCK_CATALOGUE,
   type Pension,
   type Registry,
@@ -144,7 +145,7 @@ test('hiring comes before the equipment ladder', () => {
     60,
   );
 
-  assert.deepEqual(after.hired, ['clerk'], 'the Filing Clerk was not hired first');
+  assert.deepEqual(after.hired, ['clerk1'], 'the Filing Clerk was not appointed first');
   assert.equal(after.character.gold, 100);
   assert.deepEqual(after.boughtRequisitions, []);
 });
@@ -199,11 +200,13 @@ test('staff can be let to work without being hired, and hired without working', 
   assert.ok(worked.registry.spent > 0, 'no wages were charged');
   assert.deepEqual(worked.hired, []);
 
-  const hiredOnly = visit(stateOf(), { hires: { reserve: 0 } }, 60);
-  assert.equal(hiredOnly.hired.length, STAFF_CATALOGUE.length);
+  // Enough for the whole ladder, which is 324,000 across nine rungs.
+  const rich = stateOf({ character: { ...stateOf().character, gold: 400_000 } });
+  const hiredOnly = visit(rich, { hires: { reserve: 0 } }, 60);
+  assert.equal(hiredOnly.hired.length, STAFF_LADDER.length, 'the whole ladder was affordable');
   assert.equal(
     hiredOnly.registry.spent,
-    STAFF_CATALOGUE.reduce((total, spec) => total + spec.hire, 0),
-    'wages were charged for a department that did no work',
+    STAFF_LADDER.reduce((total, rung) => total + rung.cost, 0),
+    'the ladder was not paid for in full',
   );
 });

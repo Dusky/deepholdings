@@ -3,8 +3,11 @@ import {
   HEARTBEAT_SECONDS,
   STAFF_CATALOGUE,
   isHired,
+  nextStaffRung,
   payrollPerTick,
   policyOf,
+  staffRung,
+  staffTier,
   type Registry,
   type RequisitionId,
   type StaffRole,
@@ -116,26 +119,48 @@ function RegistryColumn({
       )}
       {STAFF_CATALOGUE.map((spec) => {
         const hired = isHired(registry, spec.role);
+        const tier = staffTier(registry, spec.role);
+        const held = tier > 0 ? staffRung(spec.role, tier) : null;
+        // The promotion on offer, or nothing when the post is at the top. It is
+        // the same button either way: filling a post and promoting the person
+        // in it are one decision made repeatedly, and two controls would make
+        // the officer notice a distinction the ladder does not have.
+        const next = nextStaffRung(registry, spec.role);
         const policy = draft[spec.role] ?? policyOf(registry, spec.role) ?? spec.policyDefault;
         return (
           <div key={spec.role} className={styles.post}>
-            <button
-              type="button"
-              className={styles.unlock}
-              data-state={hired ? 'owned' : gold >= spec.hire ? 'affordable' : 'locked'}
-              disabled={hired || gold < spec.hire || busy !== null}
-              onClick={() => void hire(spec.role)}
-            >
-              <span className={styles.unlockHead}>
-                <span className={hired ? 'text-bright' : 'text-body'}>{spec.title}</span>
-                <span className={hired ? 'text-bright' : 'text-dim'}>
-                  {hired ? 'ON THE BOOKS' : busy === spec.role ? '...' : `${spec.hire}g`}
+            {held && (
+              <div className={styles.held}>
+                <span className="text-bright">{held.label}</span>
+                <span className="text-dim">
+                  Tier {tier}/3 — {held.upkeep}g/min
                 </span>
-              </span>
-              <span className={`text-dim ${styles.unlockDetail}`}>
-                {spec.detail} {spec.upkeep}g per minute.
-              </span>
-            </button>
+              </div>
+            )}
+            {next ? (
+              <button
+                type="button"
+                className={styles.unlock}
+                data-state={gold >= next.cost ? 'affordable' : 'locked'}
+                disabled={gold < next.cost || busy !== null}
+                onClick={() => void hire(spec.role)}
+              >
+                <span className={styles.unlockHead}>
+                  <span className="text-body">{hired ? `Promote to ${next.label}` : next.label}</span>
+                  <span className="text-dim">
+                    {busy === spec.role ? '...' : `${next.cost}g`}
+                  </span>
+                </span>
+                <span className={`text-dim ${styles.unlockDetail}`}>
+                  {next.detail} {next.upkeep}g per minute
+                  {held ? `, up from ${held.upkeep}` : ''}.
+                </span>
+              </button>
+            ) : (
+              <div className={`text-dim ${styles.unlockDetail}`}>
+                Nothing further to offer this post.
+              </div>
+            )}
             {hired && (
               <div className={styles.policy}>
                 <label className="text-dim" htmlFor={`policy-${spec.role}`}>

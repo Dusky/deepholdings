@@ -11,6 +11,13 @@
   text-align: left;
 }
 
+.held {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 7px;
+}
+
 .unlockHead {
   display: flex;
   justify-content: space-between;

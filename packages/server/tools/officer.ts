@@ -36,7 +36,7 @@ import {
   REQUISITION_CATALOGUE,
   STAFF_CATALOGUE,
   UNLOCK_CATALOGUE,
-  isHired,
+  nextStaffRung,
   requisitionTier,
   unlockTier,
   type CaseFile,
@@ -46,7 +46,8 @@ import {
   type Pension,
   type Registry,
   type RequisitionId,
-  type StaffRole,
+  type StaffRung,
+  type StaffRungId,
   type UnlockId,
 } from '@deepholdings/shared';
 import { runStaff } from '../src/domain/staff.js';
@@ -64,7 +65,13 @@ export interface OfficerPolicy {
   requisitions?: { reserve: number };
   /** Redeem pension rungs as soon as affordable. */
   unlocks?: boolean;
-  /** Hire every post as soon as affordable, keeping `reserve` gold back. */
+  /**
+   * Fill and promote every post as soon as affordable, keeping `reserve` back.
+   *
+   * One flag for both because they are one ladder: appointment is tier 1 and
+   * the rest are promotions, and an officer who filled every post but never
+   * promoted anybody would be modelling a department nobody would actually run.
+   */
   hires?: { reserve: number };
   /** Let hired staff work the span. Independent of `hires`, so a harness can
    *  model a department that was inherited rather than built. */
@@ -86,7 +93,8 @@ export interface VisitResult extends VisitState {
   realised: number;
   boughtRequisitions: RequisitionId[];
   boughtUnlocks: UnlockId[];
-  hired: StaffRole[];
+  /** Rungs of the promotion ladder bought, appointments included. */
+  hired: StaffRungId[];
   /** Lines the department filed, verbatim, for harnesses that count events. */
   notes: string[];
 }
@@ -147,7 +155,7 @@ export function visit(
   };
   const requisitions = [...state.requisitions];
   const boughtRequisitions: RequisitionId[] = [];
-  const hired: StaffRole[] = [];
+  const hired: StaffRungId[] = [];
   const notes: string[] = [];
   let realised = 0;
   /**
@@ -194,16 +202,31 @@ export function visit(
    * actually do.
    */
   if (policy.hires) {
-    for (const spec of STAFF_CATALOGUE) {
-      if (isHired(registry, spec.role)) continue;
-      if (character.gold - spec.hire < policy.hires.reserve) continue;
-      character = { ...character, gold: character.gold - spec.hire };
+    // Cheapest rung first across all three posts, so an officer who can afford
+    // a second Filing Clerk tier but not a first Archivist takes the clerk —
+    // which is the order a player buying on price would use, and the least
+    // favourable case for a ladder that has to justify its upper tiers.
+    for (;;) {
+      const rung = STAFF_CATALOGUE.map((spec) => nextStaffRung(registry, spec.role))
+        .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+        .reduce<StaffRung | null>(
+          (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
+          null,
+        );
+      if (!rung || character.gold - rung.cost < policy.hires.reserve) break;
+      character = { ...character, gold: character.gold - rung.cost };
+      const spec = STAFF_CATALOGUE.find((entry) => entry.role === rung.track)!;
       registry = {
         ...registry,
-        staff: [...registry.staff, { role: spec.role, policy: spec.policyDefault }],
-        spent: registry.spent + spec.hire,
+        staff:
+          rung.tier === 1
+            ? [...registry.staff, { role: rung.track, policy: spec.policyDefault, tier: 1 }]
+            : registry.staff.map((member) =>
+                member.role === rung.track ? { ...member, tier: rung.tier } : member,
+              ),
+        spent: registry.spent + rung.cost,
       };
-      hired.push(spec.role);
+      hired.push(rung.id);
     }
   }
 

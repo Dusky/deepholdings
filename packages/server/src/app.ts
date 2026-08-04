@@ -35,6 +35,7 @@ import {
   claimPension,
   retireRecruit,
   fileForm,
+  setCountersigned,
   getBulletin,
   hireStaff,
   setStaffPolicy,
@@ -319,6 +320,31 @@ export function buildApp({ repo, config, sender: injected, reporter: given }: Ap
       donorClauseIndex:
         body.donorClauseIndex === undefined ? undefined : Number(body.donorClauseIndex),
     });
+  });
+
+  /*
+   * Direct Issue (Form 5-E): keep this file by hand, or release it.
+   *
+   * Not a filing, so it is not on the idempotency list and takes no processing
+   * time. Every other form is the Authority doing something to an item and the
+   * wait is the point; this is the officer instructing their own quartermaster
+   * about their own drawer, and the design says a release returns the slot to
+   * discretion *immediately*. A two-hour wait to change your mind about which
+   * file to keep would be paperwork for its own sake.
+   *
+   * Idempotent by construction: it sets a boolean to a value the caller states
+   * rather than toggling, so a retried request cannot flip it back.
+   */
+  app.post('/v1/armoury/countersign', async (request, reply) => {
+    const accountId = await requireAccount(request, reply);
+    const { caseFileId, countersigned } = (request.body ?? {}) as {
+      caseFileId?: string;
+      countersigned?: boolean;
+    };
+    if (typeof caseFileId !== 'string' || typeof countersigned !== 'boolean') {
+      throw new ServiceError('invalid_request', 'caseFileId and countersigned required');
+    }
+    return setCountersigned(repo, accountId, caseFileId, countersigned);
   });
 
   // The registry: hiring costs gold, amending a standing instruction is free.

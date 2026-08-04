@@ -84,10 +84,12 @@ interface CaseFileEntryProps {
   onContest: (file: CaseFile, clauseIndex: number) => void;
   onCarry: (carried: Carried) => void;
   onPlace: (survivor: CaseFile, clauseIndex: number) => void;
+  onCountersign: (caseFileId: string, countersigned: boolean) => void;
 }
 
 function CaseFileEntry({
   file, filings, gold, standing, busy, carrying, canTransfer, onContest, onCarry, onPlace,
+  onCountersign,
 }: CaseFileEntryProps) {
   const clauses = file.clauseIds.map(clauseById).filter((c): c is Clause => Boolean(c));
   // Grade buys slots; a file may carry fewer clauses than its grade allows.
@@ -124,6 +126,29 @@ function CaseFileEntry({
       </div>
       <div className={`text-dim ${styles.fileMeta}`}>
         Grade {romanGrade(file.grade)} · {file.category} · book value {file.unitValue}g
+      </div>
+      {/*
+        Direct Issue, and the reason it sits at the top of the file rather than
+        beside the forms below: it is not paperwork about the item, it is an
+        instruction about your own drawer. Free, immediate, and reversible — so
+        it reads as a toggle, and the state is spelled out in words rather than
+        left to the button's colour.
+      */}
+      <div className={styles.countersign}>
+        <button
+          type="button"
+          className={styles.countersignButton}
+          data-on={Boolean(file.countersigned)}
+          disabled={busy}
+          onClick={() => onCountersign(file.id, !file.countersigned)}
+        >
+          {file.countersigned ? 'KEPT BY HAND — RELEASE' : 'KEEP BY HAND (FORM 5-E)'}
+        </button>
+        <span className={`text-dim ${styles.countersignNote}`}>
+          {file.countersigned
+            ? 'The quartermaster will not release this file, even for a better one.'
+            : 'Protects this file from being released when the drawer is full.'}
+        </span>
       </div>
       {clauses.map((clause, index) => {
         const processing = filings.find(
@@ -207,6 +232,22 @@ export function ArmouryScreen() {
             `${result.standingCharged} standing paid. The panel sits in ` +
             `${wait(result.filing.secondsRemaining)}.`,
         );
+        await refresh();
+      } catch {
+        setNotice('The clerk declined the form and did not say why. Nothing was charged.');
+      } finally {
+        setBusy(false);
+      }
+    },
+    [refresh],
+  );
+
+  const countersign = useCallback(
+    async (caseFileId: string, next: boolean) => {
+      setBusy(true);
+      setNotice(null);
+      try {
+        await api.countersign({ caseFileId, countersigned: next });
         await refresh();
       } catch {
         setNotice('The clerk declined the form and did not say why. Nothing was charged.');
@@ -343,6 +384,7 @@ export function ArmouryScreen() {
                 onContest={contest}
                 onCarry={setCarrying}
                 onPlace={place}
+                onCountersign={countersign}
               />
             ))}
             {notice && <div className={`text-dim ${styles.hint}`}>{notice}</div>}

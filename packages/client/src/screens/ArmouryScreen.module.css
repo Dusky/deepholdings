@@ -202,3 +202,52 @@
   border-color: var(--phosphor-dim);
   color: var(--phosphor-bright);
 }
+
+/*
+ * Direct Issue (Form 5-E), at the head of each file.
+ *
+ * A row rather than an inline button because the state needs a sentence beside
+ * it: "countersigned" is a word the player has just met, and a toggle whose only
+ * feedback is its own highlight would leave them guessing which way is on.
+ */
+.countersign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin: 6px 0 10px;
+}
+
+.countersignButton {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--phosphor-dim);
+  border-radius: var(--radius-control);
+  color: var(--phosphor-dim);
+  font-family: var(--font-mono);
+  font-size: calc(10px * var(--font-scale));
+  letter-spacing: 0.06em;
+}
+
+/* Carries its state in the border and the colour together, never colour alone —
+   the label says which way it is set regardless. */
+.countersignButton[data-on='true'] {
+  border-color: var(--phosphor-bright);
+  color: var(--phosphor-bright);
+}
+
+.countersignButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.countersignNote {
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+@media (pointer: coarse) {
+  .countersignButton {
+    min-height: 44px;
+  }
+}

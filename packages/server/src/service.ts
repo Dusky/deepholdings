@@ -567,6 +567,52 @@ function pendingFilings(record: CharacterRecord, now: Date): PendingFiling[] {
  * reason: if it survived the four hours, the same file could be requisitioned
  * into two others at once and the officer would get two clauses for one file.
  */
+/**
+ * Direct Issue (Form 5-E): keep a file by hand, or return it to discretion.
+ *
+ * Free and instant, unlike every other form. The wait on a filing is the
+ * Authority taking its time over your item; this is the officer telling their
+ * own quartermaster which drawer slot is not his to touch, and design rule 2
+ * says a release returns the slot to discretion immediately.
+ *
+ * Resolves first like every other mutation, because a countersignature applied
+ * to a file that this minute's catch-up already displaced must fail here rather
+ * than silently marking nothing.
+ */
+export async function setCountersigned(
+  repo: Repository,
+  accountId: string,
+  caseFileId: string,
+  countersigned: boolean,
+): Promise<{ caseFiles: CaseFile[] }> {
+  return repo.transaction(async (tx) => {
+    const record =
+      (await loadStateInside(tx, accountId)) ?? (await tx.getActiveCharacterForUpdate(accountId));
+    if (!record) throw new ServiceError('character_dead', 'no living recruit');
+    if (!record.character.alive) throw new ServiceError('character_dead', 'no living recruit');
+
+    const target = record.caseFiles.find((candidate) => candidate.id === caseFileId);
+    if (!target) throw new ServiceError('not_found', 'no such case file');
+    if (Boolean(target.countersigned) === countersigned) return { caseFiles: record.caseFiles };
+
+    const caseFiles = record.caseFiles.map((candidate) =>
+      candidate.id === caseFileId ? { ...candidate, countersigned } : candidate,
+    );
+    await tx.saveCharacter({ ...record, caseFiles });
+
+    await tx.appendJournal([
+      entry_(
+        record.character,
+        countersigned
+          ? `Form 5-E filed. Case ${target.id} is countersigned and will not be released by the quartermaster.`
+          : `Countersignature withdrawn from case ${target.id}. It returns to the quartermaster's discretion.`,
+      ),
+    ]);
+
+    return { caseFiles };
+  });
+}
+
 export async function fileForm(
   repo: Repository,
   accountId: string,
@@ -808,12 +854,18 @@ function validateOrders(orders: StandingOrders): StandingOrders {
   const spendOk = ['resupply', 'hoard', 'insure'].includes(orders?.spendPolicy);
   const site = orders?.site ?? 'holdings';
   const siteOk = SITE_CATALOGUE.some((entry) => entry.id === site);
+  // Absent is legal and means `balanced`, the metric that shipped — an older
+  // client that has never heard of this field must keep working.
+  const equipmentPolicy = orders?.equipmentPolicy ?? 'balanced';
+  const equipmentOk = ['vigour', 'survival', 'lootValue', 'balanced', 'officer'].includes(
+    equipmentPolicy,
+  );
 
   if (
     !siteOk ||
     !Number.isFinite(targetDepth) || targetDepth < 1 || targetDepth > MAX_DEPTH ||
     !Number.isFinite(retreatPct) || retreatPct < 1 || retreatPct > 100 ||
-    !lootOk || !spendOk
+    !lootOk || !spendOk || !equipmentOk
   ) {
     throw new ServiceError('invalid_request', 'invalid standing orders');
   }
@@ -827,6 +879,7 @@ function validateOrders(orders: StandingOrders): StandingOrders {
     retreatPct: clampRetreatPct(retreatPct),
     lootPriority: orders.lootPriority,
     spendPolicy: orders.spendPolicy,
+    equipmentPolicy,
   };
 }
 

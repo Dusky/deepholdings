@@ -9,6 +9,7 @@ import {
   permitDepthLimit,
   siteAuthorised,
   siteSpec,
+  type EquipmentPolicy,
   type StandingOrders,
 } from '@deepholdings/shared';
 import { FileButton } from '../components/ui/FileButton';
@@ -21,6 +22,18 @@ import styles from './OrdersScreen.module.css';
 
 const LOOT_OPTIONS: readonly LootPriority[] = ['gold', 'gear', 'relics', 'knowledge'];
 const SPEND_OPTIONS: readonly SpendPolicy[] = ['resupply', 'hoard', 'insure'];
+const KEEP_OPTIONS: readonly EquipmentPolicy[] = [
+  'balanced', 'vigour', 'survival', 'lootValue', 'officer',
+];
+
+/** Short labels: the chip row has five entries and must fit a 390px phone. */
+const KEEP_LABEL: Record<EquipmentPolicy, string> = {
+  balanced: 'BALANCED',
+  vigour: 'HEALTH',
+  survival: 'SURVIVAL',
+  lootValue: 'LOOT',
+  officer: 'BY HAND',
+};
 
 /**
  * Every chip's plain meaning, from the one glossary.
@@ -42,6 +55,14 @@ const SPEND_GLOSS: Record<SpendPolicy, string> = {
   resupply: gloss('spendResupply'),
   hoard: gloss('spendHoard'),
   insure: gloss('spendInsure'),
+};
+
+const KEEP_GLOSS: Record<EquipmentPolicy, string> = {
+  balanced: gloss('keepBalanced'),
+  vigour: gloss('keepVigour'),
+  survival: gloss('keepSurvival'),
+  lootValue: gloss('keepLoot'),
+  officer: gloss('keepOfficer'),
 };
 
 /**
@@ -144,7 +165,8 @@ export function OrdersScreen() {
     draft.targetDepth !== filed.targetDepth ||
     draft.retreatPct !== filed.retreatPct ||
     draft.lootPriority !== filed.lootPriority ||
-    draft.spendPolicy !== filed.spendPolicy;
+    draft.spendPolicy !== filed.spendPolicy ||
+    (draft.equipmentPolicy ?? 'balanced') !== (filed.equipmentPolicy ?? 'balanced');
 
   /*
    * The floor the recruit can actually reach, which is not the permit's floor.
@@ -304,6 +326,35 @@ export function OrdersScreen() {
           ))}
         </div>
         <div className={`text-dim ${styles.hint}`}>{SPEND_GLOSS[draft.spendPolicy]}</div>
+      </div>
+
+      {/*
+        The fifth order, and the reason it exists is worth stating.
+
+        `file()` keeps three case files and used to discard the weakest by a
+        formula the officer could neither see nor change — so an officer who
+        wanted a survival build could not keep one. That was survivable while
+        case files were only found and stops being survivable now they can be
+        invested in.
+      */}
+      <div className={styles.row}>
+        <div className={`text-dim ${styles.label}`} id="keep-policy-label">
+          5. WHAT TO KEEP
+        </div>
+        <div className={`text-dim ${styles.hint}`}>{gloss('keepPolicy')}</div>
+        <div className={styles.options} role="group" aria-labelledby="keep-policy-label">
+          {KEEP_OPTIONS.map((option) => (
+            <OptionChip
+              key={option}
+              label={KEEP_LABEL[option]}
+              selected={(draft.equipmentPolicy ?? 'balanced') === option}
+              onSelect={() => update({ equipmentPolicy: option })}
+            />
+          ))}
+        </div>
+        <div className={`text-dim ${styles.hint}`}>
+          {KEEP_GLOSS[draft.equipmentPolicy ?? 'balanced']}
+        </div>
       </div>
 
       <Forecast orders={draft} reachable={reachable} />

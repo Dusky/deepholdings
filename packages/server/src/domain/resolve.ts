@@ -16,6 +16,7 @@ import {
   GRIEVOUS_MAX_FRACTION,
   GRIEVOUS_MULTIPLIER,
   HOARD_SALE_BONUS,
+  equipmentPolicyOf,
   INSURE_PENSION_BONUS,
   INSURE_PREMIUM_PER_TICK,
   MAX_HIT_FRACTION,
@@ -612,7 +613,7 @@ export function resolve(options: ResolveOptions): ResolveResult {
             baseValue: value,
             rng,
           });
-          const filed = fileCaseFile(caseFiles, rolled);
+          const filed = fileCaseFile(caseFiles, rolled, equipmentPolicyOf(orders));
           caseFiles = filed.files;
           stats = carried();
           syncVitals();
@@ -626,6 +627,20 @@ export function resolve(options: ResolveOptions): ResolveResult {
             log(
               tick,
               `Drawer full. ${gone === 'the new file' ? `Case ${rolled.id} was not worth the space and has been released` : `Case ${gone} released to make room`}.`,
+            );
+          }
+          /*
+           * Design rule 1: the system may suggest, it may not act.
+           *
+           * The officer countersigned a file that scores below what just
+           * arrived. That is their instruction and it stands — but saying
+           * nothing would let a player hold a deliberate choice for weeks
+           * without ever learning what it cost them.
+           */
+          if (filed.passedOver) {
+            log(
+              tick,
+              `Case ${filed.passedOver.id} is countersigned and was kept over ${rolled.id}, which scores higher under your equipment policy.`,
             );
           }
         } else {

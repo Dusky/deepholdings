@@ -259,6 +259,50 @@ export const GLOSSARY = {
       'considers honest.',
     screen: 'orders',
   },
+  keepPolicy: {
+    term: 'What to Keep',
+    plain: 'Which case file is released when the drawer is full and something new turns up.',
+    detail:
+      'Your recruit can carry three. A fourth find replaces the weakest of ' +
+      'them, and this decides what "weakest" means. Anything you countersign ' +
+      'in the Armoury is exempt and is never released.',
+    screen: 'orders',
+  },
+  keepBalanced: {
+    term: 'Balanced',
+    plain: 'Weighs health, damage reduction and loot value together.',
+    screen: 'orders',
+  },
+  keepVigour: {
+    term: 'Health',
+    plain: 'Keeps whichever file adds the most maximum health.',
+    screen: 'orders',
+  },
+  keepSurvival: {
+    term: 'Survival',
+    plain: 'Keeps whichever file reduces damage most, ignoring everything else.',
+    screen: 'orders',
+  },
+  keepLoot: {
+    term: 'Loot',
+    plain: 'Keeps whichever file raises the value of finds most.',
+    screen: 'orders',
+  },
+  keepOfficer: {
+    term: 'By hand',
+    plain: 'Nothing is ever released automatically. A full drawer turns new finds away until you release one yourself.',
+    screen: 'orders',
+  },
+  countersign: {
+    term: 'Countersigned',
+    plain: 'A case file you have kept by hand. It is never released automatically, even for a better one.',
+    detail:
+      'Filed as Form 5-E, free and immediate. This is what makes a file safe ' +
+      'to spend Union Standing on — without it the quartermaster may release ' +
+      'the thing you just paid to improve. Withdraw the countersignature and ' +
+      'the file returns to ordinary discretion.',
+    screen: 'armoury',
+  },
   site: {
     term: 'Site',
     plain: 'Which dig your recruit works. Each pays and kills differently.',
@@ -423,6 +467,11 @@ export const FORMS: Record<string, { plain: string; verb: string }> = {
   'T-1': {
     verb: 'Transfer to a new posting',
     plain: 'Surrenders your whole pension and everything bought with it, in exchange for commendations.',
+  },
+  '5-E': {
+    verb: 'Keep a case file by hand',
+    plain:
+      'Marks a file so the quartermaster never releases it, even for a better one. Free, immediate, and reversible.',
   },
   '12-C': {
     verb: 'Contest a clause',

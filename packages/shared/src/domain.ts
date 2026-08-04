@@ -6,6 +6,44 @@ export type LootPriority = 'gold' | 'gear' | 'relics' | 'knowledge';
 export type SpendPolicy = 'resupply' | 'hoard' | 'insure';
 
 /**
+ * What the quartermaster optimises for when the drawer is full.
+ *
+ * ## The hole this fills
+ *
+ * `file()` keeps three case files and silently discards the weakest by a fixed
+ * formula — `vigour + survival×200 + lootValue×120` — that the officer could
+ * neither see nor change. So an officer who wanted a survival build could not
+ * keep one: the quartermaster would bin it for something scoring higher on a
+ * metric nobody had told them about.
+ *
+ * That was survivable while case files were only found. It stops being
+ * survivable the moment they can be *invested in*: Union Standing is scarce
+ * (measured median 2 held against a form costing 3), and spending it on a file
+ * the game may bin without asking is not a system anyone will use twice. Hence
+ * this lands before the rest of the crafting forms rather than after them.
+ *
+ * `officer` disables the quartermaster's substitution entirely — nothing is ever
+ * swapped out, and a full drawer simply refuses new arrivals. For the player who
+ * wants to run every slot by hand.
+ */
+export type EquipmentPolicy = 'vigour' | 'survival' | 'lootValue' | 'balanced' | 'officer';
+
+/**
+ * The officer's policy, defaulting to the behaviour that already shipped.
+ *
+ * Orders stored before this field existed have no value for it, and `balanced`
+ * is the formula `file()` used all along — so an existing officer's drawer
+ * behaves identically until they choose otherwise. One accessor rather than
+ * `?? 'balanced'` scattered about, because a default that disagrees with itself
+ * in one call site is the kind of bug this codebase has had before.
+ */
+export function equipmentPolicyOf(orders: {
+  equipmentPolicy?: EquipmentPolicy;
+}): EquipmentPolicy {
+  return orders.equipmentPolicy ?? 'balanced';
+}
+
+/**
  * Prestige tracks. Each is a ladder of tiers bought in order, so there is
  * always a next thing to work toward — a flat list of five is a demo, not a
  * progression.
@@ -86,6 +124,15 @@ export interface StandingOrders {
   retreatPct: number;
   lootPriority: LootPriority;
   spendPolicy: SpendPolicy;
+  /**
+   * Which case file the quartermaster keeps when the drawer is full.
+   *
+   * Optional on the way in for the same reason `site` is: orders were stored
+   * before this existed, and `equipmentPolicyOf` treats a missing value as
+   * `balanced` — the metric the hidden formula already used, so an officer who
+   * never touches this control sees no change in behaviour.
+   */
+  equipmentPolicy?: EquipmentPolicy;
 }
 
 export interface Character {

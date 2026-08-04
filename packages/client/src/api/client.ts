@@ -6,6 +6,7 @@ import type {
   BulkSellRequest,
   BulkSellResponse,
   BulletinResponse,
+  CaseFile,
   Character,
   ClaimPensionResponse,
   CommendationId,
@@ -221,6 +222,19 @@ export class ApiClient {
   /** Form 12-C. The fee leaves the purse here, whatever the panel rules. */
   fileForm(request: FileFormRequest): Promise<FileFormResponse> {
     return this.request('POST', '/v1/armoury/file', request, true);
+  }
+
+  /**
+   * Form 5-E. Costs nothing, so it carries no idempotency key.
+   *
+   * It sets the flag to a stated value rather than toggling it, which makes a
+   * retry harmless by construction — the failure mode a key exists to prevent
+   * cannot occur here.
+   */
+  countersign(request: { caseFileId: string; countersigned: boolean }): Promise<{
+    caseFiles: CaseFile[];
+  }> {
+    return this.request('POST', '/v1/armoury/countersign', request);
   }
 
   /**

@@ -18,7 +18,7 @@ import type {
   UnlockId,
   WorldState,
 } from '@deepholdings/shared';
-import { DEFAULT_ORDERS, GUILD_OBJECTIVES } from '@deepholdings/shared';
+import { DEFAULT_ORDERS, GUILD_OBJECTIVES, equipmentPolicyOf } from '@deepholdings/shared';
 import { initialWorld } from '../domain/world.js';
 import type { GuildStanding, IdempotentClaim } from '../ports.js';
 import { pendingMigrations, runMigrations } from '../migrations/runner.js';
@@ -206,7 +206,7 @@ export class PostgresRepository implements Repository {
 
   async getOrders(accountId: string): Promise<StandingOrders> {
     const { rows } = await this.db.query(
-      'SELECT site, target_depth, retreat_pct, loot_priority, spend_policy FROM standing_orders WHERE account_id = $1',
+      'SELECT site, target_depth, retreat_pct, loot_priority, spend_policy, equipment_policy FROM standing_orders WHERE account_id = $1',
       [accountId],
     );
     if (!rows[0]) return { ...DEFAULT_ORDERS };
@@ -216,6 +216,7 @@ export class PostgresRepository implements Repository {
       retreatPct: rows[0].retreat_pct,
       lootPriority: rows[0].loot_priority,
       spendPolicy: rows[0].spend_policy,
+      equipmentPolicy: rows[0].equipment_policy,
     };
   }
 
@@ -227,19 +228,20 @@ export class PostgresRepository implements Repository {
     const filed = options?.markFiled ?? false;
     await this.db.query(
       `INSERT INTO standing_orders
-         (account_id, target_depth, retreat_pct, loot_priority, spend_policy, site, updated_at, filed_at)
-       VALUES ($1, $2, $3, $4, $5, $7, now(), CASE WHEN $6 THEN now() ELSE NULL END)
+         (account_id, target_depth, retreat_pct, loot_priority, spend_policy, site, equipment_policy, updated_at, filed_at)
+       VALUES ($1, $2, $3, $4, $5, $7, $8, now(), CASE WHEN $6 THEN now() ELSE NULL END)
        ON CONFLICT (account_id) DO UPDATE SET
          site = EXCLUDED.site,
          target_depth = EXCLUDED.target_depth,
          retreat_pct = EXCLUDED.retreat_pct,
          loot_priority = EXCLUDED.loot_priority,
          spend_policy = EXCLUDED.spend_policy,
+         equipment_policy = EXCLUDED.equipment_policy,
          updated_at = now(),
          -- Once filed, always filed.
          filed_at = COALESCE(standing_orders.filed_at, EXCLUDED.filed_at)`,
       [accountId, orders.targetDepth, orders.retreatPct, orders.lootPriority, orders.spendPolicy, filed,
-       orders.site ?? 'holdings'],
+       orders.site ?? 'holdings', equipmentPolicyOf(orders)],
     );
   }
 

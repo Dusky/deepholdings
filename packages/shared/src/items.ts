@@ -101,6 +101,20 @@ export interface CaseFile {
   /** Book value, before clauses. Case files sell for more than plain loot. */
   unitValue: number;
   clauseIds: readonly string[];
+  /**
+   * Direct Issue (Form 5-E): the officer has kept this file by hand.
+   *
+   * A countersigned file is never displaced by the quartermaster, **even by a
+   * strictly better one**. That is the whole promise and it does not bend: the
+   * system may say in the log that something better was passed over, but it may
+   * not act. An explicit instruction that gets quietly overridden when the
+   * machine disagrees is worse than no instruction at all.
+   *
+   * Lives on the file rather than on a slot index, which gets rule 3 of the
+   * design for free — a countersignature survives death exactly when the file
+   * it belongs to does.
+   */
+  countersigned?: boolean;
 }
 
 export interface StatBlock {

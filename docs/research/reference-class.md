@@ -5,6 +5,14 @@
 > Idle) plus the set the existing research never looked at. It ends with
 > concrete amendments to the redesign, one of which reverses something in it,
 > and one strategic question that is above my pay grade.
+>
+> **Resolved since writing.** Part 3 poses the choice between the incremental
+> column and the premium-narrative column and says it is an owner decision. It
+> has been made: **the incremental column.** `redesign.md` was rewritten around
+> that, and Part 4's amendments below were written for the narrative design —
+> three survive the move (legacy choice at prestige, knowledge as progression,
+> the notification carrying the decision) and the rest are superseded. Parts 1
+> and 2 are unaffected and are the reason the second draft could be written.
 
 ## Why this note exists
 

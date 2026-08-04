@@ -9,6 +9,13 @@ and the crafting system. Competitive research behind several of these lives in
 [`docs/research/genre-cues.md`](docs/research/genre-cues.md) and
 [`docs/research/idle-hacking.md`](docs/research/idle-hacking.md).
 
+**Start with [`docs/research/progression-depth.md`](docs/research/progression-depth.md)
+if the question is what to build next.** It is the only note aimed at the
+project's largest measured problem — `longrun`'s day-32.6 content cliff — and it
+contradicts the obvious fix. None of the four games studied extends its primary
+number to buy longevity; they all add systems instead. The other three notes are
+positioning and policy reads, and each reduced this question to a single bullet.
+
 **Assumptions** (correct these and the plan changes):
 
 - Solo developer, part-time, no fixed launch date.

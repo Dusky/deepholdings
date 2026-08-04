@@ -44,13 +44,13 @@
  */
 import type { LadderEntry } from './tuning.js';
 
-export type CommendationTrack = 'intake' | 'endowment' | 'patronage' | 'dispensation' | 'secondment';
+export type CommendationTrack = 'intake' | 'audience' | 'patronage' | 'stretch' | 'secondment';
 
 export type CommendationId =
   | 'intake1' | 'intake2' | 'intake3'
-  | 'endowment1' | 'endowment2' | 'endowment3'
+  | 'stretch1' | 'stretch2' | 'stretch3'
+  | 'audience1' | 'audience2' | 'audience3'
   | 'patronage1' | 'patronage2' | 'patronage3'
-  | 'dispensation1' | 'dispensation2' | 'dispensation3'
   | 'secondment1';
 
 /** Account-level and permanent. Nothing here is ever spent by a reset. */
@@ -97,19 +97,55 @@ export const COMMENDATION_CATALOGUE: readonly LadderEntry<CommendationId, Commen
   // after months at Floor 12. Tier 3 is Grade 12 because that is `MAX_DEPTH`:
   // recruits arrive cleared for the deepest floor the Authority authorises, and
   // the ceiling stops it inflating past a number the balance work has measured.
-  { id: 'intake1', track: 'intake', tier: 1, cost: 1, label: 'Standing Requisition of Personnel I',
-    detail: 'Recruits arrive no lower than Grade 4.' },
-  { id: 'intake2', track: 'intake', tier: 2, cost: 3, label: 'Standing Requisition of Personnel II',
-    detail: 'Recruits arrive no lower than Grade 8.' },
-  { id: 'intake3', track: 'intake', tier: 3, cost: 7, label: 'Standing Requisition of Personnel III',
-    detail: 'Recruits arrive no lower than Grade 12.' },
+  // Grade *and* permit, in one track, because they were never really two.
+  //
+  // `authorisedDepth` is a minimum of the grade term and the permit term, so an
+  // officer who bought Grade 12 on arrival and no permit arrived cleared for
+  // Floor 12 and authorised for Floor 2. Buying half of this was worthless,
+  // which made it a pair to be bought together rather than a choice — and it
+  // cost the catalogue a whole slot to say one thing twice.
+  { id: 'intake1', track: 'intake', tier: 1, cost: 2, label: 'Standing Requisition of Personnel I',
+    detail: 'Recruits arrive at Grade 4, cleared to Permit D-2.' },
+  { id: 'intake2', track: 'intake', tier: 2, cost: 4, label: 'Standing Requisition of Personnel II',
+    detail: 'Recruits arrive at Grade 8, cleared to Permit D-4.' },
+  { id: 'intake3', track: 'intake', tier: 3, cost: 9, label: 'Standing Requisition of Personnel III',
+    detail: 'Recruits arrive at Grade 12, cleared to Permit D-6.' },
 
-  { id: 'endowment1', track: 'endowment', tier: 1, cost: 1, label: 'Service Endowment I',
-    detail: 'Every pension accrues 15% faster, permanently.' },
-  { id: 'endowment2', track: 'endowment', tier: 2, cost: 3, label: 'Service Endowment II',
-    detail: 'Every pension accrues 35% faster.' },
-  { id: 'endowment3', track: 'endowment', tier: 3, cost: 7, label: 'Service Endowment III',
-    detail: 'Every pension accrues 60% faster.' },
+  // The slot that freed, spent on a decision instead of a discount.
+  //
+  // Working below your grade is the oldest good idea in this codebase that has
+  // never once fired: `GRADE_STRETCH` is pinned at zero and its own comment
+  // explains why — "a flat stretch applies to a Grade I recruit on their first
+  // morning as readily as to a veteran", and at one floor it took balanced play
+  // from 1.7 deaths a week to seventeen.
+  //
+  // A prestige gate is exactly the thing that fixes that objection. Nobody
+  // reaches this without having filed Form T-1, by which point they have intake,
+  // a department and a drawer of case files. It is the one reward here that a
+  // player can decline on purpose: more depth means more gold and more pension,
+  // both superlinear, paid for in recruits.
+  { id: 'stretch1', track: 'stretch', tier: 1, cost: 1, label: 'Dispensation to Work Below Grade I',
+    detail: 'Recruits may work one floor deeper than their grade allows.' },
+  { id: 'stretch2', track: 'stretch', tier: 2, cost: 2, label: 'Dispensation to Work Below Grade II',
+    detail: 'Two floors deeper. They will not all come back.' },
+  { id: 'stretch3', track: 'stretch', tier: 3, cost: 4, label: 'Dispensation to Work Below Grade III',
+    detail: 'Three floors deeper. The Authority accepts no correspondence on the matter.' },
+
+  // Arbitration made repeatable, which turns case files from what you were
+  // given into what you chose.
+  //
+  // The 30% dismissal stays untouched at every tier. `forms.ts` is explicit that
+  // the risk is the point — "a reroll that always succeeds is a slider, and the
+  // player sets it to maximum and stops thinking about it" — so this buys
+  // *frequency*, never certainty. Standing is the scarce currency that makes
+  // 12-C a once-in-a-while event; spending less of it per filing is what lets an
+  // officer actually shape a build rather than accept one.
+  { id: 'audience1', track: 'audience', tier: 1, cost: 1, label: 'Right of Audience I',
+    detail: 'Form 12-C costs 2 standing instead of 3.' },
+  { id: 'audience2', track: 'audience', tier: 2, cost: 3, label: 'Right of Audience II',
+    detail: 'Form 12-C costs 1 standing.' },
+  { id: 'audience3', track: 'audience', tier: 3, cost: 6, label: 'Right of Audience III',
+    detail: 'Form 12-C may be filed without standing. It may still be dismissed.' },
 
   // The department survives a transfer, so the wage does too. This is the one
   // reward that gets better the more of slice 3 you bought.
@@ -119,13 +155,6 @@ export const COMMENDATION_CATALOGUE: readonly LadderEntry<CommendationId, Commen
     detail: 'The Authority meets 45% of your payroll.' },
   { id: 'patronage3', track: 'patronage', tier: 3, cost: 4, label: 'Departmental Patronage III',
     detail: 'The Authority meets 70% of your payroll.' },
-
-  { id: 'dispensation1', track: 'dispensation', tier: 1, cost: 1, label: 'Transferred Dispensation I',
-    detail: 'A new posting begins with Permit D-2.' },
-  { id: 'dispensation2', track: 'dispensation', tier: 2, cost: 2, label: 'Transferred Dispensation II',
-    detail: 'A new posting begins with Permit D-4.' },
-  { id: 'dispensation3', track: 'dispensation', tier: 3, cost: 4, label: 'Transferred Dispensation III',
-    detail: 'A new posting begins with Permit D-6.' },
 
   // One rung, and the only thing in this catalogue that unlocks a *place*
   // rather than a number. Priced above the tier-1 rungs so it is not simply the
@@ -148,11 +177,6 @@ export function intakeFloor(owned: readonly CommendationId[]): number {
   return [1, 4, 8, 12][commendationTier(owned, 'intake')];
 }
 
-/** Multiplier on every pension award. */
-export function endowmentMultiplier(owned: readonly CommendationId[]): number {
-  return [1, 1.15, 1.35, 1.6][commendationTier(owned, 'endowment')];
-}
-
 /** The share of payroll the officer still pays. */
 export function payrollShare(owned: readonly CommendationId[]): number {
   return [1, 0.8, 0.55, 0.3][commendationTier(owned, 'patronage')];
@@ -160,5 +184,26 @@ export function payrollShare(owned: readonly CommendationId[]): number {
 
 /** The permit tier a new posting starts on. */
 export function startingPermitTier(owned: readonly CommendationId[]): number {
-  return [1, 2, 4, 6][commendationTier(owned, 'dispensation')];
+  return [1, 2, 4, 6][commendationTier(owned, 'intake')];
+}
+
+/**
+ * Floors past their grade this officer's recruits may be sent.
+ *
+ * Added to `GRADE_STRETCH` rather than replacing it: the constant stays the
+ * global floor (zero, and measured to be the only safe value to hand everyone)
+ * and this is the exemption an officer earned.
+ */
+export function grantedStretch(owned: readonly CommendationId[]): number {
+  return commendationTier(owned, 'stretch');
+}
+
+/**
+ * What Form 12-C costs this officer in standing.
+ *
+ * Never touches `dismissChance` — see the Right of Audience note above and the
+ * one in `forms.ts`. Frequency is buyable; certainty is not.
+ */
+export function arbitrationStanding(base: number, owned: readonly CommendationId[]): number {
+  return Math.max(0, base - commendationTier(owned, 'audience'));
 }

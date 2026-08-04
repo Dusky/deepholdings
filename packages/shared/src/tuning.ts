@@ -8,7 +8,7 @@ import type {
   UnlockId,
   UnlockTrack,
 } from './domain.js';
-import { endowmentMultiplier, type CommendationId } from './transfer.js';
+import type { CommendationId } from './transfer.js';
 import { siteSpec, type SiteId } from './sites.js';
 
 /** One resolution tick per minute of real time. */
@@ -102,11 +102,24 @@ export function authorisedDepth(
   permitTier: number,
   level: number,
   site: SiteId = 'holdings',
+  /**
+   * Floors past their grade this officer has been granted, on top of the global
+   * `GRADE_STRETCH`.
+   *
+   * Defaults to zero so every existing caller and every measurement taken before
+   * the Dispensation existed still means what it meant. The reason a granted
+   * stretch is safe where a global one was not is the gate: this is only ever
+   * non-zero for an officer who has filed Form T-1, and the failure the constant
+   * documents — "a flat stretch applies to a Grade I recruit on their first
+   * morning as readily as to a veteran" — is precisely a thing a fresh recruit
+   * cannot now suffer.
+   */
+  granted = 0,
 ): number {
   return Math.min(
     targetDepth,
     permitDepthLimit(permitTier, site),
-    level + GRADE_STRETCH,
+    level + GRADE_STRETCH + granted,
     siteSpec(site).maxDepth,
   );
 }
@@ -218,10 +231,19 @@ export function pensionAward(
   const service = Math.max(0, serviceTicks);
   const depthFactor = 1 + depthReached * PENSION_DEPTH_FACTOR;
   const credit = SERVICE_CREDIT_BY_TIER[unlockTier(unlocks, 'service')];
+  /*
+   * `commendations` no longer scales the award, and the parameter stays because
+   * removing it would silently rebase every measurement that passes it.
+   *
+   * Service Endowment used to multiply this by up to 1.6, which was the same
+   * effect as the Service Credit unlock two lines up — the prestige layer's
+   * headline reward was a second copy of the layer below it. The slot now buys
+   * Right of Audience instead, which changes what an officer *does* with case
+   * files rather than what the same career is worth.
+   */
+  void commendations;
   return Math.round(
-    (service * PENSION_SERVICE_RATE * depthFactor + goldHandled * PENSION_ESTATE_RATE) *
-      credit *
-      endowmentMultiplier(commendations),
+    (service * PENSION_SERVICE_RATE * depthFactor + goldHandled * PENSION_ESTATE_RATE) * credit,
   );
 }
 

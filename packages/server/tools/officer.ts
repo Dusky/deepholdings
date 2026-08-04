@@ -53,6 +53,7 @@ import {
   type Registry,
   type RequisitionId,
   type CommendationId,
+  type CommendationTrack,
   type StaffRung,
   type StaffRungId,
   type Transfer,
@@ -101,7 +102,7 @@ export interface OfficerPolicy {
    * modelling an optimiser, and the award is linear precisely so that nobody
    * has to be one.
    */
-  transfers?: boolean;
+  transfers?: boolean | { prefer: readonly CommendationTrack[] };
 }
 
 export interface VisitState {
@@ -374,7 +375,21 @@ export function visit(
           commendationTier(transfer.unlocks, entry.track) === entry.tier - 1 &&
           entry.cost <= transfer.total,
       );
+      /*
+       * A preference outranks the Secondment, which outranks price.
+       *
+       * The Secondment kept its queue-jump because the reason for it still
+       * holds — it is the only rung that moves the recruit rather than a number
+       * — but it is no longer the *only* rung worth modelling deliberately. The
+       * Dispensation to Work Below Grade is a rung an officer can rationally
+       * refuse, so "which officer is this" has to be answerable here too.
+       */
+      const prefer = typeof policy.transfers === 'object' ? policy.transfers.prefer : [];
+      const wanted = prefer
+        .map((track) => affordable.find((entry) => entry.track === track))
+        .find((entry) => entry !== undefined);
       const rung =
+        wanted ??
         affordable.find((entry) => entry.track === 'secondment') ??
         affordable.reduce<(typeof COMMENDATION_CATALOGUE)[number] | null>(
           (best, entry) => (best === null || entry.cost < best.cost ? entry : best),

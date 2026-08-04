@@ -13,7 +13,10 @@ import {
   COMMENDATION_CATALOGUE,
   PENSION_PER_COMMENDATION,
   commendationAward,
-  endowmentMultiplier,
+  authorisedDepth,
+  formSpec,
+  grantedStretch,
+  arbitrationStanding,
   intakeFloor,
   payrollPerTick,
   payrollShare,
@@ -42,11 +45,46 @@ test('a partial commendation is never paid out', () => {
   assert.equal(commendationAward(-5000), 0);
 });
 
-test('Service Endowment multiplies every award', () => {
+test('Commendations no longer scale the award', () => {
+  // Service Endowment used to multiply this by up to 1.6, which was the Service
+  // Credit unlock's effect a second time — the prestige layer re-selling the
+  // layer below it. The parameter stays so callers keep compiling; it must not
+  // move the number.
   const plain = pensionAward(1440, 12, 0);
-  const endowed = pensionAward(1440, 12, 0, [], ['endowment1']);
-  assert.ok(Math.abs(endowed - plain * 1.15) <= 1, `${endowed} against ${plain * 1.15}`);
-  assert.equal(endowmentMultiplier([]), 1, 'an officer on their first posting pays list price');
+  assert.equal(pensionAward(1440, 12, 0, [], ['audience3', 'intake3']), plain);
+});
+
+test('the Dispensation is the only thing that lets a recruit outrun their grade', () => {
+  // `GRADE_STRETCH` is pinned at zero, so without a Commendation `authorisedDepth`
+  // clamps to grade and this is unreachable — which is what made
+  // `gradeMismatchMultiplier` dead code for the whole of the game's life.
+  assert.equal(grantedStretch([]), 0);
+  assert.equal(authorisedDepth(12, 8, 5), 5, 'an ungranted officer is held to their grade');
+  assert.equal(
+    authorisedDepth(12, 8, 5, 'holdings', grantedStretch(['stretch1', 'stretch2'])),
+    7,
+    'two rungs buy two floors',
+  );
+  // The permit still binds. A dispensation excuses your grade, not your paperwork.
+  assert.equal(authorisedDepth(12, 1, 5, 'holdings', grantedStretch(['stretch3'])), 2);
+});
+
+test('Right of Audience discounts standing and nothing else', () => {
+  const spec = formSpec('12-C')!;
+  assert.equal(arbitrationStanding(spec.standing, []), 3);
+  assert.equal(arbitrationStanding(spec.standing, ['audience1']), 2);
+  assert.equal(
+    arbitrationStanding(spec.standing, ['audience1', 'audience2', 'audience3']),
+    0,
+    'the top rung files without standing',
+  );
+  assert.ok(
+    arbitrationStanding(spec.standing, ['audience1', 'audience2', 'audience3']) >= 0,
+    'never negative, or a filing would pay standing out',
+  );
+  // The wager is not for sale: `forms.ts` is explicit that a reroll which always
+  // succeeds is a slider the player sets once and stops thinking about.
+  assert.equal(spec.dismissChance, 0.3);
 });
 
 test('Departmental Patronage lowers the payroll but never to nothing', () => {
@@ -64,22 +102,26 @@ test('Departmental Patronage lowers the payroll but never to nothing', () => {
     'but an empty one costs nothing');
 });
 
-test('a new posting starts on the permit Transferred Dispensation bought', () => {
+test('a new posting starts on the permit Standing Requisition bought', () => {
   const veteran = succeed({
     id: 'a', accountId: 'x', previous: null, depthReached: 0, unlocks: [], atTick: 0,
   }).character;
   const posting = succeed({
     id: 'b', accountId: 'x', previous: { ...veteran, permitTier: 8, level: 40 },
     depthReached: 12, unlocks: [], atTick: 0,
-    commendations: ['dispensation1', 'dispensation2'], posting: true,
+    commendations: ['intake1', 'intake2'], posting: true,
   });
 
-  assert.equal(startingPermitTier(['dispensation1', 'dispensation2']), 4);
+  assert.equal(startingPermitTier(['intake1', 'intake2']), 4);
   // Granted, not inherited: running it through `inheritedPermitTier` would take
   // one straight back off the thing the officer paid for.
   assert.equal(posting.character.permitTier, 4);
   assert.equal(posting.character.recruitNum, 1, 'a posting starts its own numbering');
-  assert.equal(posting.character.level, 1, 'and inherits no grade from the last posting');
+  // Grade 8 is what Standing Requisition II *grants*, not what the previous
+  // posting left behind — that recruit was Grade 40. The track carries both the
+  // grade and the permit now, because `authorisedDepth` takes the lower of the
+  // two and buying one without the other bought nothing.
+  assert.equal(posting.character.level, 8, 'the intake floor, not an inheritance');
 });
 
 test('the intake floor applies to a fresh posting, where there is nothing to inherit', () => {
@@ -208,10 +250,12 @@ for (const { name, make } of adapters) {
       'the top rung must not be reachable at the top rung price',
     );
 
+    // Intake tier 1 costs 2 now: it absorbed Transferred Dispensation's job, so
+    // it absorbed roughly its price too.
     const bought = await purchaseCommendation(repo, account.id, 'intake1');
     assert.deepEqual(bought.transfer.unlocks, ['intake1']);
-    assert.equal(bought.transfer.total, 1);
-    assert.equal(bought.transfer.spent, 1);
+    assert.equal(bought.transfer.total, 0);
+    assert.equal(bought.transfer.spent, 2);
 
     await assert.rejects(
       () => purchaseCommendation(repo, account.id, 'intake2'),

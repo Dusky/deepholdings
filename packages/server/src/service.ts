@@ -34,6 +34,7 @@ import {
   TIER_III_LICENCES,
   UNLOCK_CATALOGUE,
   licenceBlocked,
+  arbitrationStanding,
   type UnlockTrack,
   JOURNAL_PAGE_SIZE,
   journalLines,
@@ -684,7 +685,18 @@ export async function fileForm(
 
     const gold = formGoldCost(spec, file.grade);
     if (record.character.gold < gold) throw new ServiceError('insufficient_gold', 'not enough gold');
-    if (record.character.standing < spec.standing) {
+    /*
+     * Right of Audience discounts the standing, never the gold and never the
+     * dismissal.
+     *
+     * Charged from one figure so the gate and the debit cannot drift — the
+     * Armoury quotes this same number, and a screen that quoted the list price
+     * while the server charged the discounted one would read as the discount
+     * not working.
+     */
+    const transfer = await tx.getTransfer(accountId);
+    const standingCost = arbitrationStanding(spec.standing, transfer.unlocks);
+    if (record.character.standing < standingCost) {
       throw new ServiceError('insufficient_standing', 'not enough Union Standing');
     }
 
@@ -703,7 +715,7 @@ export async function fileForm(
     const character: Character = {
       ...record.character,
       gold: record.character.gold - gold,
-      standing: record.character.standing - spec.standing,
+      standing: record.character.standing - standingCost,
     };
     const filings = [...(record.filings ?? []), filing];
     const caseFiles = donor
@@ -722,7 +734,7 @@ export async function fileForm(
             `Fee ${gold} gold. ${donor!.name} has been struck from the register. ` +
             `Estimated processing: ${hours} hours.`
           : `Form ${spec.id} filed against case ${file.id}, contesting "${clause?.text ?? wasClauseId}". ` +
-            `Fee ${gold} gold, Union Standing ${spec.standing}. Estimated processing: ${hours} hours.`,
+            `Fee ${gold} gold, Union Standing ${standingCost}. Estimated processing: ${hours} hours.`,
       ),
     ]);
 
@@ -736,7 +748,7 @@ export async function fileForm(
         secondsRemaining: spec.ticks * TICK_SECS,
       },
       goldCharged: gold,
-      standingCharged: spec.standing,
+      standingCharged: standingCost,
       character,
     };
   });

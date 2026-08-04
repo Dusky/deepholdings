@@ -7,6 +7,7 @@
  * keyed on (character id, tick) rather than on call order or wall-clock.
  */
 import {
+  grantedStretch,
   MAX_CATCHUP_TICKS,
   authorisedSite,
   permitDepthLimit,
@@ -148,7 +149,12 @@ export interface ResolveOptions {
    */
   restriction?: AssignmentRestriction;
   /**
-   * Commendations held by the officer, for the Service Endowment multiplier.
+   * Commendations held by the officer.
+   *
+   * Read for the Dispensation to Work Below Grade, which widens
+   * `authorisedDepth`, and for the site the orders may name. It used to carry
+   * the Service Endowment pension multiplier too; that track was retired for
+   * duplicating the Service Credit unlock almost exactly.
    *
    * Optional and defaulting to none, so every harness that models an officer on
    * their first posting keeps saying exactly what it said before. The server
@@ -508,7 +514,13 @@ export function resolve(options: ResolveOptions): ResolveResult {
     const limit = permitDepthLimit(character.permitTier, site.id);
     // Where the recruit may actually work: the shallower of their permit, their
     // grade, and what the officer asked for.
-    const authorised = authorisedDepth(targetDepth, character.permitTier, character.level, site.id);
+    const authorised = authorisedDepth(
+      targetDepth,
+      character.permitTier,
+      character.level,
+      site.id,
+      grantedStretch(commendations),
+    );
     const gradeLimited = authorised < Math.min(targetDepth, limit);
     const stalled = character.depth >= limit && targetDepth > limit;
     if (stalled) {

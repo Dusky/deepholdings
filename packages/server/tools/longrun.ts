@@ -124,6 +124,30 @@ if (BUILD !== null && !(BUILD in BUILDS)) {
 }
 const UNLOCK_POLICY = BUILD === null ? true : { prefer: BUILDS[BUILD] };
 
+/**
+ * `--posture cautious|reckless` picks which Commendations the officer buys.
+ *
+ * Separate from `--build` because they test different claims. `--build` asks
+ * whether the *unlock* catalogue holds a decision, and measured that it does
+ * not — two opposed builds came out 5% apart. This asks the same question of
+ * the repaired Commendation catalogue, where one track now buys risk outright:
+ * a reckless officer takes the Dispensation and works floors their recruits are
+ * not graded for, a cautious one refuses it and buys the department instead.
+ *
+ * If these two also land within a few per cent, the repair failed and the
+ * catalogue is still a ladder of numbers wearing different labels.
+ */
+const POSTURES = {
+  reckless: ['stretch', 'intake'],
+  cautious: ['patronage', 'audience'],
+} as const;
+const postureAt = args.indexOf('--posture');
+const POSTURE = postureAt === -1 ? null : (args[postureAt + 1] as keyof typeof POSTURES);
+if (POSTURE !== null && !(POSTURE in POSTURES)) {
+  throw new Error(`unknown posture "${POSTURE}" — expected ${Object.keys(POSTURES).join(' or ')}`);
+}
+const TRANSFER_POLICY = POSTURE === null ? TRANSFER : { prefer: POSTURES[POSTURE] };
+
 interface Milestone {
   tick: number;
   what: string;
@@ -306,7 +330,7 @@ function playOne(seed: number): {
         unlocks: UNLOCK_POLICY,
         staff: STAFF,
         hires: STAFF ? { reserve: 400 } : undefined,
-        transfers: TRANSFER,
+        transfers: TRANSFER ? TRANSFER_POLICY : false,
       },
       out.ticksResolved,
       () => `f${(filingId += 1)}`,

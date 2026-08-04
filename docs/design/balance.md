@@ -1874,3 +1874,87 @@ Worth watching: a career now buys 12 of 19 rungs rather than all 19. That is the
 intended mechanism — the rungs passed over are what a later posting still has to
 offer — but it does mean a single career sees less, and if the prestige loop ever
 stops being reached, that reduction lands on the players least able to afford it.
+
+## Repairing the Commendation catalogue
+
+**Measured 2026-08-04.** Layer 2 had the same disease as layer 1, and worse: of
+five tracks, four were accelerators. `transfer.ts` states the test a prestige
+reward must pass — "make the *next* posting different rather than make this one
+stronger" — and then failed it four times.
+
+### Two structural faults, both removed
+
+**Intake and Dispensation were one track split in half.** `authorisedDepth` is a
+minimum of the grade term and the permit term; intake raised one, dispensation
+the other. An officer who bought Grade 12 on arrival and no permit arrived
+cleared for Floor 12 and authorised for Floor 2. Buying either alone was
+worthless, so it was never a choice — it was a pair, costing the catalogue a
+whole slot to say one thing twice. Merged into intake, which now grants both.
+
+**Service Endowment was Service Credit again.** +15/35/60% pension against the
+unlock ladder's +20/45/80%. The prestige layer's headline reward was a second
+copy of the layer below it. Retired; `pensionAward` no longer reads commendations
+at all.
+
+The two freed slots now buy things that change play rather than scale it:
+
+- **Dispensation to Work Below Grade** — recruits may work 1/2/3 floors past
+  their grade. This activates `GRADE_STRETCH`, pinned at zero since it was
+  measured and left as documented dead code: "a flat stretch applies to a Grade I
+  recruit on their first morning as readily as to a veteran", and at one floor it
+  took balanced play from 1.7 deaths a week to seventeen. A prestige gate is
+  exactly the objection's answer — nobody reaches it without having transferred.
+  It also brings `gradeMismatchMultiplier` alive, which has never once fired.
+- **Right of Audience** — Form 12-C costs 2/1/0 standing. Buys *frequency* of
+  arbitration, never certainty: the 30% dismissal is untouched at every tier,
+  per `forms.ts`'s note that a reroll which always succeeds is a slider the
+  player sets once and stops thinking about.
+
+### The result: better, still not a decision
+
+Two opposed postures, `--posture reckless` (Dispensation) against
+`--posture cautious` (Patronage, Right of Audience), at
+`--days 90 --runs 8 --staff --transfer --annexe`:
+
+| | reckless | cautious |
+| --- | --- | --- |
+| Gold realised | 866,754 | 808,167 |
+| Lifetime pension | 1,005,258 | 1,009,423 |
+| Deaths | 122 | 118 |
+| Final grade | 8 | 7 |
+| Longest desert | 31 | 31 |
+
+Divergence went from the unlock builds' 5% to **7.3% in gold**, with pension
+identical. Better, and by the standard set for this work still not a decision.
+
+**Why it is nearly neutral is the interesting part.** The Dispensation works —
+reckless officers do work about three floors deeper — but `gradeMismatchMultiplier`
+now fires against them, taxing exactly the depth they bought. Yield is
+superlinear in depth and so is the damage penalty, so the extra floors very
+nearly pay for themselves. That is a coherent risk/reward trade and it is *not*
+a strategic choice: it changes the texture of a career without changing what it
+is worth.
+
+**And the track has a shelf life.** `authorisedDepth` also clamps at
+`MAX_DEPTH` (12), so once a recruit passes Grade 12 the stretch term can never
+bind again — an officer holding intake3 (arrive at Grade 12) gets nothing from
+the Dispensation at all. The two tracks in the repaired catalogue actively
+cancel one another at the top. That is a real defect and it is recorded rather
+than fixed, because fixing it means either raising `MAX_DEPTH` — the thing
+`sites.ts` documents as the expensive one — or making the stretch multiply yield
+rather than depth, which turns it back into an accelerator.
+
+### What this says about the approach
+
+Three attempts now — the clause pool, the Tier III licence, this repair — have
+improved pacing and content supply while failing to produce a build decision
+worth more than single digits. The common cause is that every reward in the game
+lands on the same few numbers, and those numbers are already bounded by depth,
+grade and the caps. A fourth catalogue would be a fourth way to add a percentage
+to a career whose ceiling is set elsewhere.
+
+The concurrent-postings layer sketched alongside this one does not have that
+property: allocation between several recruits is a decision that cannot be
+expressed as a multiplier on one. That, or accepting that this game's decisions
+live in the case-file drawer and investing there, is a better use of the next
+phase than a fifth ladder.

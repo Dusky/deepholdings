@@ -115,7 +115,7 @@ Everything below follows from that.
 
 ---
 
-## 3. The five changes
+## 3. The six changes
 
 ### 3.1 A roster, not a recruit — *the big one*
 
@@ -206,7 +206,151 @@ system is hard to get right and survivable to redo.
 
 ---
 
-## 3.6 All art is generated — a constraint, and an advantage
+### 3.6 The ladder — layered prestige, each rung its own machine
+
+A single reset loop runs out. That is not a prediction, it is Figure 3 of the
+pitch and the measurement behind it: one prestige axis, nineteen unlocks, last
+new thing on day 39.
+
+Every game that lasts for months answers this the same way — **resets that reset
+the resets** — and the ones that do it *well* share a property that is easy to
+miss and is the whole point of this section:
+
+> **Each layer is not a bigger version of the layer below. It is a different
+> machine, with its own currency, its own upgrade mechanic, and its own screen.**
+
+Antimatter Dimensions is the clearest case. Infinity gives you a **flat purchase
+grid**. Eternity replaces that with a **branching study tree whose branches are
+mutually exclusive**. Reality replaces *that* with **equippable, procedurally
+generated glyphs**, a **perk web**, and eventually **a scripting language** for
+automating everything beneath it. Four layers, four genuinely different
+interfaces. NGU does the same with Augments, Wandoos, Time Machine, Hacks,
+Wishes and Cards — each a distinct mini-system rather than another multiplier
+column.
+
+That is the depth this design was missing. The corrected ladder:
+
+| Rung | Period | Currency | **Its upgrade mechanic** | Reaches down into | Feeds itself |
+| --- | --- | --- | --- | --- | --- |
+| **Shift** | minutes | — | allocation across the roster | — | — |
+| **Retirement** | hours | **Service** | **a flat purchase grid** — one-off buys, no exclusivity, always something affordable | rates and yields in the shift | Service gain per career |
+| **Closure** | days | **Writs** | **a branching board with exclusive branches** — you cannot take every path, so holdings diverge | ceilings: storage, roster slots, chain slots | Writ yield per closure, and it unlocks new rows on the Retirement grid |
+| **Charter** | weeks | **Seals** | **equippable, procedurally generated clauses** — rolled with random modifiers, and you may hold only a few | the rules: depletion curves, lattice topology, which seams exist at all | Seal rate, and it re-rolls what the Closure board can offer |
+| **Survey** | months | **Bearings** | **a standing-instruction compiler** — you write the policies the department runs on | automates every rung below, so re-climbing is fast rather than repeated | Bearing gain, and it unlocks Charter clause slots |
+
+Read the last two columns as the actual specification. **Every rung reaches
+downward and also compounds into itself** — that self-feeding term is what makes
+the ladder accelerate rather than merely stack, and it is the thing a flat
+"prestige 2 gives +200%" design never has.
+
+#### Why these four mechanics, in this order
+
+The sequence is a teaching order, not a taxonomy.
+
+1. **A grid teaches spending.** No wrong answers, immediate payoff. It is the
+   first thing a new player meets and it must not be able to trap them.
+2. **A tree teaches commitment.** The first time the game says *you cannot have
+   both* is the first time a build exists. This is where the build divergence
+   the project has never had actually comes from — measured at single digits
+   three times, because nothing until now was exclusive.
+3. **Procedural clauses teach adaptation.** You do not choose your options, you
+   choose *among what you rolled*, so no two charters play the same. This is
+   also the cheapest content in the game: a clause is a data row with modifiers,
+   and §3.7 means it costs no art.
+4. **A compiler teaches mastery.** The last rung hands the player the thing
+   `staff.ts` already believes in — *delegate with instructions* — and lets them
+   write the instructions. It is the natural terminal verb for a game about
+   running a department, and it converts the whole ladder below into something
+   you can re-climb in an afternoon.
+
+#### The wall between rungs has to be diegetic — so: depletion
+
+The reason to close a holding cannot be an arbitrary threshold. **Seams
+deplete.** Yield decays as a holding is worked out, so output within one holding
+is an S-curve that flattens, and the game says it is over in its own vocabulary
+rather than by turning a number green.
+
+That makes *when to close* a real decision with a different texture from *when
+to retire*: too early wastes a holding you had not finished mastering, too late
+is grinding a dead one. Same instrument that swept the retreat slider measures
+it.
+
+Depletion earns its place on its own. It is the first thing in this design that
+makes a *place* finite, and finiteness is what makes the next place matter.
+
+#### Why this is nearly free for us
+
+Closing a holding generates the next one **from a new seed**. Because §3.7
+requires all art to be generated, a new holding costs no asset, no map and no
+artist — it is a seed, a topology and a set of depletion curves. The Charter
+rung's procedural clauses are the same trick applied to rules instead of
+terrain.
+
+> **A prestige ladder that generates new content instead of replaying old
+> content is only affordable if content is generated. It is.**
+
+That is the answer to the content cliff and the strongest argument in this
+document for the whole approach.
+
+#### Pacing, to be measured and not assumed
+
+First retirement inside the first hour. First closure around day 3 — early
+enough that a player meets the *idea* of a ladder before they can tire of one
+rung. First charter around week 3. The Survey rung is a month-two feature and
+should not be built until Closure has been measured over several cycles.
+
+These are guesses of exactly the kind this project has been burned by, and
+`longrun` should own them before anything is hand-tuned.
+
+### 3.6b The theme is a costume over this ladder — and the old one fits better
+
+Worth stating plainly, because it reverses a call made earlier in this document.
+
+The five rungs above are defined by their **mechanics**, and mechanics do not
+care what they are called. Rename them and nothing underneath moves. That makes
+the theme a genuinely separate decision — and once the ladder exists, the
+bureaucratic frame fits it *better* than the industrial one that replaced it.
+
+| Rung | The Authority | The Holdings |
+| --- | --- | --- |
+| allocation | Duty Roster | Shift |
+| flat grid | **Discharge** — a recruit completes service | Retirement |
+| exclusive tree | **Reassignment** — your office is closed, you are posted on | Closure |
+| equippable rolls | **Commission** — you are granted a bureau of your own | Charter |
+| compiler | **Statute** — you write the regulations | Survey |
+
+Three things fall out of that table.
+
+1. **The hardest rung is already built.** Equippable procedurally-rolled
+   modifiers is the Reality-glyph mechanic, and this codebase has eighty clauses
+   across six dimensions, endorsements and riders, and Form 12-C to reroll one.
+   That is a glyph system. It shipped, and the current design wastes it.
+2. **Prestige reads as promotion.** Every rung is being moved away from the job
+   you had just got good at. It is funny, it is true, and nothing else in the
+   genre has it — the sample is cell factories, space and fantasy skills.
+3. **`staff.ts` already wrote the ending.** *"You start doing your own filing and
+   you end up running a department."* The compiler rung is that sentence
+   finished.
+
+**Recommendation: keep the Authority**, under one condition, which is the same
+test §3.4 applies to unlocks pointed at the writing instead:
+
+> **Every piece of vocabulary must be attached to a mechanic.** No glossary
+> entry without a system behind it, no form that is not a screen you use. If a
+> term cannot name something the player *does*, it is cut.
+
+The joke wore out because it was decoration on a dead system — 528 lines of
+glossary explaining a game with one pipe. `flavor.ts` already knows the fix:
+*"the form is funny because the corridor is real."* Give the frame five working
+machines and it has something to be absurd against.
+
+The case against is real and should not be waved away: the owner is sick of it,
+bureaucratic language is a comprehension tax in the first thirty minutes where
+competitors lose most churned players, and the theme historically invited more
+*vocabulary* rather than more *systems*. The condition above exists to answer
+exactly that last failure.
+
+## 3.7 All art is generated — a constraint, and an advantage
 
 There is no artist on this project, so nothing in the game may depend on a
 drawn asset. That is a hard constraint on every system above, and the
@@ -237,11 +381,16 @@ ship scientific notation**, and `mobile-incrementals.md` already flagged that as
 a *bet* rather than a principle, because the category winner's store page leads
 with "watching the numbers climb higher."
 
-If the target is a number-go-up incremental, that bet should be relaxed. A
-lattice of interacting chains produces large numbers as a matter of arithmetic,
-and refusing them means capping the lattice. This does not require scientific
-notation on day one — but "gold in the hundreds" cannot survive §3.2 and should
-not be defended.
+**Decided: full incremental scale**, scientific notation included. A lattice of
+interacting chains produces large numbers as a matter of arithmetic, and §3.6
+multiplies that across every rung of the ladder — a ceiling bought at Closure is
+worthless if the number underneath it is not allowed to climb. Refusing the
+scale means capping the lattice and flattening the ladder.
+
+"Gold in the hundreds" does not survive this design and should not be defended.
+The compensating discipline is presentation, not magnitude: suffixes while the
+numbers are readable, notation only once they are not, and never two different
+formats for the same quantity on one screen.
 
 ## 5. What survives in the codebase
 
@@ -306,8 +455,16 @@ The existing measurement culture ports directly; the questions change.
   and `progression-depth.md` finding 4 independently concluded *"other players
   are the cheapest content"*. That is the fallback if the lattice runs dry, and
   it is a later milestone, not a launch feature.
-- **The number bet (§4) is unresolved** and the design cannot be finished
-  without an answer.
+- **Layered prestige is where the genre most often becomes a chore.** "Reset to
+  go faster to reset" is a real failure mode, and our own research recorded the
+  player verdict on one of them — NGU's *"sadistic difficulty is a rushed, huge
+  mistake."* The defence is §3.6's rule that each rung buys a different **kind**
+  of thing rather than a bigger number, and it has to be enforced per rung, not
+  asserted once.
+- **A rung that arrives too late is invisible.** If a player never reaches the
+  first Closure they are playing the single-pipe game we are trying to leave.
+  Day 3 is the target and it is a guess; it is also the cheapest thing on this
+  list to measure.
 
 ## 8. Build order
 
@@ -321,6 +478,14 @@ The existing measurement culture ports directly; the questions change.
 - **Stage 3 — verbs.** The unlock catalogue rebuilt as systems, wired to
   `staff.ts` and `assignments.ts`.
 - **Stage 4 — mastery.** Per-site progression that survives the recruit.
+- **Stage 4b — depletion and Closure.** Seams deplete; the second rung lands,
+  buying ceilings and a permanent board, and generating the next holding from a
+  seed. **This is the stage the "months, not a fortnight" claim rests on**, and
+  `longrun` should be re-pointed at it the moment it exists — the question stops
+  being whether one holding is fun and becomes whether output rises *across*
+  holdings.
+- **Stage 4c — Charter.** The third rung, buying rules rather than ceilings.
+  Only worth building once Closure has been measured over several cycles.
 - **Stage 5 — surface.** New frame, mobile, push. Keep Lifeline's lesson: the
   notification should carry a *decision* — "Fourth recruit idle, reassign?",
   "Grimwald is ready to retire" — answerable from the lock screen. It reported
@@ -343,12 +508,16 @@ side of it.
 
 ## 10. Open questions
 
-1. **How big may the numbers get?** (§4) Blocks the lattice's scale.
-2. **How many recruits, and how are they directed?** Doctrine-style standing
-   instructions (the `staff.ts` model) or Majesty-style bounties where autonomous
-   people take the work that pays? The second is more interesting and less
-   proven.
-3. **Does the bureaucratic frame stay?** Orthogonal to every system above. It was
-   named as something you dislike, and `staff.ts` shows the fiction and the
-   automation ladder can agree — "you start doing your own filing and end up
-   running a department" is a genuinely good line for a roster game.
+1. ~~**How big may the numbers get?**~~ **Answered — full incremental scale.** (§4)
+2. **Does the frame stay?** Re-opened by §3.6b: the ladder makes the Authority
+   the better costume, not merely a survivable one. Recommendation is to keep
+   it, under the vocabulary-must-name-a-mechanic condition. **Your call.**
+3. ~~**How is art produced?**~~ **Answered — generated, never drawn.** (§3.7)
+4. **How is the roster directed?** Standing instructions in the `staff.ts` model
+   — delegate with a policy — or Majesty-style bounties where autonomous people
+   take the work that pays best. The second is more interesting and considerably
+   less proven. **Stage 0 can answer it.**
+5. **How many rungs, in the end?** Three are designed here (§3.6). Whether a
+   fourth is content or bloat is not answerable before Closure has been measured
+   over several cycles, and the rule that decides it is already written: a rung
+   that cannot buy a different *kind* of thing than the rung below is not a rung.

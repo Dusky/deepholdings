@@ -380,6 +380,9 @@
   }
   button:hover { border-color: var(--gold); color: var(--gold); }
   button:active { background: var(--gold-wash); }
+  button[data-on="true"] {
+    background: var(--gold-wash); border-color: var(--gold); color: var(--gold);
+  }
   button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
   .hit { cursor: crosshair; }
@@ -732,7 +735,7 @@
     <div class="sec-head">
       <div class="plate">04</div>
       <div class="titles">
-        <h2>Five changes, in order of how much they matter</h2>
+        <h2>Six changes, in order of how much they matter</h2>
         <div class="prose">
           <p class="lead">Stop selling multipliers on one producer. Build several
           producers, several chains, and make the player allocate between them.</p>
@@ -825,6 +828,168 @@
           <p class="src">Melvor rebuilt Mastery entirely after launch because the first
           version's sense of progression was sub-par. Worth knowing this system is hard
           to get right — and survivable to redo.</p>
+        </div>
+      </div>
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 06</span>
+          <h3>Resets that reset the resets</h3>
+        </div>
+        <div class="body">
+          <p>One reset loop runs out — that isn't a prediction, it's Figure 3.
+          Every game that lasts for months answers it the same way: <strong>resets
+          that reset the resets.</strong> But the ones that do it <em>well</em> share a
+          property that is easy to miss, and it is the whole point:</p>
+          <p class="src">EACH LAYER IS NOT A BIGGER VERSION OF THE ONE BELOW.<br>
+          IT IS A DIFFERENT MACHINE — ITS OWN CURRENCY, ITS OWN UPGRADE MECHANIC,
+          ITS OWN SCREEN.</p>
+          <p>Antimatter Dimensions is the clearest case. Infinity gives you a
+          <strong>flat purchase grid</strong>. Eternity replaces it with a
+          <strong>branching tree whose branches are mutually exclusive</strong>.
+          Reality replaces <em>that</em> with <strong>equippable, procedurally rolled
+          glyphs</strong>, a perk web, and finally <strong>a scripting language</strong>
+          for automating everything beneath it. Four layers, four genuinely different
+          interfaces — not four multiplier columns.</p>
+          <p>Every rung reaches <em class="term">downward</em> into the layers below
+          and also <em class="term">feeds itself</em>. That self-feeding term is what
+          makes a ladder accelerate rather than merely stack, and it is what a flat
+          "prestige 2 grants +200%" never has.</p>
+        </div>
+      </div>
+    </div>
+
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 4 · The ladder — five rungs, five machines</p>
+        <p class="fig-sub">The mechanics are the argument; the names are a costume.
+        <strong>Switch the costume and nothing underneath moves</strong> — which is
+        exactly why the theme is a separate decision from the design.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:1.1rem">
+          <span class="mono" style="font-size:.66rem;letter-spacing:.14em;color:var(--ink-3)">COSTUME</span>
+          <button id="th-auth" type="button" data-on="true">The Authority</button>
+          <button id="th-hold" type="button">The Holdings</button>
+        </div>
+
+        <svg viewBox="0 0 760 360" role="img" id="laddersvg"
+             aria-label="Diagram of five nested layers. Each rung resets everything above it and has its own upgrade mechanic: an allocation layer, then a flat purchase grid, then a branching tree with mutually exclusive branches, then equippable procedurally rolled clauses, then a standing-instruction compiler.">
+          <defs>
+            <marker id="loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/>
+            </marker>
+          </defs>
+          <g id="ladder"></g>
+        </svg>
+      </div>
+      <figcaption>
+        The rule that keeps this from becoming a chore, and the one to enforce per
+        rung rather than assert once: <b>a rung that cannot buy a different kind of
+        thing than the rung below it is not a rung.</b> Our own research recorded the
+        player verdict when a layer gets this wrong — NGU's “sadistic difficulty is a
+        rushed, huge mistake.”
+      </figcaption>
+    </figure>
+
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 5 · Ninety days, with the ladder — <span style="color:var(--oxide)">projected</span></p>
+        <p class="fig-sub">The same ninety days as Figure 3. Each dip is a reset the
+        player chose; each dip returns higher than it fell.</p>
+        <ul class="legend">
+          <li><span class="swatch" style="background:var(--gold)"></span>Output per hour (log scale)</li>
+          <li><span class="swatch" style="background:var(--blue)"></span>Closure — the holding is worked out</li>
+          <li><span class="swatch" style="background:var(--oxide)"></span>Charter</li>
+        </ul>
+        <svg id="ladderchart" viewBox="0 0 760 280" role="img"
+             aria-label="A projected log-scale curve of output per hour over ninety days, rising in a sawtooth. Each closure drops output sharply and then it recovers past its previous peak; two charters drop it further and recover higher still.">
+        </svg>
+      </div>
+      <figcaption>
+        <b style="color:var(--oxide)">This figure is a projection, not a measurement</b> —
+        it is the shape the design is aiming at, and the thing <span class="mono">longrun</span>
+        should be pointed at the moment Closure exists. Every other figure on this
+        sheet is measured. The question stops being “is one holding fun” and becomes
+        <b>“does output rise across holdings”</b>.
+      </figcaption>
+    </figure>
+
+    <div class="prose" style="margin-top:2rem">
+      <p>And the part that makes it affordable: <strong>each reset generates the next
+      board from a new seed.</strong> Because nothing in this game is drawn by hand
+      (§08), a new holding — or a new posting — costs no asset, no map and no artist.
+      The prestige ladder and the generated-art constraint turn out to be the same
+      decision seen from two sides, and together they are the answer to Figure 3.</p>
+    </div>
+
+    <!-- ── the costume argument ── -->
+    <div style="margin-top:3rem">
+      <h3 style="margin-bottom:.5rem">Which costume, then</h3>
+      <div class="prose" style="margin-bottom:1.6rem">
+        <p>Flipping Figure 4 between the two makes the real point: <strong>the
+        systems don't care.</strong> But the costumes are not equally good, and the
+        bureaucratic one turns out to fit this ladder better than the design that
+        replaced it. Both cases, honestly.</p>
+      </div>
+
+      <div class="ledger">
+        <div class="col keep">
+          <h3><span class="mark">KEEP THE AUTHORITY</span></h3>
+          <ul>
+            <li><b>The clause system already exists.</b> Eighty clauses across six
+            dimensions, endorsements and riders, and Form 12-C rerolls one. That is
+            a glyph system — the hardest rung on the ladder — and it shipped.</li>
+            <li><b>Prestige is promotion.</b> Every rung is being moved away from the
+            job you had just got good at. That is funny, true, and nobody else in the
+            genre has it.</li>
+            <li><b>Tone is a moat.</b> Our own research: NGU's second most-praised
+            quality after progression is the writing, and it is "the one thing a
+            better-funded competitor cannot copy convincingly."</li>
+            <li><b>The shelf is crowded with the alternative.</b> CIFI is a cell
+            factory, USI is space, Melvor is fantasy skills. A deadpan bureaucracy is
+            the only one of these that is distinctive in a store listing.</li>
+            <li><b>Thousands of lines of written content survive</b> rather than being
+            deleted — the glossary, the flavour corpus, the register rule.</li>
+            <li><b>The joke wore out because it had nothing to be about.</b> It was
+            528 lines of glossary explaining a game with one pipe. Give it five real
+            machines and the paperwork has something to be absurd against —
+            which is what flavor.ts already says: <em>"the form is funny because the
+            corridor is real."</em></li>
+          </ul>
+        </div>
+        <div class="col cut">
+          <h3><span class="mark">GO TO THE HOLDINGS</span></h3>
+          <ul>
+            <li><b>It is legible in one screen.</b> Seams, depth, yield, refining —
+            no glossary required. Competitors lose most churned players in the first
+            thirty minutes, to the interface rather than the game.</li>
+            <li><b>You said the joke wore out</b>, and that is data. A theme its owner
+            is sick of is a theme that will not get written well for another year.</li>
+            <li><b>Big numbers sit naturally</b> in an industrial frame. A bureau
+            reporting 4.71e12 is a tonal choice you have to keep making work.</li>
+            <li><b>Procedural art is native</b> — contours, seams, surveys. Documents
+            are drawable too, but terrain is the easier generative brief.</li>
+            <li><b>The risk it removes:</b> a bureaucratic theme invites more
+            vocabulary rather than more systems. That is precisely what happened —
+            each new form was a new multiplier with a joke attached.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="kill" style="margin-top:2rem;border-left-color:var(--gold)">
+        <p class="eyebrow" style="color:var(--gold)">The recommendation</p>
+        <div class="prose">
+          <p class="lead"><strong>Keep the Authority, and hold it to the same rule as
+          the unlocks.</strong> The bureaucracy failed as decoration on a dead system;
+          it is a genuinely strong frame for five interlocking machines, and the
+          clause rung is already built.</p>
+          <p>The condition is the part that matters: <strong>every piece of vocabulary
+          must be attached to a mechanic.</strong> No glossary entry without a system
+          behind it, no form that is not a screen you use. If a term cannot name
+          something the player does, it gets cut — the same test that condemned
+          nineteen unlocks, pointed at the writing.</p>
+          <p>That is "keep the frame, cut the paperwork" taken seriously, and it is a
+          smaller change than the Holdings rewrite while keeping the one asset a
+          better-funded competitor cannot copy.</p>
         </div>
       </div>
     </div>
@@ -999,7 +1164,7 @@
 
     <figure>
       <div class="fig-frame">
-        <p class="fig-title">Figure 4 · Seam survey, generated from a seed</p>
+        <p class="fig-title">Figure 6 · Seam survey, generated from a seed</p>
         <p class="fig-sub"><strong>This is the in-game site renderer</strong>, not an
         illustration for this document — about sixty lines of canvas, drawing a real
         delve site from the seed the resolver already computes. Press the button: that
@@ -1074,7 +1239,7 @@
     <span>Deep Holdings · redesign draft 3</span>
     <span>docs/design/redesign.md</span>
     <span>docs/research/reference-class.md</span>
-    <span>All figures measured, not modelled</span>
+    <span>Figure 5 projected · every other figure measured</span>
   </footer>
 </div>
 
@@ -1265,6 +1430,212 @@
           `<span class="k">deaths/wk</span> ${d.d}`,
           r.left + r.width / 2, r.top + 40
         );
+      };
+      hit.addEventListener('pointerenter', show);
+      hit.addEventListener('focus', show);
+      hit.addEventListener('pointerleave', hideTip);
+      hit.addEventListener('blur', hideTip);
+      svg.appendChild(hit);
+    });
+  })();
+
+  /* ───────── figure 4 · the ladder, in two costumes ─────────
+     The mechanics column never changes. That is the point of the figure. */
+  const MECHANIC = [
+    { m: 'allocation across the roster',                       f: '—',                              c: 'var(--ink-3)' },
+    { m: 'a FLAT GRID — one-off buys, nothing exclusive',      f: 'feeds its own currency per run', c: 'var(--gold)'  },
+    { m: 'a BRANCHING TREE — branches are exclusive',          f: 'unlocks new rows on the grid',   c: 'var(--blue)'  },
+    { m: 'EQUIPPABLE CLAUSES — rolled, hold only a few',       f: 're-rolls what the tree offers',  c: 'var(--oxide)' },
+    { m: 'A COMPILER — you write the standing instructions',   f: 'automates every rung below',     c: 'var(--gold)'  }
+  ];
+
+  const COSTUME = {
+    auth: {
+      label: 'THE AUTHORITY',
+      rungs: [
+        { n: 'DUTY ROSTER', p: 'minutes', cur: '—',           r: 'resets nothing' },
+        { n: 'DISCHARGE',   p: 'hours',   cur: 'Service',     r: 'a recruit completes their service' },
+        { n: 'REASSIGNMENT',p: 'days',    cur: 'Seniority',   r: 'your office is closed, you are posted on' },
+        { n: 'COMMISSION',  p: 'weeks',   cur: 'Clauses',     r: 'you are granted a bureau of your own' },
+        { n: 'STATUTE',     p: 'months',  cur: 'Precedent',   r: 'you write the regulations' }
+      ],
+      note: 'every rung is a promotion away from the job you had just got good at'
+    },
+    hold: {
+      label: 'THE HOLDINGS',
+      rungs: [
+        { n: 'SHIFT',       p: 'minutes', cur: '—',           r: 'resets nothing' },
+        { n: 'RETIREMENT',  p: 'hours',   cur: 'Service',     r: 'a delver’s career ends' },
+        { n: 'CLOSURE',     p: 'days',    cur: 'Writs',       r: 'the holding is worked out and sealed' },
+        { n: 'CHARTER',     p: 'weeks',   cur: 'Seals',       r: 'a new concession, rolled from a seed' },
+        { n: 'SURVEY',      p: 'months',  cur: 'Bearings',    r: 'you map the whole deep' }
+      ],
+      note: 'every rung resets everything above it, and buys what nothing above it could'
+    }
+  };
+
+  function drawLadder(key) {
+    const g = document.getElementById('ladder');
+    g.textContent = '';
+    const set = COSTUME[key];
+    const x0 = 14, w = 732, rowH = 66, top = 18;
+
+    set.rungs.forEach((d, i) => {
+      const mech = MECHANIC[i];
+      const y = top + i * rowH;
+      // slower rungs are wider: the layer that resets the most visibly contains the rest
+      const inset = (set.rungs.length - 1 - i) * 16;
+
+      g.appendChild(el('rect', {
+        x: x0 + inset, y, width: w - inset * 2, height: rowH - 12, rx: 2,
+        fill: i === 0 ? 'none' : 'var(--paper-3)',
+        stroke: mech.c, 'stroke-width': i === 0 ? 1 : 1.4,
+        'stroke-dasharray': i === 0 ? '3 3' : 'none',
+        opacity: i === 0 ? .8 : 1
+      }));
+
+      const put = (attrs, txt) => { const t = el('text', attrs); t.textContent = txt; g.appendChild(t); };
+      const L = x0 + inset + 13, R = x0 + w - inset - 13;
+
+      put({ x: L, y: y + 21, 'font-size': 11.5, fill: mech.c, 'letter-spacing': '.13em' }, d.n);
+      put({ x: L, y: y + 36, 'font-size': 9 }, d.p + (d.cur === '—' ? '' : '  ·  ' + d.cur));
+      put({ x: L, y: y + 49, 'font-size': 8.5, fill: 'var(--ink-3)' }, d.r);
+
+      put({ x: R, y: y + 23, 'font-size': 10, 'text-anchor': 'end', fill: mech.c,
+            'letter-spacing': '.05em' }, mech.m);
+      put({ x: R, y: y + 40, 'font-size': 8.5, 'text-anchor': 'end' }, mech.f);
+
+      if (i > 0) {
+        const lx = x0 + inset;
+        g.appendChild(el('path', {
+          d: `M${lx + 4},${y + 16} H${lx - 7} V${y - rowH + 28} H${lx + 20}`,
+          fill: 'none', stroke: mech.c, 'stroke-width': 1.2, 'stroke-dasharray': '3 2',
+          'marker-end': 'url(#loop)', opacity: .7
+        }));
+      }
+    });
+
+    const n = el('text', { x: x0, y: top + set.rungs.length * rowH + 8,
+      'font-size': 9, fill: 'var(--ink-3)' });
+    n.textContent = set.note;
+    g.appendChild(n);
+  }
+
+  (function themeToggle() {
+    const a = document.getElementById('th-auth'), h = document.getElementById('th-hold');
+    const set = (key) => {
+      drawLadder(key);
+      [[a, key === 'auth'], [h, key === 'hold']].forEach(([b, on]) => {
+        b.dataset.on = on ? 'true' : 'false';
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+    };
+    a.addEventListener('click', () => set('auth'));
+    h.addEventListener('click', () => set('hold'));
+    set('auth');
+  })();
+
+  /* ───────── figure 5 · projected ladder curve ─────────
+     A model, deliberately: this is the shape being aimed at, not a measurement. */
+  (function ladderChart() {
+    const svg = document.getElementById('ladderchart');
+    const W = 760, H = 280, P = { l: 56, r: 16, t: 36, b: 44 };
+    const plotW = W - P.l - P.r, plotH = H - P.t - P.b;
+
+    const closures = [3, 8, 16, 26, 40, 57, 76];
+    const charters = [30, 68];
+
+    // Sub-day resolution, so a reset reads as a fall and a climb rather than a
+    // vertical line. The dips are the whole claim of the figure.
+    const series = [];
+    let out = 1, ceil = 400;
+    const perDay = 4;
+    for (let s = 0; s <= 90 * perDay; s++) {
+      const day = s / perDay;
+      // A reset takes almost everything and raises the ceiling. The climb back is
+      // exponential, and the plateau at the top is the holding depleting — which
+      // is what makes the next reset the obvious move.
+      if (closures.includes(day)) { out *= 0.004; ceil *= 10; }
+      if (charters.includes(day)) { out *= 0.00012; ceil *= 60; }
+      out = Math.min(out * Math.pow(3.1, 1 / perDay), ceil);
+      series.push({ day, out: Math.max(out, 0.6) });
+    }
+
+    const maxL = Math.log10(Math.max(...series.map(s => s.out)));
+    const X = d => P.l + (d / 90) * plotW;
+    const Y = v => P.t + plotH - (Math.log10(Math.max(v, 0.6)) / maxL) * plotH;
+
+    // decade gridlines
+    for (let e = 0; e <= Math.floor(maxL); e += 2) {
+      const y = Y(Math.pow(10, e));
+      const ln = el('line', { x1: P.l, y1: y, x2: W - P.r, y2: y,
+        stroke: 'var(--rule)', 'stroke-width': .5, opacity: .6 });
+      svg.appendChild(ln);
+      const tx = el('text', { x: P.l - 8, y: y + 3.5, 'font-size': 9, 'text-anchor': 'end' });
+      tx.textContent = '10' + String(e).replace(/\d/g, c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c]);
+      svg.appendChild(tx);
+    }
+
+    // reset markers, behind the curve
+    const mark = (day, color, label) => {
+      const ln = el('line', { x1: X(day), y1: P.t, x2: X(day), y2: P.t + plotH,
+        stroke: color, 'stroke-width': 1, 'stroke-dasharray': '2 3', opacity: .55 });
+      svg.appendChild(ln);
+      if (label) {
+        const t = el('text', { x: X(day), y: P.t - 8, 'font-size': 9, 'text-anchor': 'middle', fill: color });
+        t.textContent = label;
+        svg.appendChild(t);
+      }
+    };
+    closures.forEach((d, i) => mark(d, 'var(--blue)', i === 0 ? 'first closure' : null));
+    charters.forEach((d, i) => mark(d, 'var(--oxide)', i === 0 ? 'charter' : null));
+
+    const pts = series.map(s => [X(s.day), Y(s.out)]);
+    const area = el('path', {
+      d: `M${pts[0][0]},${P.t + plotH} ` + pts.map(p => `L${p[0]},${p[1]}`).join(' ') +
+         ` L${pts[pts.length - 1][0]},${P.t + plotH} Z`,
+      fill: 'var(--gold)', opacity: '.14'
+    });
+    svg.appendChild(area);
+    const line = el('path', {
+      d: 'M' + pts.map(p => `${p[0]},${p[1]}`).join(' L'),
+      fill: 'none', stroke: 'var(--gold)', 'stroke-width': 2,
+      'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    });
+    svg.appendChild(line);
+
+    // x axis
+    [0, 15, 30, 45, 60, 75, 90].forEach(d => {
+      const t = el('text', { x: X(d), y: H - 20, 'font-size': 9, 'text-anchor': 'middle' });
+      t.textContent = 'D' + d;
+      svg.appendChild(t);
+    });
+    const xl = el('text', { x: W - P.r, y: H - 5, 'font-size': 8.5, 'text-anchor': 'end',
+      fill: 'var(--ink-3)', 'letter-spacing': '.1em' });
+    xl.textContent = 'NINETY DAYS  →';
+    svg.appendChild(xl);
+
+    // contrast with figure 3, drawn inside the plot so it clears the tick row
+    const f3 = el('line', { x1: X(39), y1: P.t + plotH - 3, x2: X(90), y2: P.t + plotH - 3,
+      stroke: 'var(--rule)', 'stroke-width': 3, opacity: .95 });
+    svg.appendChild(f3);
+    const f3t = el('text', { x: X(64.5), y: P.t + plotH - 10, 'font-size': 9,
+      'text-anchor': 'middle', fill: 'var(--ink-3)' });
+    f3t.textContent = 'where figure 3 flatlines';
+    svg.appendChild(f3t);
+
+    // hover
+    series.forEach(s => {
+      if (s.day % 1) return;
+      const bw = plotW / 90;
+      const hit = el('rect', { x: X(s.day) - bw / 2, y: P.t, width: bw, height: plotH,
+        fill: 'transparent', class: 'hit', tabindex: '0', role: 'img',
+        'aria-label': `Day ${s.day}: projected output ${s.out.toExponential(1)} per hour.` });
+      const show = () => {
+        const r = hit.getBoundingClientRect();
+        showTip(`<span class="k">day</span> ${s.day}<br><span class="k">output/h</span> ${
+          s.out >= 1e6 ? s.out.toExponential(2) : Math.round(s.out).toLocaleString('en-GB')}`,
+          r.left + r.width / 2, r.top + 30);
       };
       hit.addEventListener('pointerenter', show);
       hit.addEventListener('focus', show);

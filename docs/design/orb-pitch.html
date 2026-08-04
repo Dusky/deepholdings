@@ -1,0 +1,932 @@
+<title>ORB</title>
+<style>
+  :root {
+    --bg: #F2EFE8;
+    --bg-2: #E9E4DA;
+    --bg-3: #DED8CB;
+    --ink: #16161A;
+    --ink-2: #494A50;
+    --ink-3: #7C7D85;
+    --line: #CFC8B9;
+    --line-2: #DFD9CC;
+    --gold: #9C6B10;
+    --blue: #1D6FB8;
+    --oxide: #B03A2E;
+    --gold-soft: rgba(156,107,16,.13);
+    --oxide-soft: rgba(176,58,46,.11);
+    --blue-soft: rgba(29,111,184,.11);
+    --glow: rgba(156,107,16,.07);
+    --orb-fill: rgba(156,107,16,.17);
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --gut: clamp(1.15rem, 4vw, 3.5rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #08090C; --bg-2: #0E1015; --bg-3: #161920;
+      --ink: #E8E3D6; --ink-2: #A9A79E; --ink-3: #747370;
+      --line: #23262E; --line-2: #191C23;
+      --gold: #B58317; --blue: #3B85CC; --oxide: #CC5A48;
+      --gold-soft: rgba(181,131,23,.16);
+      --oxide-soft: rgba(204,90,72,.15);
+      --blue-soft: rgba(59,133,204,.15);
+      --glow: rgba(181,131,23,.42);
+      --orb-fill: rgba(181,131,23,.12);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F2EFE8; --bg-2: #E9E4DA; --bg-3: #DED8CB;
+    --ink: #16161A; --ink-2: #494A50; --ink-3: #7C7D85;
+    --line: #CFC8B9; --line-2: #DFD9CC;
+    --gold: #9C6B10; --blue: #1D6FB8; --oxide: #B03A2E;
+    --gold-soft: rgba(156,107,16,.13); --oxide-soft: rgba(176,58,46,.11);
+    --blue-soft: rgba(29,111,184,.11); --glow: rgba(156,107,16,.07);
+    --orb-fill: rgba(156,107,16,.17);
+  }
+  :root[data-theme="dark"] {
+    --bg: #08090C; --bg-2: #0E1015; --bg-3: #161920;
+    --ink: #E8E3D6; --ink-2: #A9A79E; --ink-3: #747370;
+    --line: #23262E; --line-2: #191C23;
+    --gold: #B58317; --blue: #3B85CC; --oxide: #CC5A48;
+    --gold-soft: rgba(181,131,23,.16); --oxide-soft: rgba(204,90,72,.15);
+    --blue-soft: rgba(59,133,204,.15); --glow: rgba(181,131,23,.42);
+    --orb-fill: rgba(181,131,23,.12);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: clamp(1rem, .97rem + .16vw, 1.06rem);
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--gut) 7rem; }
+
+  h1, h2, h3 { margin: 0; font-family: var(--mono); font-weight: 600; text-wrap: balance; }
+  h1 {
+    font-size: clamp(4.5rem, 19vw, 13rem); line-height: .82;
+    letter-spacing: -.05em; margin: 0;
+  }
+  h2 { font-size: clamp(1.5rem, 3vw, 2.15rem); line-height: 1.12; letter-spacing: -.02em; }
+  h3 { font-size: 1rem; letter-spacing: .01em; }
+  p { margin: 0; }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: .67rem; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0;
+  }
+  .prose { max-width: 62ch; display: flex; flex-direction: column; gap: 1rem; }
+  .prose p { color: var(--ink-2); }
+  .prose p.lead { color: var(--ink); font-size: 1.14em; line-height: 1.5; }
+  strong { font-weight: 650; color: var(--ink); }
+  .g { color: var(--gold); }
+  .o { color: var(--oxide); }
+  .b { color: var(--blue); }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ── hero ── */
+  header { padding: clamp(2.2rem, 6vw, 4rem) 0 0; }
+  .topline {
+    display: flex; flex-wrap: wrap; gap: .4rem 1.6rem; justify-content: space-between;
+    border-bottom: 1px solid var(--line); padding-bottom: .7rem;
+  }
+  .title-row { padding: clamp(1.6rem,4vw,2.6rem) 0 .6rem; }
+  h1 .dot { color: var(--gold); }
+  .tag {
+    font-family: var(--mono); font-size: clamp(.72rem,1.5vw,.9rem);
+    letter-spacing: .3em; text-transform: uppercase; color: var(--ink-3);
+    margin-top: .9rem;
+  }
+
+  /* ── the playable ── */
+  .rig {
+    margin-top: clamp(1.4rem, 3vw, 2.2rem);
+    border: 1px solid var(--line); border-radius: 3px;
+    background: var(--bg-2); overflow: hidden;
+  }
+  .rig-head {
+    display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; align-items: baseline;
+    padding: .7rem 1rem; border-bottom: 1px solid var(--line-2); background: var(--bg-3);
+  }
+  .rig-head .t { font-family: var(--mono); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); }
+  .rig-head .h { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--ink-3); margin-left: auto; }
+  #stage { display: block; width: 100%; height: 420px; cursor: crosshair; touch-action: manipulation; }
+  @media (max-width: 620px) { #stage { height: 330px; } }
+
+  .hud {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    border-top: 1px solid var(--line-2);
+  }
+  .hud .cell {
+    padding: .7rem 1rem; border-right: 1px solid var(--line-2);
+    display: flex; flex-direction: column; gap: .15rem;
+  }
+  .hud .cell:last-child { border-right: none; }
+  .hud .k { font-family: var(--mono); font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  .hud .v { font-family: var(--mono); font-size: 1.2rem; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+  .hud .v.warn { color: var(--oxide); }
+  .hud .v.good { color: var(--gold); }
+
+  .shop { display: flex; flex-wrap: wrap; gap: .5rem; padding: .85rem 1rem; border-top: 1px solid var(--line-2); align-items: center; }
+  button {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink); background: var(--bg-3); border: 1px solid var(--line);
+    border-radius: 2px; padding: .5rem .8rem; cursor: pointer;
+    transition: border-color .12s, color .12s, background .12s;
+  }
+  button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  button:disabled { opacity: .38; cursor: not-allowed; }
+  button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+  button .c { color: var(--ink-3); }
+  button:hover:not(:disabled) .c { color: var(--gold); }
+  .hint { font-family: var(--mono); font-size: .66rem; color: var(--ink-3); letter-spacing: .04em; margin-left: auto; }
+
+  /* ── sections ── */
+  section { padding-top: clamp(3.4rem, 8vw, 6rem); }
+  .head { display: flex; flex-direction: column; gap: .9rem; margin-bottom: 1.8rem; }
+  .rule { border-top: 1px solid var(--line); padding-top: 1rem; }
+
+  .cols { display: grid; grid-template-columns: 1fr; gap: 1.2rem; }
+  @media (min-width: 780px) { .cols { grid-template-columns: repeat(2, 1fr); gap: 1.6rem; } }
+  @media (min-width: 1000px) { .cols.three { grid-template-columns: repeat(3, 1fr); } }
+
+  .post {
+    border: 1px solid var(--line-2); border-radius: 3px; background: var(--bg-2);
+    padding: 1.05rem 1.1rem; display: flex; flex-direction: column; gap: .5rem;
+    border-top: 2px solid var(--tint, var(--line));
+  }
+  .post h3 { color: var(--tint, var(--ink)); font-size: .95rem; letter-spacing: .1em; text-transform: uppercase; }
+  .post .does { color: var(--ink); font-size: .95rem; }
+  .post .why { color: var(--ink-2); font-size: .88rem; border-top: 1px dashed var(--line); padding-top: .55rem; margin-top: auto; }
+
+  .ladder { display: flex; flex-direction: column; gap: 0; }
+  .rung {
+    display: grid; grid-template-columns: 1fr; gap: .3rem;
+    padding: .95rem 0; border-top: 1px solid var(--line-2);
+  }
+  @media (min-width: 720px) {
+    .rung { grid-template-columns: 10rem 1fr 12rem; gap: 0 1.6rem; align-items: baseline; }
+  }
+  .rung:first-child { border-top: 1px solid var(--line); }
+  .rung .n { font-family: var(--mono); font-size: .82rem; letter-spacing: .12em; color: var(--tint, var(--ink)); }
+  .rung .m { color: var(--ink-2); font-size: .93rem; }
+  .rung .m b { color: var(--ink); font-weight: 600; }
+  .rung .s { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; color: var(--ink-3); text-transform: uppercase; }
+  @media (min-width: 720px) { .rung .s { text-align: right; } }
+
+  .callout {
+    border: 1px solid var(--line); border-left: 3px solid var(--gold);
+    background: var(--bg-2); border-radius: 3px;
+    padding: clamp(1.1rem, 2.6vw, 1.7rem);
+  }
+  .callout.warn { border-left-color: var(--oxide); }
+
+  .quote {
+    font-family: var(--mono); font-size: .84rem; line-height: 1.75;
+    color: var(--ink-2); border-left: 2px solid var(--line);
+    padding-left: 1rem; max-width: 60ch;
+  }
+  .quote b { color: var(--gold); font-weight: 500; }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 1.3rem 1.8rem; }
+  .fact .v { font-family: var(--mono); font-size: clamp(1.5rem,3vw,2rem); letter-spacing: -.02em; color: var(--gold); }
+  .fact .k { font-family: var(--mono); font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-top: .2rem; }
+  .fact .n { font-size: .87rem; color: var(--ink-2); margin-top: .35rem; }
+
+  .scales { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+  #orbs { display: block; width: 100%; height: 320px; border: 1px solid var(--line-2); border-radius: 3px; background: var(--bg-2); }
+
+  footer {
+    margin-top: clamp(3.5rem, 8vw, 6rem); border-top: 1px solid var(--line); padding-top: 1.1rem;
+    display: flex; flex-wrap: wrap; gap: .5rem 1.8rem;
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .08em; color: var(--ink-3);
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="topline">
+      <p class="eyebrow">Deep Holdings · a proposal</p>
+      <p class="eyebrow">Infinite incremental · Android first</p>
+    </div>
+
+    <div class="title-row">
+      <h1>ORB<span class="dot">.</span></h1>
+      <p class="tag">You have to hit the orb</p>
+    </div>
+
+    <div class="prose" style="margin-top:1.4rem">
+      <p class="lead">An institution has found something buried, and it has assigned
+      you a desk, a form, and some people to send at it. You will never be told what
+      it is. You will be asked, repeatedly, to increase throughput.</p>
+    </div>
+
+    <!-- ── the playable ── -->
+    <div class="rig">
+      <div class="rig-head">
+        <span class="t">Working face · live</span>
+        <span class="h" id="advice">tap the orb to cut</span>
+      </div>
+      <canvas id="stage" aria-label="An interactive demonstration of the core loop: recruits cut at an orb, spoil falls to the floor, haulers carry it to the depot, and the orb reclaims whatever is left lying around."></canvas>
+
+      <div class="hud">
+        <div class="cell"><span class="k">Spoil on floor</span><span class="v" id="h-spoil">0</span></div>
+        <div class="cell"><span class="k">Material banked</span><span class="v good" id="h-mat">0</span></div>
+        <div class="cell"><span class="k">Banking</span><span class="v" id="h-rate">0.0 /s</span></div>
+        <div class="cell"><span class="k">Reclaimed by orb</span><span class="v warn" id="h-loss">0.0 /s</span></div>
+      </div>
+
+      <div class="shop">
+        <button id="buy-face" type="button">Hire faceman <span class="c" id="c-face">10</span></button>
+        <button id="buy-haul" type="button">Hire hauler <span class="c" id="c-haul">12</span></button>
+        <button id="reset" type="button">Reset</button>
+        <span class="hint" id="counts">1 faceman · 1 hauler</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── the lesson ── -->
+  <section id="thesis">
+    <div class="head rule">
+      <p class="eyebrow">01 · the thing you just felt</p>
+      <h2>Cutting harder is easy, and mostly useless</h2>
+    </div>
+    <div class="prose">
+      <p class="lead">Hire only facemen and watch what happens. The pile grows, the
+      orb takes it back faster the bigger it gets, and <strong>your banked material
+      stops moving</strong> while your output has never been higher.</p>
+      <p>Spoil on the floor is not yours. The orb reclaims it at a rate that rises
+      exponentially with the size of the heap, so the binding constraint is never how
+      hard you cut — it is <strong class="g">whether you can move it before you lose
+      it</strong>. That is the whole game in one sentence, and every system above it
+      is a new way to bend that trade.</p>
+      <p>It matters because the game this replaces had exactly one bottleneck — money —
+      for an entire career, which is why every upgrade in it was a rate and every
+      decision had an arithmetic answer.</p>
+    </div>
+
+    <div class="callout warn" style="margin-top:1.8rem">
+      <div class="quote" style="border:0;padding:0">
+        <b>THE RECLAMATION RULE</b><br>
+        loss/s = k · (spoil on floor) ^ 1.45<br><br>
+        A bottleneck that <b>moves</b>, punishes hoarding, and cannot be solved by
+        accumulating — only by throughput. Stolen wholesale from <i>(the) Gnorp
+        Apologue</i>, whose rock reclaims shards from the second tier onward.
+      </div>
+    </div>
+  </section>
+
+  <!-- ── posts ── -->
+  <section id="posts">
+    <div class="head rule">
+      <p class="eyebrow">02 · the first six posts</p>
+      <h2>Nobody on this list is a bigger number</h2>
+      <div class="prose">
+        <p>Every post has to pass the same three-part test, taken from Gnorp's
+        developer: it must <strong>change behaviour</strong>, it must
+        <strong>stay optional</strong>, and it must <strong>work with the
+        others</strong>. An upgrade every player must buy is a tax with a purchase
+        button.</p>
+      </div>
+    </div>
+
+    <div class="cols three">
+      <div class="post" style="--tint:var(--gold)">
+        <h3>Faceman</h3>
+        <p class="does">Stands at the face and cuts. Steady, small, constant.</p>
+        <p class="why">The baseline — and roster count is the multiplier, so power
+        scales with the thing that <em>is</em> the game rather than with purchases.</p>
+      </div>
+      <div class="post" style="--tint:var(--blue)">
+        <h3>Hauler</h3>
+        <p class="does">Never touches the orb. Moves spoil to the depot.</p>
+        <p class="why">Produces <strong>nothing</strong> and is frequently the correct
+        buy. The first time a player learns what the game is actually about.</p>
+      </div>
+      <div class="post" style="--tint:var(--oxide)">
+        <h3>Shotfirer</h3>
+        <p class="does">Places charges. Nothing, nothing, nothing — then a large
+        collapse.</p>
+        <p class="why">Burst instead of trickle. Out-cuts a faceman and is a
+        <strong>net loss</strong> without haulage to clear the spike.</p>
+      </div>
+      <div class="post" style="--tint:var(--gold)">
+        <h3>Borer</h3>
+        <p class="does">Cuts <em>into</em> the orb rather than at its face. Opens
+        chambers.</p>
+        <p class="why">Zero immediate yield. Chambers gate depth, depth gates the good
+        material — the first buy that is an investment rather than a rate.</p>
+      </div>
+      <div class="post" style="--tint:var(--blue)">
+        <h3>Rook</h3>
+        <p class="does">Works the heap itself, recovering what the orb is taking back.</p>
+        <p class="why"><strong>Useless until you are failing.</strong> Counter-play to
+        over-cutting rather than an upgrade to it.</p>
+      </div>
+      <div class="post" style="--tint:var(--oxide)">
+        <h3>Battery</h3>
+        <p class="does">A static installation. Fires on a cycle. Occupies no roster
+        slot once sited.</p>
+        <p class="why">The first automation — output that does not consume the scarce
+        resource, which is slots and attention.</p>
+      </div>
+    </div>
+
+    <div class="prose" style="margin-top:1.8rem">
+      <p>Read the interlock, because it is the design: shotfirers make haulers
+      necessary; haulers make rooks unnecessary <em>until you over-cut</em>; borers pay
+      nothing now and gate everything later; batteries buy back a slot, which is worth
+      more than their output. <strong>And none of the six is mandatory</strong> —
+      facemen and haulers alone will reach your first discharge.</p>
+    </div>
+  </section>
+
+  <!-- ── ladder ── -->
+  <section id="ladder">
+    <div class="head rule">
+      <p class="eyebrow">03 · the ladder</p>
+      <h2>Seven rungs, and each one is a different machine</h2>
+      <div class="prose">
+        <p>A second prestige layer that is the same game with bigger multipliers buys
+        a fortnight and costs more than it earns. So every rung has its own currency,
+        its own upgrade mechanic and its own screen — a flat grid, then a tree with
+        exclusive branches, then equippable rolls, then a compiler. Each reaches
+        <strong>down</strong> into the rungs below and also <strong>feeds
+        itself</strong>.</p>
+      </div>
+    </div>
+
+    <div class="ladder">
+      <div class="rung" style="--tint:var(--ink-3)">
+        <span class="n">DUTY ROSTER</span>
+        <span class="m"><b>Allocation.</b> Who works where. Never goes away.</span>
+        <span class="s">one working</span>
+      </div>
+      <div class="rung" style="--tint:var(--gold)">
+        <span class="n">DISCHARGE</span>
+        <span class="m"><b>A flat grid.</b> One-off buys, nothing exclusive, always
+        something affordable. It must never be able to trap a new player.</span>
+        <span class="s">a crew · hours</span>
+      </div>
+      <div class="rung" style="--tint:var(--blue)">
+        <span class="n">REASSIGNMENT</span>
+        <span class="m"><b>An exclusive tree.</b> Extraction, throughput or prospect —
+        you cannot take all three, so postings diverge. This is where a build first
+        exists.</span>
+        <span class="s">a district · days</span>
+      </div>
+      <div class="rung" style="--tint:var(--oxide)">
+        <span class="n">COMMISSION</span>
+        <span class="m"><b>Equippable rolled clauses.</b> Rolled with modifiers, hold
+        only a few, one form rerolls one clause. <b class="g">Already built</b> — eighty
+        of them, across six dimensions.</span>
+        <span class="s">a world · weeks</span>
+      </div>
+      <div class="rung" style="--tint:var(--gold)">
+        <span class="n">STATUTE</span>
+        <span class="m"><b>A compiler.</b> You write the standing instructions the
+        department runs on: <i>if spoil exceeds X, pull two facemen to haulage.</i></span>
+        <span class="s">a system · months</span>
+      </div>
+      <div class="rung" style="--tint:var(--blue)">
+        <span class="n">ENCLOSURE</span>
+        <span class="m"><b>Placement.</b> The dig needs more power than a world can
+        make, so you fence a star and title its surface shell by shell.</span>
+        <span class="s">a star</span>
+      </div>
+      <div class="rung" style="--tint:var(--oxide)">
+        <span class="n">THE AUTHORITY</span>
+        <span class="m"><b>Allocation across offices</b> — each running the whole ladder
+        below. The mechanic from rung zero, six orders of magnitude up. The structure
+        recurses, and <b>a recursive structure has no top.</b></span>
+        <span class="s">many stars</span>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:2rem">
+      <div class="prose" style="max-width:64ch">
+        <p class="lead">The escalation is a chain, not a zoom.</p>
+        <p>One pair of hands only digs so fast. A seam runs out. Then — the load-bearing
+        step — <strong>past a certain depth the rock is hot and dense, and digging stops
+        being a labour problem and becomes a power problem.</strong> One world cannot
+        generate enough to dig its own core. Quarrying the system for collectors is a
+        rounding error against what the deep draw needs.</p>
+        <p>So you enclose a star. <strong>Not because the game ran out of ideas — because
+        a deep enough hole needs a star to run it.</strong> The dig is always the point;
+        the megastructure is infrastructure for it. You are still a case officer, and
+        people are still going into a hole.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── infinite ── -->
+  <section id="infinite">
+    <div class="head rule">
+      <p class="eyebrow">04 · why it does not end</p>
+      <h2>Infinite games cannot be authored — only generated</h2>
+    </div>
+
+    <div class="cols">
+      <div class="prose">
+        <p><strong>No enumerated catalogue may exist anywhere.</strong> The game this
+        replaces has a maximum depth of twelve, permits stopping at D-8, exactly
+        nineteen unlocks and three tiers of everything. Those are <em>lists</em>, and a
+        list ends — that is not a metaphor for why it runs out on day 39, it is the
+        mechanism.</p>
+        <p>Every list becomes a function of the tier. Post <span class="mono">n</span>
+        is a formula. Depth is unbounded. Clause rolls are generated rather than drawn
+        from a fixed pool. It is a checkable rule: <strong>if a system is stored as an
+        array of hand-written entries, it terminates.</strong></p>
+        <p>And nothing here is drawn by hand, which is what makes generation possible at
+        all — there is no artist on this project, so an orb, a world and an enclosure
+        are the same renderer at three radii.</p>
+      </div>
+
+      <div class="callout warn">
+        <p class="eyebrow o" style="margin-bottom:.6rem">Decide before writing any code</p>
+        <div class="prose" style="max-width:none">
+          <p><strong>The number type.</strong> A JavaScript double overflows to infinity
+          a little past <span class="mono">1.8e308</span>, and an infinite incremental
+          goes there. It is exactly why Antimatter Dimensions' author wrote
+          <span class="mono">break_infinity.js</span>.</p>
+          <p>It reaches further here than in a browser game, because the server is
+          authoritative: every currency becomes a Decimal, Postgres columns become text
+          with the arithmetic moved into the resolver, and the resolver must stay
+          deterministic through all of it — the test suite asserts on replayed journals.</p>
+          <p><strong>Retrofitting this is the migration that kills the project.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="facts" style="margin-top:2.4rem">
+      <div class="fact">
+        <div class="v">6 + ∞</div>
+        <div class="k">Rungs</div>
+        <div class="n">Six authored and genuinely distinct; past them the structure repeats at a higher order with generated parameters.</div>
+      </div>
+      <div class="fact">
+        <div class="v">1 seed</div>
+        <div class="k">Per orb</div>
+        <div class="n">A new holding costs no asset, no map and no artist. The picture and the simulation are the same object.</div>
+      </div>
+      <div class="fact">
+        <div class="v">bounded</div>
+        <div class="k">The real metric</div>
+        <div class="n">Not "when does the last new thing happen" but "does the gap between new things stay bounded". A doubling gap is a treadmill with good marketing.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── the register ── -->
+  <section id="register">
+    <div class="head rule">
+      <p class="eyebrow">05 · the register</p>
+      <h2>The paperwork never changes scale</h2>
+      <div class="prose">
+        <p>You file the same form for a stellar enclosure that you filed for one
+        recruit's boot allowance. That is the joke, and unlike most jokes it
+        <strong>improves</strong> as the objects get more absurd — the engine behind
+        both Universal Paperclips and Kittens Game.</p>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="callout">
+        <p class="eyebrow" style="margin-bottom:.7rem">The worshippers are a mechanic</p>
+        <div class="quote">
+          An objection has been received regarding the disassembly of the orb. Pending
+          review, the following are suspended: <b>ordnance</b>, <b>shotfiring</b>, and
+          work on the <b>fourth quadrant</b>.
+        </div>
+        <div class="prose" style="margin-top:1rem;max-width:none">
+          <p>Challenges need a reason for the rule to change. A faction that objects, on
+          principle, to the orb being taken apart is a restriction engine, a comedy
+          engine, and free — and the same trick works at every scale. By the Enclosure
+          rung the objection is to fencing a star, and the form is unchanged.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="scales">
+          <button id="s-orb" type="button">The orb</button>
+          <button id="s-world" type="button">A world</button>
+          <button id="s-star" type="button">An enclosure</button>
+        </div>
+        <canvas id="orbs" aria-label="The same renderer drawing an orb, a world and a stellar enclosure — one piece of code at three radii."></canvas>
+        <p class="mono" style="font-size:.66rem;color:var(--ink-3);margin-top:.6rem;letter-spacing:.04em">
+          ONE RENDERER · THREE SCALES · GENERATED FROM A SEED
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── standing ── -->
+  <section id="standing">
+    <div class="head rule">
+      <p class="eyebrow">06 · where it stands</p>
+      <h2>What is already built, and the one week that can kill it</h2>
+    </div>
+
+    <div class="cols">
+      <div class="prose">
+        <p><strong>The spine exists and it is good.</strong> Lazy resolution against a
+        tick watermark — nothing runs per player between requests, and the server
+        replays missed ticks in a transaction. Deterministic seeding on
+        <span class="mono">(character, tick)</span>. Storage behind a port with two
+        adapters. Migrations that refuse to auto-run in production. A simulation harness
+        that drives the real resolver over months of play.</p>
+        <p>Also already written: an automation ladder where every hire takes a standing
+        instruction rather than a toggle, a challenge catalogue in the Antimatter
+        Dimensions mould, and the eighty-clause system that turns out to be an entire
+        prestige rung.</p>
+        <p><strong>This is a spine transplant, not a rewrite.</strong> Roughly four to
+        six thousand lines change.</p>
+      </div>
+
+      <div class="callout warn">
+        <p class="eyebrow o" style="margin-bottom:.6rem">Stage 0 · one week · headless</p>
+        <div class="prose" style="max-width:none">
+          <p class="lead">Six posts, a reclaiming pile, Decimal from the first line. No
+          interface.</p>
+          <p>Run the allocation-spread test: do simulated players who allocate
+          differently end the week materially apart?</p>
+          <p><strong>If the answer is "always buy haulers", the lattice is decoration
+          and everything above it is worthless.</strong> Stop there — it cost a week
+          rather than a quarter.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>ORB · proposal</span>
+    <span>docs/design/redesign.md</span>
+    <span>docs/design/ladder-contents.md</span>
+    <span>docs/research/gnorp.md</span>
+  </footer>
+</div>
+
+<script type="module">
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ═══════════ the playable working face ═══════════
+     The whole thesis in one loop: cutting is cheap, moving is the game. */
+  const cv = document.getElementById('stage');
+  const ctx = cv.getContext('2d');
+
+  // One hauler covers about 1.25 facemen, so the second faceman already starts a
+  // pile. The trap has to be reachable in the first thirty seconds to teach anything.
+  const CUT_PER_FACE = 1.4;    // spoil/s
+  const HAUL_PER_HAUL = 1.75;  // spoil/s moved to depot
+  const RECLAIM_K = 0.0105;    // loss/s = k * spoil^1.45
+  const RECLAIM_P = 1.45;
+
+  let S;
+  const fresh = () => ({
+    spoil: 0, mat: 0, face: 1, haul: 1,
+    banked: 0, lost: 0, tBank: 0, tLost: 0,
+    chips: [], t: 0, integrity: 1, everFace: false
+  });
+  S = fresh();
+
+  const costFace = () => Math.floor(10 * Math.pow(1.34, S.face - 1));
+  const costHaul = () => Math.floor(12 * Math.pow(1.34, S.haul - 1));
+
+  const el = id => document.getElementById(id);
+  const fmt = (n, d = 0) => n.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  function chip(x, y, tx, ty, kind) {
+    if (S.chips.length > 260) return;
+    S.chips.push({ x, y, tx, ty, k: kind, p: 0, s: 0.55 + Math.random() * 0.75 });
+  }
+
+  let W = 0, H = 0, cx = 0, cy = 0, R = 0, depot = { x: 0, y: 0 };
+
+  function size() {
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    cx = W * 0.34; cy = H * 0.44; R = Math.min(W * 0.17, H * 0.30);
+    depot = { x: W * 0.84, y: H * 0.74 };
+  }
+
+  cv.addEventListener('pointerdown', e => {
+    const r = cv.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    if (Math.hypot(x - cx, y - cy) < R * 1.5) {
+      S.spoil += 3; S.integrity = Math.max(0.25, S.integrity - 0.004);
+      for (let i = 0; i < 5; i++) {
+        const a = Math.random() * Math.PI * 2;
+        chip(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9,
+             cx + (Math.random() - 0.5) * R * 2.2, H * 0.86, 'fall');
+      }
+    }
+  });
+
+  function step(dt) {
+    S.t += dt;
+    const cut = S.face * CUT_PER_FACE * dt;
+    S.spoil += cut;
+    S.integrity = Math.max(0.25, S.integrity - cut * 0.0009);
+
+    const moved = Math.min(S.spoil, S.haul * HAUL_PER_HAUL * dt);
+    S.spoil -= moved; S.mat += moved; S.banked += moved;
+
+    const lost = Math.min(S.spoil, RECLAIM_K * Math.pow(S.spoil, RECLAIM_P) * dt);
+    S.spoil -= lost; S.lost += lost;
+
+    S.tBank = S.tBank * 0.94 + (moved / dt) * 0.06;
+    S.tLost = S.tLost * 0.94 + (lost / dt) * 0.06;
+
+    if (Math.random() < cut * 2.2) {
+      const a = Math.random() * Math.PI * 2;
+      chip(cx + Math.cos(a) * R * 0.9, cy + Math.sin(a) * R * 0.9,
+           cx + (Math.random() - 0.5) * R * 2.4, H * 0.86, 'fall');
+    }
+    if (Math.random() < moved * 1.5) {
+      chip(cx + (Math.random() - 0.5) * R * 2, H * 0.86, depot.x, depot.y, 'haul');
+    }
+    if (Math.random() < lost * 1.5) {
+      chip(cx + (Math.random() - 0.5) * R * 2, H * 0.86,
+           cx + (Math.random() - 0.5) * R, cy, 'back');
+    }
+
+    for (const c of S.chips) c.p = Math.min(1, c.p + dt * c.s);
+    S.chips = S.chips.filter(c => c.p < 1);
+  }
+
+  function draw() {
+    const ink3 = css('--ink-3'), line = css('--line'),
+          gold = css('--gold'), blue = css('--blue'), oxide = css('--oxide');
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = '10px ui-monospace, monospace';
+    ctx.textBaseline = 'middle';
+
+    // floor
+    ctx.strokeStyle = line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, H * 0.88); ctx.lineTo(W, H * 0.88); ctx.stroke();
+
+    // ── the orb ──
+    const glow = ctx.createRadialGradient(cx, cy, R * 0.2, cx, cy, R * 2.1);
+    glow.addColorStop(0, css('--glow')); glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow; ctx.fillRect(cx - R * 2.2, cy - R * 2.2, R * 4.4, R * 4.4);
+
+    // the body itself, so the orb reads as a mass on paper as well as a light in the dark
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.fillStyle = css('--orb-fill'); ctx.fill();
+
+    for (let i = 0; i < 20; i++) {
+      const t = i / 20, rr = R * Math.sqrt(1 - t * t);
+      ctx.beginPath(); ctx.arc(cx, cy - R * t * 0.24, rr, 0, Math.PI * 2);
+      ctx.strokeStyle = gold; ctx.globalAlpha = (0.06 + t * 0.2) * S.integrity;
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+    ctx.strokeStyle = gold; ctx.lineWidth = 1.8; ctx.stroke();
+
+    // wear: cracks deepen as integrity drops
+    const cracks = Math.round((1 - S.integrity) * 26);
+    let seed = 7;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let c = 0; c < cracks; c++) {
+      const a = rnd() * Math.PI * 2, r0 = R * (0.2 + rnd() * 0.5);
+      let x = cx + Math.cos(a) * r0, y = cy + Math.sin(a) * r0, d = rnd() * 6.28;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let k = 0; k < 4; k++) {
+        d += (rnd() - 0.5); const L = R * 0.12;
+        x += Math.cos(d) * L; y += Math.sin(d) * L;
+        if (Math.hypot(x - cx, y - cy) > R * 0.95) break;
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = blue; ctx.globalAlpha = .5; ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── the heap ──
+    const heapW = Math.min(R * 3.1, 34 + S.spoil * 1.8);
+    const heapH = Math.min(H * 0.34, Math.sqrt(S.spoil) * 6.2);
+    if (S.spoil > 0.4) {
+      ctx.beginPath();
+      ctx.moveTo(cx - heapW / 2, H * 0.88);
+      ctx.quadraticCurveTo(cx, H * 0.88 - heapH * 1.9, cx + heapW / 2, H * 0.88);
+      ctx.closePath();
+      const bad = S.tLost > S.tBank;
+      ctx.fillStyle = bad ? oxide : ink3;
+      ctx.globalAlpha = bad ? .34 : .20; ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = bad ? oxide : ink3;
+      ctx.lineWidth = bad ? 1.6 : 1; ctx.stroke();
+    }
+
+    // ── the depot ──
+    ctx.strokeStyle = ink3; ctx.lineWidth = 1;
+    ctx.strokeRect(depot.x - 30, depot.y - 22, 60, 44);
+    ctx.fillStyle = ink3; ctx.textAlign = 'center';
+    ctx.fillText('DEPOT', depot.x, depot.y + 36);
+    const fill = Math.min(1, S.mat / 400);
+    ctx.fillStyle = gold; ctx.globalAlpha = .5;
+    ctx.fillRect(depot.x - 29, depot.y + 21 - 42 * fill, 58, 42 * fill);
+    ctx.globalAlpha = 1;
+
+    // ── chips ──
+    for (const c of S.chips) {
+      const e = c.k === 'fall' ? c.p * c.p : c.p;
+      const x = c.x + (c.tx - c.x) * e;
+      const y = c.y + (c.ty - c.y) * e - (c.k === 'haul' ? Math.sin(c.p * Math.PI) * 26 : 0);
+      ctx.fillStyle = c.k === 'back' ? oxide : c.k === 'haul' ? gold : ink3;
+      ctx.globalAlpha = 1 - c.p * 0.35;
+      ctx.fillRect(x - 1.6, y - 1.6, 3.2, 3.2);
+    }
+    ctx.globalAlpha = 1;
+
+    // labels
+    ctx.textAlign = 'left'; ctx.fillStyle = ink3;
+    ctx.fillText('THE ORB', 14, 18);
+    ctx.textAlign = 'center';
+    if (S.spoil > 3) ctx.fillText('SPOIL', cx, H * 0.94);
+    ctx.textAlign = 'left';
+  }
+
+  function hud() {
+    el('h-spoil').textContent = fmt(S.spoil, 0);
+    el('h-mat').textContent = fmt(S.mat, 0);
+    el('h-rate').textContent = fmt(S.tBank, 1) + ' /s';
+    el('h-loss').textContent = fmt(S.tLost, 1) + ' /s';
+    el('c-face').textContent = costFace();
+    el('c-haul').textContent = costHaul();
+    el('buy-face').disabled = S.mat < costFace();
+    el('buy-haul').disabled = S.mat < costHaul();
+    el('counts').textContent =
+      `${S.face} ${S.face === 1 ? 'faceman' : 'facemen'} · ${S.haul} hauler${S.haul === 1 ? '' : 's'}`;
+
+    // the readout that does the teaching: what share of the cut is being lost
+    const thru = S.tBank + S.tLost;
+    const wasted = thru > 0.2 ? S.tLost / thru : 0;
+    el('h-loss').textContent = fmt(S.tLost, 1) + ' /s' +
+      (wasted > 0.02 ? '  (' + Math.round(wasted * 100) + '%)' : '');
+
+    const a = el('advice');
+    if (S.tLost > S.tBank && S.spoil > 12) {
+      a.textContent = 'the orb is taking more than you are banking';
+      a.style.color = css('--oxide');
+    } else if (wasted > 0.18) {
+      a.textContent = 'losing ' + Math.round(wasted * 100) + '% of everything you cut';
+      a.style.color = css('--oxide');
+    } else if (S.face > 2 && S.haul === 1) {
+      a.textContent = 'more cutting is not the answer';
+      a.style.color = css('--ink-2');
+    } else {
+      a.textContent = 'tap the orb to cut';
+      a.style.color = '';
+    }
+  }
+
+  let last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    step(dt); draw(); hud();
+    requestAnimationFrame(frame);
+  }
+
+  el('buy-face').addEventListener('click', () => {
+    const c = costFace(); if (S.mat < c) return;
+    S.mat -= c; S.face++; S.everFace = true;
+  });
+  el('buy-haul').addEventListener('click', () => {
+    const c = costHaul(); if (S.mat < c) return;
+    S.mat -= c; S.haul++;
+  });
+  el('reset').addEventListener('click', () => { S = fresh(); });
+
+  size(); addEventListener('resize', size);
+  requestAnimationFrame(frame);
+
+  /* ═══════════ one renderer, three scales ═══════════ */
+  const oc = document.getElementById('orbs');
+  const octx = oc.getContext('2d');
+  let mode = 'orb';
+  const SPEC = {
+    orb:   { r: .40, cracks: 14, pits: 22, shells: 0, worked: .35, label: 'ORB · GRADE II WORKING' },
+    world: { r: .46, cracks: 24, pits: 52, shells: 0, worked: .62, label: 'WORLD · CRUST LET' },
+    star:  { r: .17, cracks: 0,  pits: 0,  shells: 6, worked: 1,   label: 'ENCLOSURE IN PROGRESS' }
+  };
+  const rngOf = s => () => {
+    s |= 0; s = s + 0x6D2B79F5 | 0;
+    let x = Math.imul(s ^ s >>> 15, 1 | s);
+    x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+    return ((x ^ x >>> 14) >>> 0) / 4294967296;
+  };
+
+  function drawOrbs() {
+    const b = oc.getBoundingClientRect();
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = b.width, h = b.height;
+    oc.width = w * dpr; oc.height = h * dpr;
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.clearRect(0, 0, w, h);
+
+    const sp = SPEC[mode], rand = rngOf(1771);
+    const ink3 = css('--ink-3'), line = css('--line'),
+          gold = css('--gold'), blue = css('--blue');
+    const ox = w / 2, oy = h * 0.53, maxR = Math.min(w * 0.42, h * 0.42);
+    const R2 = maxR * (sp.r / 0.46);
+    octx.font = '9px ui-monospace, monospace'; octx.textBaseline = 'middle';
+
+    for (let i = 0; i < 24; i++) {
+      const t = i / 24, rr = R2 * Math.sqrt(1 - t * t);
+      octx.beginPath(); octx.arc(ox, oy - R2 * t * 0.26, rr, 0, Math.PI * 2);
+      octx.strokeStyle = mode === 'star' ? gold : ink3;
+      octx.globalAlpha = (0.08 + t * 0.26) * (0.5 + sp.worked * 0.5);
+      octx.lineWidth = 1; octx.stroke();
+    }
+    octx.globalAlpha = 1;
+    octx.beginPath(); octx.arc(ox, oy, R2, 0, Math.PI * 2);
+    octx.strokeStyle = mode === 'star' ? gold : css('--ink-2');
+    octx.lineWidth = 1.6; octx.stroke();
+    if (mode === 'star') {
+      octx.beginPath(); octx.arc(ox, oy, R2 * .92, 0, Math.PI * 2);
+      octx.fillStyle = gold; octx.globalAlpha = .6; octx.fill(); octx.globalAlpha = 1;
+    }
+
+    for (let c = 0; c < sp.cracks; c++) {
+      const a = rand() * Math.PI * 2, r0 = R2 * (0.15 + rand() * 0.5);
+      let x = ox + Math.cos(a) * r0, y = oy + Math.sin(a) * r0, d = rand() * 6.28;
+      octx.beginPath(); octx.moveTo(x, y);
+      for (let k = 0; k < 4 + rand() * 6; k++) {
+        d += (rand() - .5) * 1.1;
+        const L = R2 * (0.05 + rand() * 0.11);
+        const nx = x + Math.cos(d) * L, ny = y + Math.sin(d) * L;
+        if (Math.hypot(nx - ox, ny - oy) > R2 * 0.96) break;
+        octx.lineTo(nx, ny); x = nx; y = ny;
+      }
+      octx.strokeStyle = blue; octx.globalAlpha = .45 + rand() * .4;
+      octx.lineWidth = .8 + rand() * 1.2; octx.stroke(); octx.globalAlpha = 1;
+    }
+
+    for (let i = 0; i < sp.pits; i++) {
+      const a = rand() * Math.PI * 2, rr = R2 * Math.sqrt(rand()) * .9;
+      const px = ox + Math.cos(a) * rr, py = oy + Math.sin(a) * rr;
+      const pr = 1.6 + rand() * (R2 * .035);
+      const live = rand() < sp.worked;
+      octx.beginPath(); octx.arc(px + pr * .22, py + pr * .22, pr, 0, Math.PI * 2);
+      octx.fillStyle = css('--ink-2'); octx.globalAlpha = .28; octx.fill();
+      octx.beginPath(); octx.arc(px, py, pr, 0, Math.PI * 2);
+      octx.fillStyle = live ? gold : css('--bg-3'); octx.globalAlpha = live ? .85 : .9;
+      octx.fill(); octx.globalAlpha = 1;
+      octx.strokeStyle = live ? gold : ink3; octx.lineWidth = live ? 1.1 : .8; octx.stroke();
+    }
+
+    for (let sh = 0; sh < sp.shells; sh++) {
+      const rr = R2 + (maxR - R2) * ((sh + 1) / sp.shells);
+      octx.beginPath(); octx.arc(ox, oy, rr, 0, Math.PI * 2);
+      octx.strokeStyle = line; octx.lineWidth = .8;
+      octx.setLineDash([2, 4]); octx.stroke(); octx.setLineDash([]);
+      const segs = 30 + sh * 16, comp = Math.max(.05, .99 - sh * .185 - rand() * .08);
+      const ph = rand() * Math.PI * 2;
+      for (let i = 0; i < segs; i++) {
+        if (rand() > comp) continue;
+        const a0 = ph + (i / segs) * Math.PI * 2;
+        octx.beginPath(); octx.arc(ox, oy, rr, a0, a0 + (Math.PI * 2 / segs) * .88);
+        octx.strokeStyle = sh < 3 ? gold : blue;
+        octx.globalAlpha = .35 + comp * .55;
+        octx.lineWidth = 2.4 + (1 - sh / sp.shells) * 1.6;
+        octx.stroke(); octx.globalAlpha = 1;
+      }
+      octx.fillStyle = ink3; octx.textAlign = 'center';
+      octx.fillText('SHELL ' + (sh + 1), ox, oy - rr - 7);
+    }
+
+    octx.textAlign = 'left'; octx.fillStyle = ink3;
+    octx.fillText(sp.label, 12, 16);
+    octx.textAlign = 'right'; octx.fillStyle = gold;
+    octx.fillText(Math.round(sp.worked * 100) + '% WORKED', w - 12, 16);
+    octx.textAlign = 'left';
+  }
+
+  (function scaleBtns() {
+    const map = { orb: 's-orb', world: 's-world', star: 's-star' };
+    const set = m => {
+      mode = m; drawOrbs();
+      Object.entries(map).forEach(([k, id]) => {
+        const btn = document.getElementById(id);
+        btn.style.borderColor = k === m ? css('--gold') : '';
+        btn.style.color = k === m ? css('--gold') : '';
+        btn.setAttribute('aria-pressed', k === m ? 'true' : 'false');
+      });
+    };
+    Object.entries(map).forEach(([k, id]) =>
+      document.getElementById(id).addEventListener('click', () => set(k)));
+    set('orb');
+  })();
+
+  addEventListener('resize', drawOrbs);
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawOrbs);
+  new MutationObserver(drawOrbs).observe(document.documentElement,
+    { attributes: true, attributeFilter: ['data-theme'] });
+</script>

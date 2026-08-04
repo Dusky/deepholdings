@@ -232,16 +232,57 @@ That is the depth this design was missing. The corrected ladder:
 
 | Rung | Period | Currency | **Its upgrade mechanic** | Reaches down into | Feeds itself |
 | --- | --- | --- | --- | --- | --- |
-| **Shift** | minutes | — | allocation across the roster | — | — |
-| **Retirement** | hours | **Service** | **a flat purchase grid** — one-off buys, no exclusivity, always something affordable | rates and yields in the shift | Service gain per career |
-| **Closure** | days | **Writs** | **a branching board with exclusive branches** — you cannot take every path, so holdings diverge | ceilings: storage, roster slots, chain slots | Writ yield per closure, and it unlocks new rows on the Retirement grid |
-| **Charter** | weeks | **Seals** | **equippable, procedurally generated clauses** — rolled with random modifiers, and you may hold only a few | the rules: depletion curves, lattice topology, which seams exist at all | Seal rate, and it re-rolls what the Closure board can offer |
-| **Survey** | months | **Bearings** | **a standing-instruction compiler** — you write the policies the department runs on | automates every rung below, so re-climbing is fast rather than repeated | Bearing gain, and it unlocks Charter clause slots |
+| **Duty Roster** | minutes | — | allocation across the roster | — | — |
+| **Discharge** | hours | **Service** | **a flat purchase grid** — one-off buys, no exclusivity, always something affordable | rates and yields in the shift | Service gain per career |
+| **Reassignment** | days | **Seniority** | **a branching board with exclusive branches** — you cannot take every path, so districts diverge | ceilings: storage, roster slots, chain slots | Seniority yield, and it unlocks new rows on the grid |
+| **Commission** | weeks | **Clauses** | **equippable, procedurally rolled clauses** — random modifiers, hold only a few | the rules: depletion curves, lattice topology, which seams exist at all | Clause rate, and it re-rolls what the tree can offer |
+| **Statute** | months | **Precedent** | **a standing-instruction compiler** — you write the policy every office files under | automates every rung below, so re-climbing is fast rather than repeated | Precedent gain, and it unlocks clause slots |
+| **Enclosure** | the long run | **Title** | **placement** — you build the thing shell by shell | consumes the entire lattice below as feedstock | Title rate per shell completed |
+| *The Authority* | *not built* | *Mandate* | *allocation across offices — the ladder eats its tail* | *every office runs the whole ladder below it* | — |
 
 Read the last two columns as the actual specification. **Every rung reaches
 downward and also compounds into itself** — that self-feeding term is what makes
 the ladder accelerate rather than merely stack, and it is the thing a flat
 "prestige 2 gives +200%" design never has.
+
+#### The escalation has to be a chain, not a zoom
+
+A ladder that simply zooms out — one shaft, a district, a world, a star — is set
+dressing. **Each rung has to be forced into existence by a wall the rung below
+ran into**, or the endgame is a non-sequitur with a big number on it.
+
+The chain that holds:
+
+| Rung | You manage | …but |
+| --- | --- | --- |
+| Duty Roster | one shaft | one pair of hands only digs so fast |
+| Discharge | a crew | the seam is worked out, and deeper rock needs kit this seam cannot pay for |
+| Reassignment | a district | past a certain depth the rock is hot and dense — digging stops being a **labour** problem and becomes a **power** problem |
+| Commission | a world | one world cannot generate enough power to dig its own core |
+| Statute | a system | every rock in the system, quarried for collectors, is a rounding error against what the deep draw needs |
+| **Enclosure** | **a star** | a star's entire output is finite, and the dig has not stopped |
+| The Authority | many stars | *(not built — the ladder eats its tail)* |
+
+The load-bearing move is the third row. **Depth converts from a labour problem
+into a power problem**, and from there the escalation is forced rather than
+chosen: you do not build a Dyson sphere because the game ran out of ideas, you
+build it because *a deep enough hole needs a star to run it*. The dig is always
+the point. The megastructure is infrastructure for the dig.
+
+That keeps the premise intact at every scale — **you are still the handler, and
+people are still going into a hole** — which is the constraint this whole
+redesign was told not to break.
+
+The terminal rung closes the loop: its mechanic is *allocation across offices*,
+which is the Duty Roster's mechanic six orders of magnitude up. In the
+bureaucratic costume that lands as a joke worth the whole climb — you become the
+institution that was sending you memos in hour one.
+
+**And the paperwork never changes.** You file the same form for a stellar
+enclosure that you filed for one recruit's boot allowance. That is the answer to
+"the joke wore out": a deadpan register applied to steadily more absurd objects
+is the engine of both Universal Paperclips and Kittens Game, and it is a joke
+that *improves* with scale rather than wearing through.
 
 #### Why these four mechanics, in this order
 

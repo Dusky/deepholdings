@@ -854,16 +854,24 @@
           and also <em class="term">feeds itself</em>. That self-feeding term is what
           makes a ladder accelerate rather than merely stack, and it is what a flat
           "prestige 2 grants +200%" never has.</p>
+          <p>And each rung <strong>zooms out</strong>. One shaft, then a career, then a
+          district, a world, a system — and finally a star, enclosed shell by shell.
+          Universal Paperclips starts on a clicker and ends disassembling the universe;
+          Kittens Game ends in orbit. Scope escalation is the genre's signature move
+          and this design was stopping at "a slightly bigger mine".</p>
+          <p class="src">THE JOKE IS THAT THE PAPERWORK NEVER CHANGES.<br>
+          YOU FILE THE SAME FORM FOR A STELLAR ENCLOSURE THAT YOU FILED FOR ONE
+          RECRUIT'S BOOT ALLOWANCE.</p>
         </div>
       </div>
     </div>
 
     <figure>
       <div class="fig-frame">
-        <p class="fig-title">Figure 4 · The ladder — five rungs, five machines</p>
-        <p class="fig-sub">The mechanics are the argument; the names are a costume.
-        <strong>Switch the costume and nothing underneath moves</strong> — which is
-        exactly why the theme is a separate decision from the design.</p>
+        <p class="fig-title">Figure 4 · The ladder — seven rungs, and what forces each one</p>
+        <p class="fig-sub">Read the <em>but —</em> lines: each rung exists because the
+        one above it ran into a wall. The mechanics are the argument and the names are
+        a costume — <strong>switch the costume and nothing underneath moves.</strong></p>
 
         <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:1.1rem">
           <span class="mono" style="font-size:.66rem;letter-spacing:.14em;color:var(--ink-3)">COSTUME</span>
@@ -871,8 +879,8 @@
           <button id="th-hold" type="button">The Holdings</button>
         </div>
 
-        <svg viewBox="0 0 760 360" role="img" id="laddersvg"
-             aria-label="Diagram of five nested layers. Each rung resets everything above it and has its own upgrade mechanic: an allocation layer, then a flat purchase grid, then a branching tree with mutually exclusive branches, then equippable procedurally rolled clauses, then a standing-instruction compiler.">
+        <svg viewBox="0 0 760 620" role="img" id="laddersvg"
+             aria-label="Diagram of seven nested layers, each forced into existence by a constraint the layer above ran into. One shaft is limited by one pair of hands; a crew by the seam running out; a district by depth becoming a power problem rather than a labour problem; a world by being unable to generate enough power to dig its own core; a system because quarried rock is a rounding error against the power needed; a star because even its whole output is finite. Each layer also has its own upgrade mechanic: allocation, a flat grid, an exclusive tree, equippable rolled clauses, a compiler, placement, and finally allocation again across offices.">
           <defs>
             <marker id="loop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" fill="context-stroke"/>
@@ -1183,6 +1191,28 @@
         scale costs nothing to support here: a number in the trillions is type, not artwork.
       </figcaption>
     </figure>
+
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 7 · Enclosure survey — the same renderer, thirty orders of magnitude later</p>
+        <p class="fig-sub">The last rung of the ladder, drawn by the same kind of code
+        as Figure 6. A seeded walk placed the chambers in a seam; a seeded placement
+        lays collector shells around a star. <strong>Neither costs an asset.</strong></p>
+        <canvas id="dyson" style="width:100%;height:360px;display:block;border:1px solid var(--rule-soft);border-radius:2px"></canvas>
+        <div style="display:flex;flex-wrap:wrap;gap:.8rem 1.4rem;align-items:center;margin-top:.9rem">
+          <button id="reseed2" type="button">Survey another star</button>
+          <span class="mono" style="font-size:.7rem;letter-spacing:.08em;color:var(--ink-3)">
+            SEED <span id="seedval2" style="color:var(--gold)">—</span>
+          </span>
+        </div>
+      </div>
+      <figcaption>
+        A dungeon and a Dyson sphere are the same drawing problem: <b>a seed, a
+        topology, and a set of yields.</b> This is the strongest argument for the
+        generated-art constraint — it is the only way a two-person project gets to
+        promise an endgame at this scale and actually ship it.
+      </figcaption>
+    </figure>
   </section>
 
   <!-- ══════════ 09 · LOCKED ══════════ -->
@@ -1441,34 +1471,50 @@
 
   /* ───────── figure 4 · the ladder, in two costumes ─────────
      The mechanics column never changes. That is the point of the figure. */
+  /* The mechanic ladder. `because` is what the rung below runs into — the
+     constraint that forces the next rung to exist. That chain is the argument;
+     without it the Dyson sphere is set dressing. */
   const MECHANIC = [
-    { m: 'allocation across the roster',                       f: '—',                              c: 'var(--ink-3)' },
-    { m: 'a FLAT GRID — one-off buys, nothing exclusive',      f: 'feeds its own currency per run', c: 'var(--gold)'  },
-    { m: 'a BRANCHING TREE — branches are exclusive',          f: 'unlocks new rows on the grid',   c: 'var(--blue)'  },
-    { m: 'EQUIPPABLE CLAUSES — rolled, hold only a few',       f: 're-rolls what the tree offers',  c: 'var(--oxide)' },
-    { m: 'A COMPILER — you write the standing instructions',   f: 'automates every rung below',     c: 'var(--gold)'  }
+    { m: 'ALLOCATION across the roster',                     f: '—',                              s: 'ONE SHAFT',
+      because: 'one pair of hands only digs so fast', c: 'var(--ink-3)' },
+    { m: 'a FLAT GRID — one-off buys, nothing exclusive',    f: 'feeds its own currency per run', s: 'A CREW',
+      because: 'the seam is worked out, and deeper rock needs kit this seam cannot pay for', c: 'var(--gold)' },
+    { m: 'a BRANCHING TREE — branches are exclusive',        f: 'unlocks new rows on the grid',   s: 'A DISTRICT',
+      because: 'past a certain depth the rock is hot and dense — digging stops being a labour problem and becomes a POWER problem', c: 'var(--blue)' },
+    { m: 'EQUIPPABLE CLAUSES — rolled, hold only a few',     f: 're-rolls what the tree offers',  s: 'A WORLD',
+      because: 'one world cannot generate enough power to dig its own core', c: 'var(--oxide)' },
+    { m: 'A COMPILER — you write the standing instructions', f: 'automates every rung below',     s: 'A SYSTEM',
+      because: 'every rock in the system, quarried for collectors, is still a rounding error against what the deep draw needs', c: 'var(--gold)' },
+    { m: 'PLACEMENT — you build it shell by shell',          f: 'consumes everything below it',   s: 'A STAR',
+      because: 'a star’s entire output is finite, and the dig has not stopped', c: 'var(--blue)' },
+    { m: 'ALLOCATION across offices — the ladder eats its tail', f: 'every office runs the whole ladder below', s: 'MANY STARS',
+      because: null, c: 'var(--oxide)' }
   ];
 
   const COSTUME = {
     auth: {
       label: 'THE AUTHORITY',
       rungs: [
-        { n: 'DUTY ROSTER', p: 'minutes', cur: '—',           r: 'resets nothing' },
-        { n: 'DISCHARGE',   p: 'hours',   cur: 'Service',     r: 'a recruit completes their service' },
-        { n: 'REASSIGNMENT',p: 'days',    cur: 'Seniority',   r: 'your office is closed, you are posted on' },
-        { n: 'COMMISSION',  p: 'weeks',   cur: 'Clauses',     r: 'you are granted a bureau of your own' },
-        { n: 'STATUTE',     p: 'months',  cur: 'Precedent',   r: 'you write the regulations' }
+        { n: 'DUTY ROSTER',  p: 'minutes', cur: '—',         r: 'resets nothing' },
+        { n: 'DISCHARGE',    p: 'hours',   cur: 'Service',   r: 'a recruit completes their service' },
+        { n: 'REASSIGNMENT', p: 'days',    cur: 'Seniority', r: 'your office is closed, you are posted on' },
+        { n: 'COMMISSION',   p: 'weeks',   cur: 'Clauses',   r: 'you are granted a bureau of your own' },
+        { n: 'STATUTE',      p: 'months',  cur: 'Precedent', r: 'you write what every office files under' },
+        { n: 'ENCLOSURE',    p: 'the long run', cur: 'Title', r: 'the star is fenced, shell by shell' },
+        { n: 'THE AUTHORITY',p: 'not built yet', cur: 'Mandate', r: 'you become the thing that was sending you memos' }
       ],
       note: 'every rung is a promotion away from the job you had just got good at'
     },
     hold: {
       label: 'THE HOLDINGS',
       rungs: [
-        { n: 'SHIFT',       p: 'minutes', cur: '—',           r: 'resets nothing' },
-        { n: 'RETIREMENT',  p: 'hours',   cur: 'Service',     r: 'a delver’s career ends' },
-        { n: 'CLOSURE',     p: 'days',    cur: 'Writs',       r: 'the holding is worked out and sealed' },
-        { n: 'CHARTER',     p: 'weeks',   cur: 'Seals',       r: 'a new concession, rolled from a seed' },
-        { n: 'SURVEY',      p: 'months',  cur: 'Bearings',    r: 'you map the whole deep' }
+        { n: 'SHIFT',       p: 'minutes', cur: '—',         r: 'resets nothing' },
+        { n: 'RETIREMENT',  p: 'hours',   cur: 'Service',   r: 'a delver’s career ends' },
+        { n: 'CLOSURE',     p: 'days',    cur: 'Writs',     r: 'the holding is worked out and sealed' },
+        { n: 'CHARTER',     p: 'weeks',   cur: 'Seals',     r: 'a new concession, rolled from a seed' },
+        { n: 'SURVEY',      p: 'months',  cur: 'Bearings',  r: 'you map the whole deep' },
+        { n: 'THE SPHERE',  p: 'the long run', cur: 'Yield', r: 'the star becomes the power station for the hole' },
+        { n: 'THE COMPANY', p: 'not built yet', cur: 'Shares', r: 'you charter the companies that do this' }
       ],
       note: 'every rung resets everything above it, and buys what nothing above it could'
     }
@@ -1478,16 +1524,16 @@
     const g = document.getElementById('ladder');
     g.textContent = '';
     const set = COSTUME[key];
-    const x0 = 14, w = 732, rowH = 66, top = 18;
+    const x0 = 14, w = 732, boxH = 58, band = 26, rowH = boxH + band, top = 18;
 
     set.rungs.forEach((d, i) => {
       const mech = MECHANIC[i];
       const y = top + i * rowH;
       // slower rungs are wider: the layer that resets the most visibly contains the rest
-      const inset = (set.rungs.length - 1 - i) * 16;
+      const inset = (set.rungs.length - 1 - i) * 14;
 
       g.appendChild(el('rect', {
-        x: x0 + inset, y, width: w - inset * 2, height: rowH - 12, rx: 2,
+        x: x0 + inset, y, width: w - inset * 2, height: boxH, rx: 2,
         fill: i === 0 ? 'none' : 'var(--paper-3)',
         stroke: mech.c, 'stroke-width': i === 0 ? 1 : 1.4,
         'stroke-dasharray': i === 0 ? '3 3' : 'none',
@@ -1499,23 +1545,29 @@
 
       put({ x: L, y: y + 21, 'font-size': 11.5, fill: mech.c, 'letter-spacing': '.13em' }, d.n);
       put({ x: L, y: y + 36, 'font-size': 9 }, d.p + (d.cur === '—' ? '' : '  ·  ' + d.cur));
-      put({ x: L, y: y + 49, 'font-size': 8.5, fill: 'var(--ink-3)' }, d.r);
+      put({ x: L, y: y + 49, "font-size": 8.5, fill: "var(--ink-3)" }, d.r);
 
-      put({ x: R, y: y + 23, 'font-size': 10, 'text-anchor': 'end', fill: mech.c,
+      put({ x: R, y: y + 21, 'font-size': 10, 'text-anchor': 'end', fill: mech.c,
             'letter-spacing': '.05em' }, mech.m);
-      put({ x: R, y: y + 40, 'font-size': 8.5, 'text-anchor': 'end' }, mech.f);
+      put({ x: R, y: y + 36, 'font-size': 8.5, 'text-anchor': 'end' }, mech.f);
+      // the scope axis: what you are actually managing at this rung
+      put({ x: R, y: y + 49, "font-size": 9, "text-anchor": "end", fill: "var(--ink-2)",
+            'letter-spacing': '.16em' }, 'you manage  ' + mech.s);
 
-      if (i > 0) {
-        const lx = x0 + inset;
+      // the causal band: what this rung runs into, which is why the next one exists
+      if (mech.because) {
+        const by = y + boxH + band * 0.62;
         g.appendChild(el('path', {
-          d: `M${lx + 4},${y + 16} H${lx - 7} V${y - rowH + 28} H${lx + 20}`,
-          fill: 'none', stroke: mech.c, 'stroke-width': 1.2, 'stroke-dasharray': '3 2',
-          'marker-end': 'url(#loop)', opacity: .7
+          d: `M${x0 + 26},${y + boxH + 4} V${y + boxH + band - 3}`,
+          fill: 'none', stroke: mech.c, 'stroke-width': 1.2,
+          'marker-end': 'url(#loop)', opacity: .8
         }));
+        put({ x: x0 + 38, y: by, 'font-size': 9.5, fill: 'var(--ink-2)' },
+            'but — ' + mech.because);
       }
     });
 
-    const n = el('text', { x: x0, y: top + set.rungs.length * rowH + 8,
+    const n = el('text', { x: x0, y: top + set.rungs.length * rowH - band + 22,
       'font-size': 9, fill: 'var(--ink-3)' });
     n.textContent = set.note;
     g.appendChild(n);
@@ -1801,13 +1853,97 @@
     drawSeam();
   });
 
+  /* ───────── figure 7 · the Enclosure, same trick at stellar scale ───────── */
+  const dysCv = document.getElementById('dyson');
+  const dctx = dysCv.getContext('2d');
+  const seedOut2 = document.getElementById('seedval2');
+  let seed2 = 1771;
+
+  function drawDyson() {
+    const r = dysCv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = r.width, h = r.height;
+    dysCv.width = w * dpr; dysCv.height = h * dpr;
+    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dctx.clearRect(0, 0, w, h);
+
+    const rand = rngOf(seed2);
+    const ink3 = css('--ink-3'), rule = css('--rule'),
+          gold = css('--gold'), blue = css('--blue');
+    const cx = w * 0.5, cy = h * 0.54;
+    const maxR = Math.min(w * 0.42, h * 0.42);
+
+    dctx.font = '9px ui-monospace, monospace';
+    dctx.textBaseline = 'middle';
+
+    // the star
+    dctx.beginPath(); dctx.arc(cx, cy, maxR * 0.13, 0, Math.PI * 2);
+    dctx.fillStyle = gold; dctx.globalAlpha = .5; dctx.fill();
+    dctx.globalAlpha = 1; dctx.strokeStyle = gold; dctx.lineWidth = 1.4; dctx.stroke();
+
+    const shells = 6;
+    let placed = 0, total = 0;
+
+    for (let s = 0; s < shells; s++) {
+      const rr = maxR * (0.26 + (s / (shells - 1)) * 0.74);
+
+      // the shell's construction guide — the part not built yet
+      dctx.beginPath(); dctx.arc(cx, cy, rr, 0, Math.PI * 2);
+      dctx.strokeStyle = rule; dctx.lineWidth = .8;
+      dctx.setLineDash([2, 4]); dctx.stroke(); dctx.setLineDash([]);
+
+      // collectors: completion falls off with radius, so the outer shells are frontier
+      const segs = 30 + s * 16;
+      const completion = Math.max(0.05, 0.99 - s * 0.185 - rand() * 0.08);
+      const phase = rand() * Math.PI * 2;
+      total += segs;
+
+      for (let i = 0; i < segs; i++) {
+        if (rand() > completion) continue;
+        placed++;
+        const a0 = phase + (i / segs) * Math.PI * 2;
+        const a1 = a0 + (Math.PI * 2 / segs) * 0.88;
+        dctx.beginPath();
+        dctx.arc(cx, cy, rr, a0, a1);
+        dctx.strokeStyle = s < 3 ? gold : blue;
+        dctx.globalAlpha = .35 + completion * 0.55;
+        dctx.lineWidth = 2.4 + (1 - s / shells) * 1.6;
+        dctx.lineCap = 'butt';
+        dctx.stroke();
+        dctx.globalAlpha = 1;
+      }
+
+      // label each shell at its own crown, so six labels do not stack on one line
+      dctx.fillStyle = ink3;
+      dctx.textAlign = 'center';
+      dctx.fillText('SHELL ' + (s + 1), cx, cy - rr - 7);
+    }
+
+    dctx.textAlign = 'left';
+    dctx.fillStyle = ink3;
+    dctx.fillText('ENCLOSURE IN PROGRESS', 12, 18);
+    dctx.textAlign = 'right';
+    dctx.fillStyle = gold;
+    dctx.fillText(Math.round((placed / total) * 100) + '% OF SURFACE TITLED', w - 12, 18);
+    dctx.textAlign = 'left';
+    dctx.fillStyle = ink3;
+    dctx.fillText(placed.toLocaleString('en-GB') + ' COLLECTORS SITED', 12, h - 14);
+    seedOut2.textContent = seed2;
+  }
+
+  drawDyson();
+  document.getElementById('reseed2').addEventListener('click', () => {
+    seed2 = Math.floor(Math.random() * 99999);
+    drawDyson();
+  });
+
   /* redraw canvases when the theme changes, so ink follows the sheet */
-  const repaint = () => { contours(); drawSeam(); };
+  const repaint = () => { contours(); drawSeam(); drawDyson(); };
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', repaint);
   new MutationObserver(repaint).observe(document.documentElement, {
     attributes: true, attributeFilter: ['data-theme']
   });
-  window.addEventListener('resize', drawSeam);
+  window.addEventListener("resize", () => { drawSeam(); drawDyson(); });
 
   window.addEventListener('scroll', hideTip, { passive: true });
 </script>

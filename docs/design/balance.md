@@ -1750,3 +1750,58 @@ That is a real if small cost, and it is the direction the ceilings exist to
 police. 5.4% remains well inside the band the per-career spread already showed
 (p90 7%, worst 18%), so it is recorded rather than acted on. If it climbs again
 with the next drop-table change, the survival values are where to look first.
+
+## The endpoint was the wrong number, and it hid an inverted result
+
+**Measured 2026-08-04, before committing to Phase 3.** The plan was to add depth
+bands. Two checks stopped that, and the second one redirects the programme.
+
+### Raising `MAX_DEPTH` is the one thing this codebase already knows not to do
+
+`sites.ts` says so in its opening comment, with reasons: `authorisedDepth` clamps
+to it, the damage curve is shaped around it, and `maxHpForLevel` caps grade at it
+— the last because a ninety-day run once found the game **self-terminating**.
+Grade bought survivability without limit, the worst blow at Floor 12 is about 97
+damage, a Grade 30 recruit's retreat threshold sits above that, so recruits
+stopped dying and progression halted permanently on day fourteen. The Annexe
+exists because a parallel site costs writing where a deeper one costs
+re-verification of all of it. Phase 3 as sketched walked into that.
+
+### Measuring the engaged path first
+
+The 45-milestone baseline is default play: no department, no transfers, no
+Annexe. Three systems the game has, excluded. With all three on:
+
+| | Default | Engaged |
+| --- | --- | --- |
+| Last new thing | 65 sessions | **177 sessions** |
+| New things | 45 | 60 |
+| **Longest stretch with nothing new** | **13 sessions** (worst 21) | **56 sessions** (worst 68) |
+
+The endpoint says the engaged path is nearly three times healthier. The desert
+line says it is four times worse paced. Both are true and the second is the one a
+player feels: an engaged officer checks in twice a day for **twenty-eight days**
+with nothing new, and does it twice.
+
+The timeline shows why. Everything past the default cliff arrives in clumps — a
+burst at day 34.8 (Chief Filing Clerk, Service Credit III, two Commendations,
+posting 2), nothing until day 63.5, then another burst. Transfers fire when the
+pension ladder runs out, so their rungs all land together.
+
+### What this changes
+
+The endpoint metric cannot see a gap, which makes it blind to exactly the failure
+the engaged path has. `longrun` now reports the longest desert alongside it, and
+that is the number content work should be aimed at.
+
+The two paths need opposite work, which is the finding:
+
+- **Default path** — well paced to session 65, then a wall. Wants more content
+  past it, or a legible reason to prestige. Adding content here is real work.
+- **Engaged path** — no wall inside ninety days, but two month-long deserts.
+  Wants the content it *already has* spread out, not more of it. That is
+  scheduling, and it is much cheaper than authoring.
+
+Aiming Phase 3 at the engaged path's clumping is the better trade: it improves
+the experience of the players who engage most, and it costs pacing work rather
+than a new site.

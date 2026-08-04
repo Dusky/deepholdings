@@ -9,9 +9,25 @@
  *
  * So this plays a career for ninety days and records the tick at which each
  * *new* thing happens for the first time — a permit tier, a floor, a prestige
- * rung, a requisition. The output is a timeline, and the number that matters
- * is the last entry on it: after that moment the game has nothing further to
- * show, and everything after it is repetition.
+ * rung, a requisition. The output is a timeline.
+ *
+ * ## The last entry is not the number that matters
+ *
+ * It was described as such here for two phases, and measuring both paths showed
+ * that to be wrong. An endpoint cannot see a gap, so it scores three clumps of
+ * prestige rungs with month-long deserts between them identically to the same
+ * count arriving evenly — and those are opposite games to play.
+ *
+ * Read against the desert line below, the two paths invert:
+ *
+ *   default   endpoint 65 sessions, longest desert 13 — well paced, then a wall
+ *   engaged   endpoint 177 sessions, longest desert 56 — no wall, but a player
+ *             checks in for a month at a time with nothing new twice over
+ *
+ * The path that looks healthiest on the endpoint is the worse-paced one. They
+ * also need opposite fixes: the default path wants more content past its wall
+ * (or a legible reason to prestige), and the engaged path wants the content it
+ * already has spread out, because transfers deliver their rungs all at once.
  *
  * The officer modelled is an engaged one who spends as soon as they can. That
  * is deliberately the *fastest* exhaustion: a casual player takes longer to
@@ -464,6 +480,38 @@ console.log(
  * not the same size of event as a screen unlocking, and eighty of them would
  * swamp a list of forty-five and make this phase incomparable to the next.
  */
+/*
+ * The longest stretch with nothing new — the number a player actually feels.
+ *
+ * The endpoint metric above cannot see a gap, and that turns out to matter more
+ * than it sounds. Measured on the same run with `--staff --transfer --annexe`,
+ * an engaged officer's last new thing lands at session 177 of 180, which reads
+ * as a game that never runs out. What actually happens is three clumps of
+ * prestige rungs — a burst at day 34.8, then **twenty-eight days of nothing**,
+ * a burst at day 63.5, then another desert — and an endpoint of 177 scores that
+ * identically to sixty evenly-spaced arrivals.
+ *
+ * Both headline numbers mislead in opposite directions. The default path scores
+ * 65 sessions and looks broken; the engaged path scores 177 and looks healthy;
+ * neither describes playing the game. The distance between consecutive new
+ * things does, so it is reported here and it is the number content work should
+ * be aimed at.
+ */
+const deserts = runs.map((r) => {
+  const ticks = r.milestones.map((m) => m.tick).sort((a, b) => a - b);
+  let worst = 0;
+  let prev = 0;
+  for (const t of ticks) {
+    worst = Math.max(worst, t - prev);
+    prev = t;
+  }
+  return worst;
+});
+console.log(
+  `longest stretch with nothing new: median ${sessionOf(med(deserts))} sessions  ` +
+    `best ${sessionOf(Math.min(...deserts))}  worst ${sessionOf(Math.max(...deserts))}`,
+);
+
 const clauseCounts = runs.map((r) => r.clausesSeen.size);
 const clauseLast = runs.map((r) => Math.max(0, ...r.clausesSeen.values()));
 console.log(

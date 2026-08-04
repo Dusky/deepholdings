@@ -375,11 +375,56 @@ console.log(
     `${ANNEXE ? ', working the Annexe' : ''}\n`,
 );
 
-console.log('--- when the last new thing happens ---');
+/**
+ * Check-ins a day, and why this number is the whole point of the section below.
+ *
+ * Product goal #3 says two check-ins a day should be plenty, and the game is
+ * built so that absence costs nothing. That makes **elapsed days the wrong unit
+ * for measuring novelty**, and reporting in days is why the content cliff read
+ * as a distant problem for months.
+ *
+ * A day is not a unit of play here — it is a unit of waiting. The player
+ * experiences this game as a sequence of short visits, so the honest question is
+ * "how many times can I open this before it stops showing me anything new", and
+ * the honest answer at day 32.6 is about sixty-five. Against active-playtime
+ * figures for the games in `docs/research/progression-depth.md` — Melvor's 384
+ * hours, NGU's "over a year" — sixty-five short visits is four or five hours of
+ * a player's attention.
+ *
+ * Two is deliberately the *generous* reading. An engaged player checks in more
+ * often and exhausts the novelty sooner, so this figure is a ceiling.
+ */
+const SESSIONS_PER_DAY = 2;
+const TOTAL_SESSIONS = DAYS * SESSIONS_PER_DAY;
+const sessionOf = (tick: number) => Math.ceil((tick / 1440) * SESSIONS_PER_DAY);
+
+console.log('--- how long until nothing is new ---');
 const lasts = runs.map((r) => r.lastNewThing);
-console.log(`median day ${day(med(lasts))}  earliest ${day(Math.min(...lasts))}  latest ${day(Math.max(...lasts))}`);
+const medianLast = med(lasts);
 console.log(
-  `then ${(DAYS - Number(day(med(lasts)))).toFixed(1)} days of the remaining ${DAYS} have nothing new in them\n`,
+  `median ${sessionOf(medianLast)} sessions  ` +
+    `earliest ${sessionOf(Math.min(...lasts))}  latest ${sessionOf(Math.max(...lasts))}` +
+    `   (at ${SESSIONS_PER_DAY} check-ins a day)`,
+);
+console.log(
+  `then ${TOTAL_SESSIONS - sessionOf(medianLast)} of the run's ${TOTAL_SESSIONS} sessions have nothing new in them`,
+);
+
+// Density, not just the endpoint. A run whose novelty is front-loaded into the
+// first ten sessions and a run that spreads it evenly both report the same "last
+// new thing", and they are not the same game.
+const counts = runs.map((r) => r.milestones.length);
+const withSomething = runs.map(
+  (r) => new Set(r.milestones.map((m) => sessionOf(m.tick))).size,
+);
+console.log(
+  `${med(counts)} new things across the whole run — ` +
+    `${med(withSomething)} sessions of ${TOTAL_SESSIONS} contain one ` +
+    `(${((med(withSomething) / TOTAL_SESSIONS) * 100).toFixed(1)}%)`,
+);
+console.log(
+  `in days, for comparison: median day ${day(medianLast)}  ` +
+    `earliest ${day(Math.min(...lasts))}  latest ${day(Math.max(...lasts))}\n`,
 );
 
 console.log('--- everything that ever happens, first career ---');

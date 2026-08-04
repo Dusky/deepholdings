@@ -1633,3 +1633,64 @@ two attempts.
 
 That is the seventh finding this session that only a real client, or a
 harness driving the real code, could produce.
+
+## Sessions, not days — the unit that made the cliff look distant
+
+**Baseline recorded 2026-08-04, before any content work begins.** Every phase of
+the content-cliff programme is measured against these numbers.
+
+```
+npm run longrun --workspace @deepholdings/server -- --days 90 --runs 8
+```
+
+| | Baseline |
+| --- | --- |
+| Last new thing | **66 sessions** (earliest 65, latest 69) — day 32.6 |
+| Sessions with nothing new after that | 114 of 180 |
+| New things in the whole run | 45 |
+| Sessions containing one | **18 of 180 (10.0%)** |
+
+### Why the unit changed
+
+`longrun` reported "the last new thing happens on day 32.6" for months, and that
+is a true sentence that hid the problem. A day is not a unit of play in this
+game — it is a unit of waiting. Product goal #3 promises two check-ins a day are
+plenty and absence costs nothing, so the player experiences this as a sequence of
+short visits, not as elapsed calendar time.
+
+Converted, day 32.6 is about **sixty-five visits**. Against the active-playtime
+figures in [`docs/research/progression-depth.md`](../research/progression-depth.md)
+— Melvor's 384 hours to content completion, NGU's "over a year" — sixty-five
+short visits is four or five hours of a player's attention before the game stops
+producing anything they have not seen. That is the number to be alarmed by, and
+no report produced it until now.
+
+Two check-ins a day is deliberately the *generous* reading. An engaged player
+opens the app more often and exhausts the novelty sooner, so the session figure
+is a ceiling rather than an estimate.
+
+### The finding the endpoint was hiding
+
+The density line is new information and it is worse than the endpoint suggested:
+**45 new things arrive in only 18 sessions.** Novelty is not spread across the
+first sixty-six visits, it is clustered into eighteen of them. Roughly three
+visits in four show the player nothing new *even during the stretch the old
+report called the good part*.
+
+That reframes what "more content" has to mean. A change that adds twenty new
+things but delivers them in six more clumps moves the endpoint and does not move
+the experience. The number to watch is **sessions containing something new**, and
+a run where that share falls while the endpoint moves out is a regression wearing
+a success's clothes.
+
+### What this does not measure
+
+- **Novelty is counted, not weighted.** A new permit tier and a new screen both
+  score one. `milestones` has no notion of size, so a phase that adds many small
+  arrivals will flatter itself against one that adds a single large system.
+- **Repeat engagement is invisible.** A player who enjoys re-running a system
+  they have already seen registers nothing here. This measures first encounters
+  only, which is the right proxy for a content cliff and the wrong one for
+  whether the game is fun.
+- **`cadence` still does not model staff**, so its genuine-empty figure and this
+  one are measuring adjacent but different things.

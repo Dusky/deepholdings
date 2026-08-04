@@ -125,7 +125,7 @@ export const COMMENDATION_CATALOGUE: readonly LadderEntry<CommendationId, Commen
   // player can decline on purpose: more depth means more gold and more pension,
   // both superlinear, paid for in recruits.
   { id: 'stretch1', track: 'stretch', tier: 1, cost: 1, label: 'Dispensation to Work Below Grade I',
-    detail: 'Recruits may work one floor deeper than their grade allows.' },
+    detail: 'Recruits may work one floor deeper than they are authorised.' },
   { id: 'stretch2', track: 'stretch', tier: 2, cost: 2, label: 'Dispensation to Work Below Grade II',
     detail: 'Two floors deeper. They will not all come back.' },
   { id: 'stretch3', track: 'stretch', tier: 3, cost: 4, label: 'Dispensation to Work Below Grade III',

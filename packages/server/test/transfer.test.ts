@@ -65,8 +65,23 @@ test('the Dispensation is the only thing that lets a recruit outrun their grade'
     7,
     'two rungs buy two floors',
   );
-  // The permit still binds. A dispensation excuses your grade, not your paperwork.
-  assert.equal(authorisedDepth(12, 1, 5, 'holdings', grantedStretch(['stretch3'])), 2);
+  // A dispensation excuses the paperwork too, and that is a deliberate change
+  // from how it first shipped. Restricted to the grade term it was dead on
+  // arrival: the default order, the permit ladder and the site all stop at
+  // MAX_DEPTH, so an officer holding Standing Requisition III (arrive at Grade
+  // 12) got nothing from it at all — the two tracks the repair was built around
+  // cancelled each other for anyone who could afford both.
+  assert.equal(
+    authorisedDepth(12, 1, 5, 'holdings', grantedStretch(['stretch1', 'stretch2', 'stretch3'])),
+    5,
+    'permit D-1 stops at Floor 2, and the exemption is worth three past it',
+  );
+
+  // The point of the change: floors past MAX_DEPTH are reachable, and only
+  // here. `maxHpForLevel` still caps grade at MAX_DEPTH, so a recruit down
+  // there carries Grade 12 hit points against Floor 15 damage.
+  assert.equal(authorisedDepth(12, 8, 12, 'holdings', grantedStretch(['stretch1', 'stretch2', 'stretch3'])), 15);
+  assert.equal(authorisedDepth(12, 8, 12), 12, 'and nobody reaches them without the form');
 });
 
 test('Right of Audience discounts standing and nothing else', () => {

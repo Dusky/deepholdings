@@ -53,6 +53,7 @@ import {
   type UnlockId,
   STAFF_LADDER,
   COMMENDATION_CATALOGUE,
+  type CommendationId,
   type SiteId,
   type Transfer,
 } from '@deepholdings/shared';
@@ -275,7 +276,23 @@ function playOne(seed: number): {
       character, inventory, unlocks,
       orders: { ...DEFAULT_ORDERS, site },
       toTick: to, permitAppliedTick, caseFiles, filings,
-      commendations: ANNEXE ? ['secondment1'] : transfer.unlocks,
+      /*
+       * The Secondment is *added*, not substituted.
+       *
+       * This read `ANNEXE ? ['secondment1'] : transfer.unlocks`, which handed
+       * the resolver a one-item list and threw away everything the officer had
+       * actually earned. `--annexe` exists to reach the second site without
+       * waiting for the Commendation, and instead it silently switched off
+       * every commendation effect the resolver reads — which is how the
+       * Dispensation measured as worth nothing: `grantedStretch` was being
+       * asked about a list that never contained a stretch rung.
+       *
+       * Same shape as the bugs this file's own header catalogues: the harness
+       * quietly describing a different game from the one being shipped.
+       */
+      commendations: ANNEXE
+        ? [...new Set<CommendationId>([...transfer.unlocks, 'secondment1'])]
+        : transfer.unlocks,
     });
 
     for (const entry of out.journal) {

@@ -116,12 +116,36 @@ export function authorisedDepth(
    */
   granted = 0,
 ): number {
+  /*
+   * The grant is added *after* the minimum, not inside it, and that is the
+   * whole difference between a working track and a dead one.
+   *
+   * Inside, it only widened the grade term — and all four ceilings sit at
+   * twelve: the default order targets `MAX_DEPTH`, permits stop at `MAX_DEPTH`,
+   * and the site stops there too. So an officer who bought Grade 12 on arrival
+   * (Standing Requisition III) got nothing whatever from the Dispensation. The
+   * two tracks the Commendation repair was built around cancelled each other
+   * for exactly the officers who could afford both.
+   *
+   * Outside, it is what the form says it is: an exemption from the Authority's
+   * ceilings, worth N floors past wherever the recruit would otherwise be
+   * stopped. Floors 13 and below are the only content in this game that has
+   * never been reachable.
+   *
+   * What it deliberately does *not* touch is `maxHpForLevel`, which still caps
+   * grade at `MAX_DEPTH`. `sites.ts` records why raising the ceiling is
+   * dangerous: grade used to buy survivability without limit until recruits
+   * stopped dying and the game self-terminated on day fourteen. That mechanism
+   * is untouched here — a recruit on Floor 15 carries Grade 12 hit points, so
+   * the deep floors are lethal rather than free. The danger being re-opened is
+   * the one this game wants.
+   */
   return Math.min(
     targetDepth,
     permitDepthLimit(permitTier, site),
-    level + GRADE_STRETCH + granted,
+    level + GRADE_STRETCH,
     siteSpec(site).maxDepth,
-  );
+  ) + granted;
 }
 
 /**

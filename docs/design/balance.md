@@ -1958,3 +1958,44 @@ property: allocation between several recruits is a decision that cannot be
 expressed as a multiplier on one. That, or accepting that this game's decisions
 live in the case-file drawer and investing there, is a better use of the next
 phase than a fifth ladder.
+
+## Correction: `--annexe` was switching off commendations
+
+**Every figure in this document measured with `--annexe` is unreliable, and the
+three sections above it are the ones affected.** `longrun` passed the resolver
+`ANNEXE ? ['secondment1'] : transfer.unlocks` — substituting a one-item list for
+everything the officer had earned, rather than adding the Secondment to it. With
+that flag set, `resolve` never saw intake, patronage, audience or stretch.
+
+It is the same shape as the bugs `longrun`'s own header catalogues: the harness
+quietly describing a different game from the one being shipped. It is how the
+Dispensation measured as worth nothing — `grantedStretch` was being asked about a
+list that could not contain a stretch rung.
+
+### What the postures do once the resolver can see them
+
+| | reckless | cautious |
+| --- | --- | --- |
+| Deaths | **166** | 144 |
+| Deepest floor | 11 | 10 |
+| Final grade | 6 | 8 |
+| Gold realised | 762,491 | 789,473 |
+| Lifetime pension | 1,021,526 | 1,012,465 |
+
+Against the 122/118 deaths and 867k/808k gold reported before the fix, this is a
+different result in kind. Reckless officers die **15% more often**, work a floor
+deeper, and end two grades lower because death resets grade — and they earn
+slightly *less* gold for it.
+
+That is finally a decision rather than a percentage: two postures with visibly
+different careers. It is also, on these numbers, a **badly priced** one — the
+risky option currently pays less than the safe one, which is a balance problem
+rather than a design one, and the first thing to look at next.
+
+The Dispensation also became a real exemption in the same change: the grant is
+added after `authorisedDepth`'s minimum rather than inside its grade term, so it
+lifts the permit and site ceilings too. Restricted to grade it was dead on
+arrival, since all four ceilings sit at twelve. `maxHpForLevel` is untouched and
+still caps grade at `MAX_DEPTH`, so a recruit on Floor 15 carries Grade 12 hit
+points — the deep floors are lethal rather than free, which is the danger this
+game wants rather than the one `sites.ts` warns about.

@@ -100,6 +100,29 @@ const TRANSFER = args.includes('--transfer');
  * transfer layer's question, and `--transfer` answers that one.
  */
 const ANNEXE = args.includes('--annexe');
+/**
+ * `--build economy|operations` picks which tracks the officer licenses.
+ *
+ * The point of the flag is falsification. Tier III is licensed now, so two
+ * officers can want different things — and if the two builds below turn out to
+ * play the same, the licence has not created a decision, it has only created a
+ * delay. That is a result this harness is supposed to be able to report, so the
+ * builds are deliberately opposed: one buys money, the other buys survivability
+ * and room to work.
+ *
+ * With no flag the officer has no preference and takes rungs cheapest-first,
+ * which is what every measurement before the licence described.
+ */
+const BUILDS = {
+  economy: ['stipend', 'service', 'estate'],
+  operations: ['permits', 'recruit', 'cabinet'],
+} as const;
+const buildAt = args.indexOf('--build');
+const BUILD = buildAt === -1 ? null : (args[buildAt + 1] as keyof typeof BUILDS);
+if (BUILD !== null && !(BUILD in BUILDS)) {
+  throw new Error(`unknown build "${BUILD}" — expected ${Object.keys(BUILDS).join(' or ')}`);
+}
+const UNLOCK_POLICY = BUILD === null ? true : { prefer: BUILDS[BUILD] };
 
 interface Milestone {
   tick: number;
@@ -280,7 +303,7 @@ function playOne(seed: number): {
       {
         sells: true,
         requisitions: { reserve: 200 },
-        unlocks: true,
+        unlocks: UNLOCK_POLICY,
         staff: STAFF,
         hires: STAFF ? { reserve: 400 } : undefined,
         transfers: TRANSFER,

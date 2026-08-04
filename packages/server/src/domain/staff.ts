@@ -1,5 +1,6 @@
 import {
   UNLOCK_CATALOGUE,
+  licenceBlocked,
   archivistFeeShare,
   archivistStandingRelief,
   archivistThroughput,
@@ -241,6 +242,11 @@ function cheapestAffordable(pension: Pension, reserve: number, discount = 1) {
     (entry) =>
       !pension.unlocks.includes(entry.id as UnlockId) &&
       unlockTier(pension.unlocks, entry.track) === entry.tier - 1 &&
+      // The Junior Officer redeems on the officer's behalf, so they are bound by
+      // the same Tier III licence. Without this the department would quietly
+      // spend licences the officer never chose to spend — and worse, spend them
+      // cheapest-first, which is the one ordering the rule exists to prevent.
+      !licenceBlocked(pension.unlocks, entry) &&
       pension.total - Math.round(entry.cost * discount) >= reserve,
   ).reduce<(typeof UNLOCK_CATALOGUE)[number] | null>(
     (best, entry) => (best === null || entry.cost < best.cost ? entry : best),

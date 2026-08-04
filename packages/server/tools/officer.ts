@@ -37,6 +37,8 @@ import {
   REQUISITION_CATALOGUE,
   STAFF_CATALOGUE,
   UNLOCK_CATALOGUE,
+  licenceBlocked,
+  type UnlockTrack,
   canTransfer,
   commendationAward,
   commendationTier,
@@ -69,8 +71,15 @@ export interface OfficerPolicy {
    * resupply, which is a different experiment from the one usually intended.
    */
   requisitions?: { reserve: number };
-  /** Redeem pension rungs as soon as affordable. */
-  unlocks?: boolean;
+  /**
+   * Redeem pension rungs as soon as affordable.
+   *
+   * `prefer` names the tracks this officer is building toward, in order. It is
+   * meaningful only because Tier III is licensed — with an unconstrained
+   * catalogue every officer ends up owning all nineteen rungs and a preference
+   * changes nothing but the order they arrive in.
+   */
+  unlocks?: boolean | { prefer: readonly UnlockTrack[] };
   /**
    * Fill and promote every post as soon as affordable, keeping `reserve` back.
    *
@@ -140,13 +149,49 @@ export function nextRequisition(owned: readonly RequisitionId[]) {
   );
 }
 
-export function nextUnlock(owned: readonly UnlockId[]) {
-  return UNLOCK_CATALOGUE.filter(
-    (entry) => !owned.includes(entry.id) && unlockTier(owned, entry.track) === entry.tier - 1,
-  ).reduce<(typeof UNLOCK_CATALOGUE)[number] | null>(
-    (best, entry) => (best === null || entry.cost < best.cost ? entry : best),
-    null,
+/**
+ * The next rung this officer would buy, or null when the ladder has nothing
+ * left *for them*.
+ *
+ * Two things changed here when Tier III became licensed, and both matter.
+ *
+ * Blocked rungs are filtered out, so an officer who has spent their licences
+ * sees the catalogue as exhausted. That is not a workaround — it is the rule
+ * working. `visit()` files Form T-1 when `nextUnlock` returns null, so a career
+ * that has committed its licences transfers, and the next posting licenses
+ * different tracks. The prestige loop becomes the way to see the rungs you
+ * passed over, which is precisely the "legible reason to transfer" the default
+ * path was measured to be missing.
+ *
+ * And `prefer` exists because without it there is no officer to model. Cheapest
+ * -first is the optimal policy when nothing competes; once two tracks contend
+ * for one licence, "which build is this officer running" is a real question and
+ * the harness has to be able to ask it.
+ */
+export function nextUnlock(
+  owned: readonly UnlockId[],
+  prefer: readonly UnlockTrack[] = [],
+) {
+  const available = UNLOCK_CATALOGUE.filter(
+    (entry) =>
+      !owned.includes(entry.id) &&
+      unlockTier(owned, entry.track) === entry.tier - 1 &&
+      !licenceBlocked(owned, entry),
   );
+  if (available.length === 0) return null;
+  const rank = (entry: (typeof UNLOCK_CATALOGUE)[number]) => {
+    const at = prefer.indexOf(entry.track);
+    return at === -1 ? prefer.length : at;
+  };
+  return available.reduce<(typeof UNLOCK_CATALOGUE)[number] | null>((best, entry) => {
+    if (best === null) return entry;
+    // Preference decides first and price only breaks ties, because an officer
+    // saving for the track they want is the whole behaviour being modelled. A
+    // cheapest-first officer with a preference list would just be the old
+    // policy wearing a hat.
+    if (rank(entry) !== rank(best)) return rank(entry) < rank(best) ? entry : best;
+    return entry.cost < best.cost ? entry : best;
+  }, null);
 }
 
 export function visit(
@@ -274,8 +319,9 @@ export function visit(
   //    so a harness with both models the officer mopping up what the post's
   //    reserve policy left behind — which is what actually happens.
   if (policy.unlocks) {
+    const prefer = typeof policy.unlocks === 'object' ? policy.unlocks.prefer : [];
     for (;;) {
-      const rung = nextUnlock(pension.unlocks);
+      const rung = nextUnlock(pension.unlocks, prefer);
       if (!rung || pension.total < rung.cost) break;
       pension = {
         ...pension,
@@ -295,7 +341,8 @@ export function visit(
    * the officer could still have spent, which no player would do and which
    * would make the harness report the prestige layer as a loss.
    */
-  if (policy.transfers && nextUnlock(pension.unlocks) === null && canTransfer(pension.total + pension.spent)) {
+  const preferredTracks = typeof policy.unlocks === 'object' ? policy.unlocks.prefer : [];
+  if (policy.transfers && nextUnlock(pension.unlocks, preferredTracks) === null && canTransfer(pension.total + pension.spent)) {
     awarded = commendationAward(pension.total + pension.spent);
     transfer = {
       total: transfer.total + awarded,

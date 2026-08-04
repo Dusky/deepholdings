@@ -1805,3 +1805,72 @@ The two paths need opposite work, which is the finding:
 Aiming Phase 3 at the engaged path's clumping is the better trade: it improves
 the experience of the players who engage most, and it costs pacing work rather
 than a new site.
+
+## Tier III licences: the pacing fix worked, the decision did not
+
+**Measured 2026-08-04.** The unlock catalogue had no decision in it: seven
+tracks, three tiers, no prerequisites between tracks and no budget that makes
+them compete, so the optimal play is "buy the next rung you can afford" until you
+own all nineteen. The harness proves it — `visit()` models an officer as exactly
+that policy, and it is not an approximation, it is optimal. A game a three-line
+policy plays perfectly has nothing in it to play.
+
+So Tier III is now **licensed**: everything through Tier II is free, and a career
+may take only `TIER_III_LICENCES` (2) of the six eligible tracks to the top.
+Capping whole tracks would have cut a first career from nineteen rungs to nine,
+and the first career is the one that has to earn attention — the measured problem
+was never early, it was the late clumping.
+
+### The pacing result: the desert halved
+
+All figures `--days 90 --runs 8 --staff --transfer --annexe`:
+
+| | Before | After (no build) | economy | operations |
+| --- | --- | --- | --- | --- |
+| **Longest stretch with nothing new** | **56** (worst 68) | **29** (worst 31) | 29 (31) | 29 (32) |
+| Last new thing | 177 sessions | 167 | 166 | 168 |
+| New things | 60 | 59 | 60 | 59 |
+| Unlocks bought | 19 of 19 | 12 of 19 | 13 of 19 | 12 of 19 |
+
+The mechanism is the one intended. `nextUnlock` filters blocked rungs, so an
+officer who has committed their licences sees the ladder as exhausted and files
+Form T-1 — and `visit()` already transfers on exactly that condition. Transfers
+become more frequent and smaller, so prestige rungs arrive spread out instead of
+in two bursts. The month-long desert an engaged officer sat through twice is now
+about a fortnight.
+
+It also gives the default path the thing it was measured to be missing: a legible
+reason to transfer. The ladder visibly runs out with rungs still on it.
+
+### The decision result: negative, and worth stating plainly
+
+The falsifiable test set for this work was whether the harness would need more
+than one officer policy. It now supports them — `--build economy` and
+`--build operations` license opposed tracks — and **they play almost the same**:
+
+| | economy | operations |
+| --- | --- | --- |
+| Gold realised | 809,120 | 852,628 |
+| Lifetime pension | 1,109,065 | 1,058,453 |
+| Final grade | 9 | 11 |
+
+Directionally coherent — economy buys Service Credit and gets ~5% more pension,
+operations buys Improved Intake and gets two more grades and ~5% more gold — but
+5% is not a decision. It is a rounding difference a player would never feel, and
+every novelty measure is identical to within noise.
+
+**The reason is the catalogue, not the licence.** Every track is "+X% to
+something": faster permits, richer estates, bigger stipend, more cabinet stacks.
+None of them changes *how a career is played*, so choosing between them cannot
+change much either. The licence created a choice-shaped hole and then revealed
+that the things being chosen between are interchangeable.
+
+That is the more useful finding, and it redirects the next step. Differentiating
+the tracks — so that at least one changes the loop rather than scaling it — is
+what would make the licence matter. Adding a third licence, or more tracks, would
+not; there would just be more interchangeable options.
+
+Worth watching: a career now buys 12 of 19 rungs rather than all 19. That is the
+intended mechanism — the rungs passed over are what a later posting still has to
+offer — but it does mean a single career sees less, and if the prestige loop ever
+stops being reached, that reduction lands on the players least able to afford it.

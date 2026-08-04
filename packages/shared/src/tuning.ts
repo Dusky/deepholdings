@@ -512,6 +512,68 @@ export function unlockTier(unlocks: readonly UnlockId[], track: UnlockTrack): nu
 }
 
 /**
+ * How many tracks a single career may take to Tier III.
+ *
+ * ## Why the catalogue needed a constraint at all
+ *
+ * Because without one there was no decision in it. Seven tracks, three tiers,
+ * no prerequisites between tracks and no budget that makes them compete: the
+ * optimal play is "buy the next rung you can afford", in any order, until you
+ * own all nineteen. The proof is in the harness — `visit()` models an officer
+ * as exactly that policy, and it is not an approximation, it is *optimal*. A
+ * game a three-line policy plays perfectly has nothing in it to play.
+ *
+ * ## Why Tier III and not the whole ladder
+ *
+ * Capping tracks outright would cut a first career from nineteen rungs to nine,
+ * and the first career is the one that has to earn a player's attention. The
+ * measured problem is not early — the default path is well paced to session 65
+ * (longest desert 13). It is late: the engaged path clumps its prestige rungs
+ * into bursts with fifty-six-session deserts between them.
+ *
+ * So the free part is everything through Tier II — twelve rungs plus the
+ * cosmetic, most of the catalogue, the early game untouched. The licence binds
+ * only on the expensive top rungs (41,000 to 88,000 pension), which is exactly
+ * where the desert is and exactly where a career-shaping choice belongs.
+ *
+ * ## Why two
+ *
+ * Six tracks have a Tier III. At two licences a career sees fifteen of the
+ * nineteen rungs and needs three careers to have seen them all, so the rungs
+ * not taken become content a later career still has coming. That is the point:
+ * it multiplies a catalogue that already exists across the prestige loop
+ * instead of authoring a new one.
+ */
+export const TIER_III_LICENCES = 2;
+
+/** Tracks already carried to their top tier, which is what spends a licence. */
+export function licencesSpent(unlocks: readonly UnlockId[]): number {
+  return new Set(
+    UNLOCK_CATALOGUE.filter((entry) => entry.tier === 3 && unlocks.includes(entry.id))
+      .map((entry) => entry.track),
+  ).size;
+}
+
+/**
+ * Whether the licence limit stands between this career and a rung.
+ *
+ * Only ever true of a Tier III rung on a track not already licensed — a track
+ * you have taken to the top does not re-spend its licence, and nothing below
+ * Tier III is licensed at all.
+ */
+export function licenceBlocked(
+  unlocks: readonly UnlockId[],
+  entry: { readonly track: UnlockTrack; readonly tier: number },
+): boolean {
+  if (entry.tier < 3) return false;
+  const alreadyLicensed = UNLOCK_CATALOGUE.some(
+    (rung) => rung.tier === 3 && rung.track === entry.track && unlocks.includes(rung.id),
+  );
+  if (alreadyLicensed) return false;
+  return licencesSpent(unlocks) >= TIER_III_LICENCES;
+}
+
+/**
  * Per-tier effects, indexed by owned tier — index 0 is "not bought".
  *
  * Kept beside the catalogue so a balance change is one edit rather than a hunt

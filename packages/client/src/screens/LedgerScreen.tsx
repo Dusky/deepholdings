@@ -574,12 +574,23 @@ export function LedgerScreen() {
               <span className={styles.unlockHead}>
                 <span className={unlock.owned ? 'text-bright' : 'text-body'}>{unlock.label}</span>
                 <span className={unlock.owned ? 'text-bright' : 'text-dim'}>
-                  {unlock.owned ? 'COMPLETE' : pending === unlock.id ? '...' : unlock.cost}
+                  {/*
+                    A licensed-out rung says so where the price goes. Showing a
+                    cost the officer can plainly afford, on a button that will
+                    not press, is the reading that makes a rule look like a bug.
+                  */}
+                  {unlock.owned
+                    ? 'COMPLETE'
+                    : pending === unlock.id
+                      ? '...'
+                      : unlock.blocked
+                        ? 'NOT THIS POSTING'
+                        : unlock.cost}
                 </span>
               </span>
               <span className={`text-dim ${styles.unlockDetail}`}>
                 {unlock.maxTier > 1 && `Tier ${unlock.tier}/${unlock.maxTier} — `}
-                {unlock.detail}
+                {unlock.blocked ? unlock.blockedReason : unlock.detail}
               </span>
             </button>
           );

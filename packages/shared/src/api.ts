@@ -44,6 +44,8 @@ export interface ApiError {
       | 'insufficient_standing'
       | 'not_authorised'
       | 'already_owned'
+      /** A Tier III unlock refused because the career's licences are spent. */
+      | 'licence_exhausted'
       | 'character_dead'
       | 'rate_limited'
       | 'duplicate_request'
@@ -385,6 +387,16 @@ export interface LadderOffer<Id extends string, Track extends string> {
   /** True only when every tier of the track is bought. */
   owned: boolean;
   affordable: boolean;
+  /**
+   * Set when a rule other than price stands in the way — today only the Tier III
+   * licence limit on the pension ladder.
+   *
+   * Distinct from `affordable` on purpose. "You cannot afford this yet" and "you
+   * have spent your licences elsewhere" are different sentences and want
+   * different screens: one is a wait, the other is a decision already made.
+   */
+  blocked?: boolean;
+  blockedReason?: string;
 }
 
 /** Priced in pension. */

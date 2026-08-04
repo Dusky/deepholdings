@@ -31,7 +31,10 @@ import {
   staffSpec,
   formGoldCost,
   formSpec,
+  TIER_III_LICENCES,
   UNLOCK_CATALOGUE,
+  licenceBlocked,
+  type UnlockTrack,
   JOURNAL_PAGE_SIZE,
   journalLines,
   pensionAward,
@@ -108,7 +111,8 @@ export class ServiceError extends Error {
       | 'insufficient_standing'
       | 'not_authorised'
       | 'already_owned'
-      | 'character_dead',
+      | 'character_dead'
+      | 'licence_exhausted',
     message: string,
   ) {
     super(message);
@@ -1101,7 +1105,7 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
       inventory: quote(record?.inventory ?? [], world, orders),
       market: world.market,
       pension,
-      unlocks: ladderOffers(UNLOCK_CATALOGUE, pension.unlocks, pension.total),
+      unlocks: ladderOffers(UNLOCK_CATALOGUE, pension.unlocks, pension.total, unlockBlocker(pension.unlocks)),
       gold,
       office,
       requisitions: ladderOffers(REQUISITION_CATALOGUE, office.requisitions, gold),
@@ -1109,6 +1113,21 @@ export async function getLedger(repo: Repository, accountId: string): Promise<Le
       transfer,
     };
   });
+}
+
+/**
+ * The pension ladder's one non-price rule, in the words the officer reads.
+ *
+ * Defined once and passed to every `ladderOffers` call for unlocks, because a
+ * rule enforced in `purchaseUnlock` but missing from one of the three screens
+ * that publish offers is how a client comes to show a buyable button that the
+ * server refuses.
+ */
+function unlockBlocker(unlocks: readonly UnlockId[]) {
+  return (entry: { readonly track: UnlockTrack; readonly tier: number }): string | null =>
+    licenceBlocked(unlocks, entry)
+      ? `Tier III licences spent (${TIER_III_LICENCES} of ${TIER_III_LICENCES}). Another posting may license a different track.`
+      : null;
 }
 
 /**
@@ -1125,6 +1144,15 @@ function ladderOffers<Id extends string, Track extends string>(
   catalogue: readonly LadderEntry<Id, Track>[],
   owned: readonly Id[],
   available: number,
+  /**
+   * Why a rung is unbuyable for a reason that is not price.
+   *
+   * Optional because only the pension ladder has such a rule — the gold and
+   * Commendation ladders are climbed on cost alone, and passing them a blocker
+   * they do not have would be inventing a constraint to keep the signature
+   * tidy.
+   */
+  blockedBy?: (entry: LadderEntry<Id, Track>) => string | null,
 ): LadderOffer<Id, Track>[] {
   const tracks = [...new Set(catalogue.map((entry) => entry.track))];
   return tracks.map((track) => {
@@ -1132,6 +1160,7 @@ function ladderOffers<Id extends string, Track extends string>(
     const next = rungs.find((entry) => !owned.includes(entry.id));
     const shown = next ?? rungs[rungs.length - 1];
     const complete = next === undefined;
+    const reason = complete || !blockedBy ? null : blockedBy(shown);
     return {
       id: shown.id,
       track,
@@ -1141,7 +1170,10 @@ function ladderOffers<Id extends string, Track extends string>(
       detail: shown.detail,
       cost: shown.cost,
       owned: complete,
-      affordable: !complete && available >= shown.cost,
+      // A blocked rung is not affordable however much pension is banked, so the
+      // existing screens grey it out without knowing the new rule exists.
+      affordable: !complete && reason === null && available >= shown.cost,
+      ...(reason === null ? {} : { blocked: true, blockedReason: reason }),
     };
   });
 }
@@ -1364,6 +1396,12 @@ export async function purchaseUnlock(
     if (unlockTier(pension.unlocks, entry.track) !== entry.tier - 1) {
       throw new ServiceError('invalid_request', 'previous tier not held');
     }
+    // The licence limit is a rule about the career, not about this rung's price,
+    // so it is checked before pension is even looked at — a blocked track is not
+    // "save up for it", it is "not this posting".
+    if (licenceBlocked(pension.unlocks, entry)) {
+      throw new ServiceError('licence_exhausted', 'Tier III licences already spent');
+    }
     if (pension.total < entry.cost) {
       throw new ServiceError('insufficient_pension', 'not enough pension');
     }
@@ -1374,7 +1412,10 @@ export async function purchaseUnlock(
       unlocks: [...pension.unlocks, id],
     };
     await tx.savePension(accountId, updated);
-    return { pension: updated, unlocks: ladderOffers(UNLOCK_CATALOGUE, updated.unlocks, updated.total) };
+    return {
+      pension: updated,
+      unlocks: ladderOffers(UNLOCK_CATALOGUE, updated.unlocks, updated.total, unlockBlocker(updated.unlocks)),
+    };
   });
 }
 

@@ -75,6 +75,9 @@ const ERROR_STATUS: Record<ApiError['error']['code'], number> = {
   insufficient_standing: 409,
   not_authorised: 403,
   already_owned: 409,
+  // A rule about the career, not a missing precondition the client can fix by
+  // retrying — same 409 family as the other "you cannot have this" refusals.
+  licence_exhausted: 409,
   character_dead: 409,
   rate_limited: 429,
   duplicate_request: 409,

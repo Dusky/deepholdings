@@ -4,7 +4,16 @@ node_modules
 .git
 .github
 docs
+# The client is a static bundle and a Capacitor shell — no part of the server
+# image needs its source. Its *manifest* is a different matter: `npm ci` against
+# a workspace lockfile refuses to run unless every workspace named in
+# package-lock.json has its package.json present, so excluding this one file
+# broke the build with "/packages/client/package.json: not found".
+#
+# That went unnoticed because the `image` job only runs once `check` passes, and
+# `check` was red for days. A conditional job cannot report a bug it never runs.
 packages/client
+!packages/client/package.json
 *.log
 
 # The same two patterns `.gitignore` carries, and for a sharper reason.

@@ -201,6 +201,11 @@ from active management to long-term idling"*. A compelling centrepiece is not by
 itself a long game. **The orb is the face; the ladder in §3.6 is the length.**
 Neither substitutes for the other.
 
+> **Rung contents are specified separately.** What the posts, grades and grid
+> rows actually are lives in [`ladder-contents.md`](./ladder-contents.md) — six
+> tier-one posts held to the behaviour/optional/synergy test, three material
+> grades, and the reclamation pressure that makes throughput the real decision.
+
 ### 3.1 A roster, not a recruit — *the big one*
 
 Several recruits working in parallel, each with their own aptitudes, each

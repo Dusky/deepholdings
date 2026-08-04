@@ -1,0 +1,1442 @@
+<title>Deep Holdings — Survey &amp; Redesign</title>
+<style>
+  :root {
+    --paper: #EDE6D8;
+    --paper-2: #E4DCCB;
+    --paper-3: #DAD1BC;
+    --ink: #141C24;
+    --ink-2: #3D4A56;
+    --ink-3: #6B7683;
+    --rule: #C3B9A4;
+    --rule-soft: #D3CAB6;
+    --gold: #9C6B10;
+    --blue: #1D6FB8;
+    --oxide: #B03A2E;
+    --gold-wash: rgba(156, 107, 16, 0.12);
+    --blue-wash: rgba(29, 111, 184, 0.10);
+    --oxide-wash: rgba(176, 58, 46, 0.10);
+    --contour: rgba(20, 28, 36, 0.16);
+    --shadow: 0 1px 0 rgba(20,28,36,.06), 0 12px 28px -20px rgba(20,28,36,.5);
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, "Times New Roman", serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "DejaVu Sans Mono", monospace;
+
+    --measure: 68ch;
+    --gutter: clamp(1.15rem, 4vw, 3rem);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0C1219;
+      --paper-2: #121A23;
+      --paper-3: #18222D;
+      --ink: #DDD6C6;
+      --ink-2: #A6A091;
+      --ink-3: #7C7A70;
+      --rule: #243040;
+      --rule-soft: #1C2734;
+      --gold: #B58317;
+      --blue: #3B85CC;
+      --oxide: #CC5A48;
+      --gold-wash: rgba(181, 131, 23, 0.16);
+      --blue-wash: rgba(59, 133, 204, 0.14);
+      --oxide-wash: rgba(204, 90, 72, 0.14);
+      --contour: rgba(221, 214, 198, 0.13);
+      --shadow: 0 1px 0 rgba(0,0,0,.4), 0 14px 32px -22px rgba(0,0,0,.9);
+    }
+  }
+
+  :root[data-theme="light"] {
+    --paper: #EDE6D8; --paper-2: #E4DCCB; --paper-3: #DAD1BC;
+    --ink: #141C24; --ink-2: #3D4A56; --ink-3: #6B7683;
+    --rule: #C3B9A4; --rule-soft: #D3CAB6;
+    --gold: #9C6B10; --blue: #1D6FB8; --oxide: #B03A2E;
+    --gold-wash: rgba(156,107,16,.12); --blue-wash: rgba(29,111,184,.10); --oxide-wash: rgba(176,58,46,.10);
+    --contour: rgba(20,28,36,.16);
+    --shadow: 0 1px 0 rgba(20,28,36,.06), 0 12px 28px -20px rgba(20,28,36,.5);
+  }
+  :root[data-theme="dark"] {
+    --paper: #0C1219; --paper-2: #121A23; --paper-3: #18222D;
+    --ink: #DDD6C6; --ink-2: #A6A091; --ink-3: #7C7A70;
+    --rule: #243040; --rule-soft: #1C2734;
+    --gold: #B58317; --blue: #3B85CC; --oxide: #CC5A48;
+    --gold-wash: rgba(181,131,23,.16); --blue-wash: rgba(59,133,204,.14); --oxide-wash: rgba(204,90,72,.14);
+    --contour: rgba(221,214,198,.13);
+    --shadow: 0 1px 0 rgba(0,0,0,.4), 0 14px 32px -22px rgba(0,0,0,.9);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .sheet { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter) 8rem; }
+
+  /* ---------- shared type ---------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0;
+  }
+  h1, h2, h3 { font-weight: 600; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.7rem, 7.5vw, 5.1rem); line-height: .98; letter-spacing: -.022em; }
+  h2 { font-size: clamp(1.75rem, 3.4vw, 2.6rem); line-height: 1.1; letter-spacing: -.014em; }
+  h3 { font-size: clamp(1.12rem, 1.7vw, 1.32rem); line-height: 1.25; }
+  p { margin: 0; }
+  strong { font-weight: 600; }
+  em.term { font-style: normal; color: var(--gold); font-weight: 600; }
+
+  .prose { max-width: var(--measure); display: flex; flex-direction: column; gap: 1.05rem; }
+  .prose p { color: var(--ink-2); }
+  .prose p.lead { color: var(--ink); font-size: 1.16em; line-height: 1.5; }
+
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: clamp(3.5rem, 9vw, 7rem) 0 clamp(2.5rem, 5vw, 4rem); }
+  #contours {
+    position: absolute; inset: -2rem calc(var(--gutter) * -1) 0;
+    width: calc(100% + var(--gutter) * 2); height: 100%;
+    z-index: 0; pointer-events: none;
+  }
+  .hero > * { position: relative; z-index: 1; }
+
+  .sheet-head {
+    display: flex; flex-wrap: wrap; gap: .5rem 2rem;
+    align-items: baseline;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: .7rem; margin-bottom: clamp(2rem, 5vw, 3.4rem);
+  }
+  .sheet-head .grow { flex: 1 1 12rem; }
+
+  .hero h1 { margin-bottom: 1.4rem; }
+  .hero h1 .sub {
+    display: block;
+    font-size: .27em;
+    letter-spacing: .02em;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin-top: .9rem;
+    line-height: 1.35;
+    max-width: 26ch;
+  }
+  .thesis {
+    max-width: 46ch;
+    font-size: clamp(1.2rem, 2.1vw, 1.55rem);
+    line-height: 1.42;
+    border-left: 3px solid var(--gold);
+    padding-left: 1.1rem;
+  }
+  .thesis b { color: var(--gold); font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section { padding-top: clamp(3.6rem, 8vw, 6.5rem); }
+  .sec-head {
+    display: grid;
+    grid-template-columns: 3.6rem 1fr;
+    gap: 0 1rem;
+    align-items: start;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.1rem;
+    margin-bottom: 2rem;
+  }
+  .sec-head .plate {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .12em;
+    color: var(--gold); padding-top: .45rem;
+  }
+  .sec-head .titles { display: flex; flex-direction: column; gap: .6rem; }
+  .sec-head .titles > .prose { margin-top: .35rem; }
+
+  /* ---------- figures ---------- */
+  figure { margin: 2.4rem 0 0; }
+  .fig-frame {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    padding: clamp(1rem, 2.6vw, 1.9rem);
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  figcaption {
+    font-family: var(--mono); font-size: .7rem; line-height: 1.6;
+    letter-spacing: .04em; color: var(--ink-3);
+    margin-top: .8rem; max-width: 82ch;
+  }
+  figcaption b { color: var(--ink-2); font-weight: 500; }
+  .fig-title {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin: 0 0 .2rem;
+  }
+  .fig-sub { color: var(--ink); font-size: 1.02rem; margin: 0 0 1.3rem; max-width: 62ch; }
+
+  svg { display: block; max-width: 100%; }
+  svg text { font-family: var(--mono); fill: var(--ink-3); }
+
+  /* ---------- legend ---------- */
+  .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.3rem; margin: 0 0 1.1rem; padding: 0; list-style: none; }
+  .legend li {
+    display: flex; align-items: center; gap: .45rem;
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .04em; color: var(--ink-2);
+  }
+  .swatch { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+
+  /* ---------- pipe vs lattice ---------- */
+  .compare { display: grid; grid-template-columns: 1fr; gap: 1.4rem; }
+  @media (min-width: 860px) { .compare { grid-template-columns: 1fr 1fr; gap: 1.6rem; } }
+  .panel {
+    background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 2px;
+    padding: clamp(1rem, 2.4vw, 1.6rem); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: .9rem;
+  }
+  .panel.now { border-top: 2px solid var(--oxide); }
+  .panel.next { border-top: 2px solid var(--gold); }
+  .panel h3 { display: flex; align-items: baseline; gap: .6rem; flex-wrap: wrap; }
+  .panel h3 .tag {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .14em;
+    text-transform: uppercase; padding: .16rem .45rem; border-radius: 2px;
+  }
+  .panel.now .tag { color: var(--oxide); background: var(--oxide-wash); }
+  .panel.next .tag { color: var(--gold); background: var(--gold-wash); }
+  .panel p { color: var(--ink-2); font-size: .96rem; }
+
+  /* ---------- scorecard ---------- */
+  .scorecard { width: 100%; border-collapse: collapse; font-size: .95rem; min-width: 40rem; }
+  .scorecard th {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--ink-3); text-align: left; font-weight: 400;
+    padding: 0 .9rem .6rem 0; border-bottom: 1px solid var(--rule);
+  }
+  .scorecard td { padding: .8rem .9rem .8rem 0; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  .scorecard tr:last-child td { border-bottom: none; }
+  .scorecard .decision { color: var(--ink); font-weight: 600; width: 30%; }
+  .scorecard .them { color: var(--ink-2); font-size: .9rem; width: 38%; }
+  .scorecard .us { color: var(--ink-2); font-size: .9rem; }
+  .pips { display: inline-flex; gap: 3px; vertical-align: middle; margin-right: .55rem; }
+  .pip { width: 7px; height: 14px; border-radius: 1px; background: var(--rule); }
+  .pip.on { background: var(--oxide); }
+  .pip.half { background: linear-gradient(to top, var(--oxide) 50%, var(--rule) 50%); }
+
+  /* ---------- unit chart ---------- */
+  .units { display: flex; flex-wrap: wrap; gap: 5px; margin: 0 0 1.1rem; max-width: 30rem; }
+  .unit {
+    width: 26px; height: 34px; border-radius: 2px;
+    background: var(--oxide-wash); border: 1px solid var(--oxide);
+    display: grid; place-items: center;
+    font-family: var(--mono); font-size: .58rem; color: var(--oxide);
+  }
+  .bignum {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: clamp(3rem, 9vw, 5.2rem); line-height: .9; letter-spacing: -.03em;
+    color: var(--oxide); font-weight: 500;
+  }
+  .bignum small { display: block; font-size: .16em; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); margin-top: .8rem; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1.4rem 2rem; }
+  .stat { display: flex; flex-direction: column; gap: .3rem; }
+  .stat .v {
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: clamp(1.7rem, 3.4vw, 2.3rem); line-height: 1; letter-spacing: -.02em; color: var(--ink);
+  }
+  .stat .v.gold { color: var(--gold); }
+  .stat .v.oxide { color: var(--oxide); }
+  .stat .v.blue { color: var(--blue); }
+  .stat .k { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .stat .n { font-size: .88rem; color: var(--ink-2); line-height: 1.45; }
+
+  /* ---------- 90-day grid ---------- */
+  .daygrid { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; max-width: 46rem; }
+  .day { aspect-ratio: 1; border-radius: 1px; background: var(--rule); }
+  .day.new { background: var(--gold); }
+  .day.empty { background: var(--rule-soft); border: 1px solid var(--rule); }
+
+  /* ---------- changes ---------- */
+  .changes { display: flex; flex-direction: column; gap: 0; margin-top: 1rem; }
+  .change {
+    display: grid; grid-template-columns: 1fr; gap: .5rem;
+    padding: 1.5rem 0; border-top: 1px solid var(--rule-soft);
+  }
+  @media (min-width: 780px) {
+    .change { grid-template-columns: 15rem 1fr; gap: 0 2.5rem; align-items: start; }
+  }
+  .change:first-child { border-top: 1px solid var(--rule); }
+  .change .lhs { display: flex; flex-direction: column; gap: .5rem; }
+  .change .num {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; color: var(--gold);
+  }
+  .change .body { display: flex; flex-direction: column; gap: .75rem; color: var(--ink-2); }
+  .change .body .src {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .04em; color: var(--ink-3);
+    border-left: 2px solid var(--rule); padding-left: .8rem;
+  }
+
+  /* ---------- horizon ---------- */
+  .horizon { display: grid; grid-template-columns: 1fr; gap: 1.3rem; }
+  @media (min-width: 900px) { .horizon { grid-template-columns: repeat(3, 1fr); } }
+  .card {
+    background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 2px;
+    box-shadow: var(--shadow); display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .card .cap {
+    padding: .8rem 1.15rem; border-bottom: 1px solid var(--rule-soft);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    background: var(--paper-3);
+  }
+  .card .cap .when { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+  .card .cap .scale { font-family: var(--mono); font-size: .68rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .card .inner { padding: 1.15rem; display: flex; flex-direction: column; gap: .85rem; }
+  .card h3 { font-size: 1.06rem; }
+  .card p { font-size: .92rem; color: var(--ink-2); }
+  .card .readout {
+    font-family: var(--mono); font-size: .72rem; line-height: 1.9; color: var(--ink-2);
+    background: var(--paper); border: 1px solid var(--rule-soft); border-radius: 2px;
+    padding: .7rem .85rem; font-variant-numeric: tabular-nums;
+  }
+  .card .readout .n { color: var(--gold); }
+  .card .readout .lbl { color: var(--ink-3); }
+  .card .ask {
+    font-size: .9rem; color: var(--ink); border-top: 1px dashed var(--rule);
+    padding-top: .8rem;
+  }
+  .card .ask b { color: var(--gold); font-weight: 600; }
+
+  /* ---------- ledger (keep/cut) ---------- */
+  .ledger { display: grid; grid-template-columns: 1fr; gap: 1.4rem; }
+  @media (min-width: 820px) { .ledger { grid-template-columns: 1fr 1fr; gap: 2.2rem; } }
+  .col h3 { display: flex; align-items: center; gap: .6rem; margin-bottom: .9rem; padding-bottom: .6rem; border-bottom: 1px solid var(--rule); }
+  .col h3 .mark { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; }
+  .col.keep h3 .mark { color: var(--blue); }
+  .col.cut h3 .mark { color: var(--oxide); }
+  .col ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .55rem; }
+  .col li { font-size: .93rem; color: var(--ink-2); padding-left: 1.1rem; position: relative; line-height: 1.5; }
+  .col li::before {
+    content: ""; position: absolute; left: 0; top: .62em;
+    width: 6px; height: 1px; background: var(--rule);
+  }
+  .col.keep li::before { background: var(--blue); }
+  .col.cut li::before { background: var(--oxide); }
+  .col li b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- kill test ---------- */
+  .kill {
+    background: var(--paper-2); border: 1px solid var(--rule); border-left: 3px solid var(--oxide);
+    border-radius: 2px; padding: clamp(1.2rem, 3vw, 2rem);
+    display: flex; flex-direction: column; gap: 1rem; box-shadow: var(--shadow);
+  }
+  .kill .prose { max-width: 60ch; }
+
+  .stages { display: flex; flex-direction: column; gap: 0; margin-top: 1.6rem; }
+  .stage {
+    display: grid; grid-template-columns: 5.5rem 1fr; gap: 0 1.4rem;
+    padding: .95rem 0; border-top: 1px solid var(--rule-soft); align-items: baseline;
+  }
+  .stage:first-child { border-top: 1px solid var(--rule); }
+  .stage .s { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; color: var(--gold); }
+  .stage .t { color: var(--ink); font-weight: 600; font-size: .98rem; }
+  .stage .d { color: var(--ink-2); font-size: .9rem; grid-column: 2; margin-top: .2rem; }
+
+  /* ---------- locked ---------- */
+  .locked { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+  @media (min-width: 760px) { .locked { grid-template-columns: repeat(2, 1fr); gap: 1.2rem; } }
+  .lock {
+    border: 1px solid var(--rule-soft); border-radius: 2px; padding: 1.1rem 1.2rem;
+    background: var(--paper-2); display: flex; flex-direction: column; gap: .45rem;
+  }
+  .lock .q { font-family: var(--mono); font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  .lock .a { color: var(--ink); font-weight: 600; font-size: 1.02rem; }
+  .lock .why { font-size: .89rem; color: var(--ink-2); }
+  .lock.open { border-style: dashed; border-color: var(--rule); }
+  .lock.open .a { color: var(--oxide); }
+
+  /* ---------- tooltip ---------- */
+  .tt {
+    position: fixed; z-index: 50; pointer-events: none; opacity: 0;
+    transform: translate(-50%, -122%); transition: opacity .12s ease;
+    background: var(--ink); color: var(--paper);
+    font-family: var(--mono); font-size: .7rem; line-height: 1.55;
+    padding: .45rem .6rem; border-radius: 3px; white-space: nowrap;
+    font-variant-numeric: tabular-nums; box-shadow: 0 6px 18px -8px rgba(0,0,0,.6);
+  }
+  .tt.on { opacity: 1; }
+  .tt .k { color: var(--paper-3); }
+
+  button {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink); background: var(--paper-3);
+    border: 1px solid var(--rule); border-radius: 2px;
+    padding: .55rem .9rem; cursor: pointer;
+    transition: background .12s ease, border-color .12s ease, color .12s ease;
+  }
+  button:hover { border-color: var(--gold); color: var(--gold); }
+  button:active { background: var(--gold-wash); }
+  button:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .hit { cursor: crosshair; }
+  .hit:focus-visible, .day:focus-visible, .unit:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  footer {
+    margin-top: clamp(4rem, 9vw, 7rem); border-top: 1px solid var(--rule);
+    padding-top: 1.2rem; display: flex; flex-wrap: wrap; gap: .6rem 2rem;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--ink-3);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="sheet">
+
+  <!-- ══════════ HERO ══════════ -->
+  <header class="hero">
+    <canvas id="contours" aria-hidden="true"></canvas>
+
+    <div class="sheet-head">
+      <p class="eyebrow grow">Deep Holdings · Survey &amp; Redesign</p>
+      <p class="eyebrow">Sheet 1 of 1</p>
+      <p class="eyebrow">Draft 3 · North star</p>
+    </div>
+
+    <h1>
+      One pipe,<br>where a lattice
+      <span style="color:var(--gold)">should be</span>.
+      <span class="sub">A working survey of why the game is inert, and the shape of the one that isn't.</span>
+    </h1>
+
+    <p class="thesis">
+      The engine is sound. The problem is that everything in this game
+      flows down <b>a single pipe</b> — one worker, making one number —
+      and every system built since has only changed <b>how fast</b>.
+    </p>
+  </header>
+
+  <!-- ══════════ 01 · THE FINDING ══════════ -->
+  <section id="finding">
+    <div class="sec-head">
+      <div class="plate">01</div>
+      <div class="titles">
+        <h2>The question isn't why an idle game is boring</h2>
+        <div class="prose">
+          <p class="lead">Melvor Idle is timers, and holds players for hundreds of hours.
+          Kittens Game is resources accumulating. CIFI took the mobile category award
+          three years running selling upgrade trees. None of them has
+          moment-to-moment decisions either.</p>
+          <p>So the honest question is why <em class="term">this</em> one is inert when those
+          are not — and the answer is structural, visible in the code, and fixable
+          without leaving the genre.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="compare">
+      <div class="panel now">
+        <h3><span class="tag">Now</span> A single pipe</h3>
+        <svg viewBox="0 0 420 250" role="img" aria-label="Diagram: one recruit produces gold, which feeds a pension, with every system feeding back as a rate multiplier on the same single flow.">
+          <defs>
+            <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--oxide)"/>
+            </marker>
+            <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--ink-3)"/>
+            </marker>
+          </defs>
+
+          <rect x="26" y="104" width="96" height="42" rx="2" fill="var(--oxide-wash)" stroke="var(--oxide)"/>
+          <text x="74" y="122" text-anchor="middle" font-size="10" fill="var(--oxide)">1 RECRUIT</text>
+          <text x="74" y="136" text-anchor="middle" font-size="8">the only producer</text>
+
+          <line x1="122" y1="125" x2="176" y2="125" stroke="var(--oxide)" stroke-width="2" marker-end="url(#ao)"/>
+
+          <rect x="180" y="104" width="82" height="42" rx="2" fill="var(--oxide-wash)" stroke="var(--oxide)"/>
+          <text x="221" y="128" text-anchor="middle" font-size="11" fill="var(--oxide)">GOLD</text>
+
+          <line x1="262" y1="125" x2="312" y2="125" stroke="var(--oxide)" stroke-width="2" marker-end="url(#ao)"/>
+
+          <rect x="316" y="104" width="82" height="42" rx="2" fill="none" stroke="var(--rule)" stroke-dasharray="3 3"/>
+          <text x="357" y="122" text-anchor="middle" font-size="10">PENSION</text>
+          <text x="357" y="136" text-anchor="middle" font-size="8">a slow f(gold)</text>
+
+          <text x="210" y="30" text-anchor="middle" font-size="8.5" fill="var(--ink-3)">
+            SITES · CASE FILES · CLAUSES · COMMENDATIONS · REQUISITIONS · LICENCES
+          </text>
+          <path d="M96 44 Q 210 62 210 100" fill="none" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 3" marker-end="url(#ag)"/>
+          <path d="M324 44 Q 210 62 210 100" fill="none" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 3" marker-end="url(#ag)"/>
+          <text x="210" y="80" text-anchor="middle" font-size="8" fill="var(--ink-3)">all of it, a multiplier on one flow</text>
+
+          <text x="210" y="196" text-anchor="middle" font-size="9.5" fill="var(--oxide)">NOTHING TO ALLOCATE BETWEEN</text>
+          <line x1="120" y1="208" x2="300" y2="208" stroke="var(--oxide)" stroke-width="1"/>
+          <text x="210" y="228" text-anchor="middle" font-size="8">one producer · one currency · one bottleneck</text>
+        </svg>
+        <p>Three separate attempts at a build decision each moved single digits —
+        the clause pool, Tier&nbsp;III licences, the Commendation repair. They were
+        all multipliers on the same pipe.</p>
+      </div>
+
+      <div class="panel next">
+        <h3><span class="tag">Next</span> A lattice</h3>
+        <svg viewBox="0 0 420 250" role="img" aria-label="Diagram: a roster of delvers feeds three seams, which feed raw material into refining and then equipment, which feeds back into deeper delving.">
+          <defs>
+            <marker id="abl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--blue)"/>
+            </marker>
+            <marker id="agd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+              <path d="M0 0 L10 5 L0 10 z" fill="var(--gold)"/>
+            </marker>
+          </defs>
+
+          <text x="46" y="22" font-size="8.5" fill="var(--ink-3)">ROSTER</text>
+          <g fill="var(--gold-wash)" stroke="var(--gold)">
+            <rect x="18" y="32" width="56" height="22" rx="2"/>
+            <rect x="18" y="60" width="56" height="22" rx="2"/>
+            <rect x="18" y="88" width="56" height="22" rx="2"/>
+            <rect x="18" y="116" width="56" height="22" rx="2"/>
+          </g>
+          <g font-size="8" fill="var(--gold)" text-anchor="middle">
+            <text x="46" y="47">DELVER</text>
+            <text x="46" y="75">DELVER</text>
+            <text x="46" y="103">DELVER</text>
+            <text x="46" y="131">DELVER</text>
+          </g>
+          <text x="46" y="154" font-size="8" fill="var(--ink-3)" text-anchor="middle">you allocate</text>
+
+          <g stroke="var(--gold)" stroke-width="1.4" fill="none" marker-end="url(#agd)">
+            <path d="M74 43 L 124 48"/>
+            <path d="M74 71 L 124 52"/>
+            <path d="M74 99 L 124 108"/>
+            <path d="M74 127 L 124 166"/>
+          </g>
+
+          <g fill="var(--blue-wash)" stroke="var(--blue)">
+            <rect x="128" y="34" width="62" height="30" rx="2"/>
+            <rect x="128" y="94" width="62" height="30" rx="2"/>
+            <rect x="128" y="152" width="62" height="30" rx="2"/>
+          </g>
+          <g font-size="8" fill="var(--blue)" text-anchor="middle">
+            <text x="159" y="53">SEAM I</text>
+            <text x="159" y="113">SEAM II</text>
+            <text x="159" y="171">SEAM III</text>
+          </g>
+
+          <g stroke="var(--blue)" stroke-width="1.4" fill="none" marker-end="url(#abl)">
+            <path d="M190 49 L 226 88"/>
+            <path d="M190 109 L 226 100"/>
+            <path d="M190 167 L 226 112"/>
+          </g>
+
+          <rect x="230" y="82" width="60" height="36" rx="2" fill="var(--blue-wash)" stroke="var(--blue)"/>
+          <text x="260" y="98" text-anchor="middle" font-size="8" fill="var(--blue)">REFINING</text>
+          <text x="260" y="110" text-anchor="middle" font-size="7.5">cap-bound</text>
+
+          <line x1="290" y1="100" x2="326" y2="100" stroke="var(--blue)" stroke-width="1.4" marker-end="url(#abl)"/>
+
+          <rect x="330" y="82" width="66" height="36" rx="2" fill="var(--gold-wash)" stroke="var(--gold)"/>
+          <text x="363" y="98" text-anchor="middle" font-size="8" fill="var(--gold)">EQUIPMENT</text>
+          <text x="363" y="110" text-anchor="middle" font-size="7.5">→ deeper</text>
+
+          <path d="M363 118 Q 363 214 200 214 Q 60 214 46 142" fill="none"
+                stroke="var(--gold)" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#agd)"/>
+          <text x="210" y="228" text-anchor="middle" font-size="8" fill="var(--gold)">equipment lets the roster work deeper seams</text>
+        </svg>
+        <p>Several producers, several chains, each with its own number and its own
+        bottleneck. Allocation is the one reward shape that <strong>cannot collapse
+        into a multiplier</strong> — which is why "concurrent postings" kept surfacing
+        in the roadmap and kept being deferred.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 02 · EVIDENCE ══════════ -->
+  <section id="evidence">
+    <div class="sec-head">
+      <div class="plate">02</div>
+      <div class="titles">
+        <h2>Three measurements, already in the repository</h2>
+        <div class="prose">
+          <p>None of this is speculation. <span class="mono">balance.md</span> and
+          <span class="mono">longrun</span> have been reporting it for months —
+          the findings were read as tuning problems because there was no frame
+          that made them one story.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FIG 1 — retreat sweep -->
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 1 · Retreat threshold sweep, at target depth 6</p>
+        <p class="fig-sub">The game's most-touted risk control ran from 5 to 80 and
+        meant something across about twenty of those points.</p>
+
+        <ul class="legend">
+          <li><span class="swatch" style="background:var(--gold)"></span>Value per hour</li>
+          <li><span class="swatch" style="background:var(--oxide)"></span>Deaths per week</li>
+          <li><span class="swatch" style="background:var(--rule);border:1px dashed var(--ink-3)"></span>Indistinguishable region</li>
+        </ul>
+
+        <svg id="sweep" viewBox="0 0 720 300" role="img"
+             aria-label="Two stacked charts sharing a retreat-threshold axis. Value per hour is flat at about 280 from threshold 35 upward. Deaths per week is zero from 35 upward and rises steeply below 25, reaching 148 per week at threshold 5.">
+        </svg>
+        <div id="sweep-table" hidden></div>
+      </div>
+      <figcaption>
+        Source: <b>docs/design/balance.md</b>, "The retreat slider was mostly scenery."
+        Everything from 35 upward is one setting — a recruit withdrawing above the
+        damage cap cannot be killed by a normal blow. Below 10 the ordering stops
+        being monotonic, because the recruit dies before reaching anything worth losing.
+        <b>The slider was scenery across two-thirds of its range.</b>
+      </figcaption>
+    </figure>
+
+    <!-- FIG 2 — unlocks -->
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 2 · The permanent unlock catalogue</p>
+        <p class="fig-sub">Nineteen unlocks. Every one of them is a rate or a capacity.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:2rem 3rem;align-items:flex-start">
+          <div>
+            <div class="units" id="units" role="img" aria-label="Nineteen marks, all identical, representing nineteen unlocks that are all rate or capacity increases."></div>
+            <p class="mono" style="font-size:.7rem;color:var(--ink-3);letter-spacing:.04em;max-width:30rem">
+              PERMITS CLEAR IN 90 MIN INSTEAD OF 180 · NEW RECRUITS START AT LEVEL 2 ·
+              +2 GOLD PER MINUTE · FOUR MORE STACKS · PENSIONS ACCRUE 20% FASTER · …
+            </p>
+          </div>
+          <div class="bignum">19<span>/19</span><small>are “faster”, “more” or “cheaper”</small></div>
+        </div>
+      </div>
+      <figcaption>
+        Our own research states the law — <b>“a rung is a new verb, not a bigger
+        permission”</b> (docs/research/progression-depth.md) — and the catalogue
+        breaks it nineteen times out of nineteen. Not one opens a screen, adds a
+        resource, or gives the player anything new to do. So “what should I buy
+        next” has an arithmetic answer: cheapest per unit of rate. That is why
+        nineteen unlocks produce no build, and arrive as three lump sums.
+      </figcaption>
+    </figure>
+
+    <!-- FIG 3 — novelty cliff -->
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 3 · Ninety days of a simulated career</p>
+        <p class="fig-sub">After every structural fix, the last new thing still happens on day 39.</p>
+
+        <ul class="legend">
+          <li><span class="swatch" style="background:var(--gold)"></span>Day containing something the player hasn't seen</li>
+          <li><span class="swatch" style="background:var(--rule-soft);border:1px solid var(--rule)"></span>Nothing new</li>
+        </ul>
+        <div class="daygrid" id="daygrid" role="img" aria-label="Ninety cells representing ninety days. The first thirty-nine are marked as containing something new; days forty to ninety are empty."></div>
+      </div>
+      <figcaption>
+        Source: <b>npm run longrun</b>. Before the structural fixes the last new
+        thing landed on day 13.4. After them — surplus grade repurposed, unlock
+        tiers re-priced, and the HP curve capped so recruits could die again —
+        it reached day 39.2, with all 19 unlocks bought. <b>Fifty-one of ninety days
+        still contain nothing.</b> That is what a single pipe runs out of.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════ 03 · SCORECARD ══════════ -->
+  <section id="scorecard">
+    <div class="sec-head">
+      <div class="plate">03</div>
+      <div class="titles">
+        <h2>The genre runs on five decisions</h2>
+        <div class="prose">
+          <p>This is the whole diagnosis on one sheet. Every game in the competitive
+          sample offers most of these. We offer about half of one.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="fig-frame">
+      <table class="scorecard">
+        <thead>
+          <tr><th>Decision the genre runs on</th><th>Who does it well</th><th>Deep Holdings today</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="decision"><span class="pips"><span class="pip"></span></span>Allocation across producers</td>
+            <td class="them">Kittens' jobs · Melvor's 29 skills · CIFI's parallel trees</td>
+            <td class="us"><strong style="color:var(--oxide)">None.</strong> One recruit. There is nothing to allocate.</td>
+          </tr>
+          <tr>
+            <td class="decision"><span class="pips"><span class="pip half"></span></span>When to prestige</td>
+            <td class="them">The defining decision of the genre</td>
+            <td class="us">Exists as Form R-1 and measures well — but the primary path is <strong>the recruit dying</strong>, which is a dice roll.</td>
+          </tr>
+          <tr>
+            <td class="decision"><span class="pips"><span class="pip"></span></span>What to unlock next</td>
+            <td class="them">NGU gates <em>features</em>; CIFI gates <em>systems</em></td>
+            <td class="us">19 unlocks, all rate or capacity. The choice is arithmetic.</td>
+          </tr>
+          <tr>
+            <td class="decision"><span class="pips"><span class="pip"></span></span>Which bottleneck to break</td>
+            <td class="them">Kittens' storage caps, moving constantly</td>
+            <td class="us">Gold. For the entire career.</td>
+          </tr>
+          <tr>
+            <td class="decision"><span class="pips"><span class="pip"></span></span>Build divergence</td>
+            <td class="them">Realm Grinder factions · NGU's reset layers</td>
+            <td class="us">Measured at single digits, three times, by three different systems.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure style="margin-top:1.6rem">
+      <div class="fig-frame">
+        <p class="fig-title">The one that is already half-built</p>
+        <p class="fig-sub">Form R-1 lets an officer retire a recruit deliberately. The
+        simulation says player-timed prestige is a genuine strategic axis — it is
+        simply buried behind a form instead of being the spine of the game.</p>
+        <div class="stat-row">
+          <div class="stat">
+            <span class="k">Never retires</span>
+            <span class="v">255<span style="font-size:.42em;color:var(--ink-3)"> g/h</span></span>
+            <span class="n"><b class="mono" style="color:var(--ink-3)">19</b> pension/h — the meta-currency barely moves.</span>
+          </div>
+          <div class="stat">
+            <span class="k">Retires daily</span>
+            <span class="v gold">206<span style="font-size:.42em;color:var(--ink-3)"> g/h</span></span>
+            <span class="n"><b class="mono" style="color:var(--gold)">87</b> pension/h — trades a fifth of income for <strong>4.5×</strong> the pension rate.</span>
+          </div>
+          <div class="stat">
+            <span class="k">Retires every 2h</span>
+            <span class="v oxide">86<span style="font-size:.42em;color:var(--ink-3)"> g/h</span></span>
+            <span class="n"><b class="mono" style="color:var(--oxide)">49</b> pension/h — a legible trap. Worse on both currencies.</span>
+          </div>
+        </div>
+      </div>
+      <figcaption>
+        A real axis with a dominant-looking option that isn't, and a trap that
+        announces itself. <b>That is what a good incremental decision looks like</b> —
+        and it is currently one form among dozens.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════ 04 · THE CHANGES ══════════ -->
+  <section id="changes">
+    <div class="sec-head">
+      <div class="plate">04</div>
+      <div class="titles">
+        <h2>Five changes, in order of how much they matter</h2>
+        <div class="prose">
+          <p class="lead">Stop selling multipliers on one producer. Build several
+          producers, several chains, and make the player allocate between them.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="changes">
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 01</span>
+          <h3>A roster, not a recruit</h3>
+        </div>
+        <div class="body">
+          <p>Several delvers working in parallel, each with their own aptitudes,
+          each assigned to a seam and a depth. This is the single change that
+          creates decisions without needing a writer — and roster size and delver
+          quality are both numbers to buy.</p>
+          <p class="src">Darkest Dungeon keeps a roster of 20+ so no death cripples the
+          campaign. Majesty directs autonomous heroes with bounties rather than orders.
+          Tap Titans 2 runs a hero roster. All three point the same way.</p>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 02</span>
+          <h3>Chains that feed chains</h3>
+        </div>
+        <div class="body">
+          <p>Today it is <span class="mono">delve → gold</span>, and the market is a
+          place to turn that output into the same number. Instead: raw material feeds
+          refining, refining feeds equipment, equipment feeds deeper delving, depth
+          feeds rarer material. Each link has its own number and its own bottleneck.</p>
+          <p class="src">Kittens Game's storage caps, taken literally: repeatedly being
+          unable to afford a goal because you cannot <em>hold</em> enough turns waiting
+          into planning. Planning is a decision.</p>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 03</span>
+          <h3>Prestige becomes the loop, and you time it</h3>
+        </div>
+        <div class="body">
+          <p>Form R-1 promoted from a form to <strong>the</strong> progression path.
+          Death becomes a failure mode of pushing too hard, not the payout mechanism —
+          so depth is a real risk instead of the only route forward.</p>
+          <p>And <strong>you choose what carries over.</strong> Sunless Sea offers five
+          inheritances at a captain's death; the Correspondent hands over the entire
+          discovered chart. That is a prestige <em>decision</em> rather than a payout,
+          and the cheapest source of build divergence available to us.</p>
+          <p class="src">This also closes the worst bug in the project's history: when the
+          HP curve outran damage, recruits stopped dying — and because death was the only
+          pension source, progression stopped dead on day 14 and never resumed.
+          A prestige loop a balance error can switch off is not a loop.</p>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 04</span>
+          <h3>Unlocks must be verbs</h3>
+        </div>
+        <div class="body">
+          <p>Retire the nineteen rate multipliers, or demote them to a cheap
+          background tier bought without thinking. Meta-currency should buy
+          <em class="term">new systems</em>: a second delver slot, a new chain, a seam
+          with its own rules, a piece of automation, a challenge that replays content
+          you've beaten with one rule changed.</p>
+          <p class="src">The test, borrowed from our own tuning comment about the permit
+          that granted nothing: <b>if a rung cannot be described without the words
+          “faster”, “more” or “cheaper”, it is not a rung.</b></p>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 05</span>
+          <h3>Mastery, in the genre's own idiom</h3>
+        </div>
+        <div class="body">
+          <p>Knowledge should be what survives a delver — and the genre already has
+          that idea as a number. Melvor's Mastery accrues per activity with use, plus
+          a pool that accelerates the rest, with thresholds that unlock capability.</p>
+          <p>So: per-seam mastery that accrues with use, survives the roster, and
+          unlocks options at thresholds rather than only rates. Number-go-up,
+          genre-native, and it does the job the pension was failing to do.</p>
+          <p class="src">Melvor rebuilt Mastery entirely after launch because the first
+          version's sense of progression was sub-par. Worth knowing this system is hard
+          to get right — and survivable to redo.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 05 · HORIZON ══════════ -->
+  <section id="horizon">
+    <div class="sec-head">
+      <div class="plate">05</div>
+      <div class="titles">
+        <h2>What it feels like, at three depths</h2>
+        <div class="prose">
+          <p>The north star. If the game at day 30 doesn't look meaningfully unlike
+          the game at day 1 — different screens, different questions, a different
+          bottleneck — the redesign hasn't landed.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="horizon">
+      <div class="card">
+        <div class="cap"><span class="when">Day 1</span><span class="scale">10³</span></div>
+        <div class="inner">
+          <h3>One delver, one seam</h3>
+          <p>You hire someone, point them at the shallow workings, and close the app.
+          Twenty minutes later your phone says they've hit a seam of something you
+          don't have a name for yet.</p>
+          <div class="readout">
+            <span class="lbl">roster</span> <span class="n">1</span> / 1<br>
+            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">4,120</span><br>
+            <span class="lbl">seams&nbsp;</span> <span class="n">1</span> known
+          </div>
+          <p class="ask"><b>The question:</b> push deeper, or bank and hire a second?</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cap"><span class="when">Day 30</span><span class="scale">10⁷</span></div>
+        <div class="inner">
+          <h3>Three seams, and a refinery that can't keep up</h3>
+          <p>Six delvers. Two chains running. Your refinery is capped and half your
+          raw output is spoiling in the yard — so the interesting question stopped
+          being "how deep" a week ago.</p>
+          <div class="readout">
+            <span class="lbl">roster</span> <span class="n">6</span> / 8<br>
+            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">12.4M</span><br>
+            <span class="lbl">bound&nbsp;</span> <span class="n">refining cap</span>
+          </div>
+          <p class="ask"><b>The question:</b> starve a seam to fund storage, or retire
+          your best delver now and take the chart?</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cap"><span class="when">Day 90</span><span class="scale">10¹²</span></div>
+        <div class="inner">
+          <h3>You are running a department</h3>
+          <p>Hiring is automatic under a policy you set. Selling is automatic under a
+          floor price you set. Four chains, two of which didn't exist on day 30, and
+          a challenge running that has taken your equipment away on purpose.</p>
+          <div class="readout">
+            <span class="lbl">roster</span> <span class="n">19</span> / 24<br>
+            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">4.71e12</span><br>
+            <span class="lbl">bound&nbsp;</span> <span class="n">deep-seam mastery</span>
+          </div>
+          <p class="ask"><b>The question:</b> which of four chains do you let run dry
+          to finish the fifth?</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 06 · LEDGER ══════════ -->
+  <section id="ledger">
+    <div class="sec-head">
+      <div class="plate">06</div>
+      <div class="titles">
+        <h2>This is a spine transplant, not a rewrite</h2>
+        <div class="prose">
+          <p>An earlier draft of this proposal deleted 12–14k lines. It was pointed at
+          the wrong genre, and it was about to throw away the two most
+          genre-correct systems in the codebase. <strong>Roughly 4–6k lines change.</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="ledger">
+      <div class="col keep">
+        <h3><span class="mark">KEEP</span> and make load-bearing</h3>
+        <ul>
+          <li><b>Lazy resolution &amp; the tick watermark.</b> Nothing runs per player between requests. This is what makes offline progression real, and it is genuinely good work.</li>
+          <li><b>Deterministic seeding</b> on (character, tick). The same span resolves the same way twice — which is what lets the tests assert on it.</li>
+          <li><b>The simulation harness.</b> <span class="mono">simulate</span>, <span class="mono">longrun</span>, <span class="mono">forecast</span> — the most valuable asset here. It needs new questions, not new code.</li>
+          <li><b>staff.ts</b> — an automation ladder where every hire takes a standing instruction rather than a toggle. "Automation that removes the decision removes the game." Exactly right.</li>
+          <li><b>assignments.ts</b> — Antimatter Dimensions-style challenges. Best content-per-authored-line mechanic in the genre.</li>
+          <li>Storage ports, migrations, auth, rate limiting, idempotency, health. All of it.</li>
+        </ul>
+      </div>
+      <div class="col cut">
+        <h3><span class="mark">CUT</span> or rebuild</h3>
+        <ul>
+          <li><b>The 19 pension unlocks</b> — rebuilt as verbs; rate tiers demoted to background.</li>
+          <li><b>Permits and grade as depth gates</b> — eight rungs saying the same sentence.</li>
+          <li><b>Death as the prestige trigger</b> — decoupled; R-1 promoted in its place.</li>
+          <li><b>resolve.ts rules</b> — rebuilt for a roster. The structure stays.</li>
+          <li><b>Case files, clauses, commendations, licences, filings, clearances</b> — folded into mastery and the lattice, or cut.</li>
+          <li><b>The paperwork</b> — the institution stays, the forms stop being the interface.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ 07 · KILL TEST ══════════ -->
+  <section id="stage0">
+    <div class="sec-head">
+      <div class="plate">07</div>
+      <div class="titles">
+        <h2>One week that can kill it</h2>
+      </div>
+    </div>
+
+    <div class="kill">
+      <p class="eyebrow" style="color:var(--oxide)">Stage 0 · headless · no UI</p>
+      <div class="prose">
+        <p class="lead">Three delvers, two seams, one extra chain. Run the
+        allocation-spread test: do simulated players who allocate differently end
+        the week materially apart?</p>
+        <p><strong>If allocation converges on one best assignment, stop.</strong>
+        The thesis is wrong, everything downstream of it is decoration, and it cost
+        a week rather than a quarter. This is the same instrument that condemned the
+        retreat slider — pointed at the mechanic before it ships instead of a year
+        after.</p>
+      </div>
+    </div>
+
+    <div class="stages">
+      <div class="stage"><span class="s">STAGE 1</span><span class="t">The lattice</span>
+        <span class="d">Two or three interlocking chains with real bottlenecks, and storage caps that bind.</span></div>
+      <div class="stage"><span class="s">STAGE 2</span><span class="t">Prestige</span>
+        <span class="d">R-1 promoted to the loop, legacy choice at retirement, death decoupled from payout.</span></div>
+      <div class="stage"><span class="s">STAGE 3</span><span class="t">Verbs</span>
+        <span class="d">The unlock catalogue rebuilt as systems, wired to the automation ladder and the challenge catalogue.</span></div>
+      <div class="stage"><span class="s">STAGE 4</span><span class="t">Mastery</span>
+        <span class="d">Per-seam progression that survives the delver.</span></div>
+      <div class="stage"><span class="s">STAGE 5</span><span class="t">Surface</span>
+        <span class="d">New frame, mobile, push — and the notification carries a decision, not a number. Lifeline reported 81% day-one retention on exactly that.</span></div>
+    </div>
+  </section>
+
+  <!-- ══════════ 08 · ART ══════════ -->
+  <section id="art">
+    <div class="sec-head">
+      <div class="plate">08</div>
+      <div class="titles">
+        <h2>Nothing here gets drawn by hand</h2>
+        <div class="prose">
+          <p class="lead">There is no artist on this project, so the visual language
+          has to be something a program can produce — and the architecture already
+          hands us that for free.</p>
+          <p>Every roll in this game is keyed on <span class="mono">(character,&nbsp;tick)</span>
+          through <span class="mono">tickSeed</span>. The same span resolves the same
+          way twice. That means <strong>a seam can render as a pure function of the seed
+          that generated it</strong> — the picture and the simulation are the same
+          object, and a site always looks like itself.</p>
+          <p>This is why the direction is cartographic rather than illustrative.
+          Contours, seam lattices, node graphs, plotted survey sheets: all of it is
+          arithmetic and two colours of ink. No character art, no item icons, no
+          sprite sheet, nothing that needs a hand.</p>
+        </div>
+      </div>
+    </div>
+
+    <figure>
+      <div class="fig-frame">
+        <p class="fig-title">Figure 4 · Seam survey, generated from a seed</p>
+        <p class="fig-sub"><strong>This is the in-game site renderer</strong>, not an
+        illustration for this document — about sixty lines of canvas, drawing a real
+        delve site from the seed the resolver already computes. Press the button: that
+        is a new site, and it costs nothing to make.</p>
+        <canvas id="seam" style="width:100%;height:340px;display:block;border:1px solid var(--rule-soft);border-radius:2px"></canvas>
+        <div style="display:flex;flex-wrap:wrap;gap:.8rem 1.4rem;align-items:center;margin-top:.9rem">
+          <button id="reseed" type="button">Generate another seam</button>
+          <span class="mono" style="font-size:.7rem;letter-spacing:.08em;color:var(--ink-3)">
+            SEED <span id="seedval" style="color:var(--gold)">—</span>
+          </span>
+        </div>
+      </div>
+      <figcaption>
+        The same seed always yields the same seam. <b>The art budget for this game is a
+        random number generator and a stylesheet</b> — which is also why full incremental
+        scale costs nothing to support here: a number in the trillions is type, not artwork.
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- ══════════ 09 · LOCKED ══════════ -->
+  <section id="locked">
+    <div class="sec-head">
+      <div class="plate">09</div>
+      <div class="titles">
+        <h2>Decisions taken, and the one still open</h2>
+      </div>
+    </div>
+
+    <div class="locked">
+      <div class="lock">
+        <span class="q">How big do the numbers get</span>
+        <span class="a">Full incremental scale</span>
+        <span class="why">Wherever the maths goes, scientific notation included. A lattice
+        produces large numbers arithmetically; refusing them means capping the lattice.
+        "Gold in the hundreds" cannot survive Change 02, and shouldn't be defended.</span>
+      </div>
+      <div class="lock">
+        <span class="q">What is the fiction</span>
+        <span class="a">Keep the frame, cut the paperwork</span>
+        <span class="why">Still an institution that sends people underground — but forms,
+        permits and clearances stop being the interface. The department fantasy survives:
+        you start doing your own filing and end up running a department. That line was
+        already in the codebase, and it is a roster game's premise.</span>
+      </div>
+      <div class="lock">
+        <span class="q">What survives a delver</span>
+        <span class="a">Mastery and the chart</span>
+        <span class="why">Not a pension. Per-seam knowledge that accrues with use, plus
+        whichever inheritance you choose at retirement.</span>
+      </div>
+      <div class="lock">
+        <span class="q">How the art gets made</span>
+        <span class="a">Generated, never drawn</span>
+        <span class="why">No artist on the project, so no asset pipeline that needs one.
+        Seams, contours, roster diagrams and charts are all functions of the seed the
+        resolver already computes. The cartographic direction was chosen because it is
+        the one that a program can draw convincingly.</span>
+      </div>
+      <div class="lock open">
+        <span class="q">Still open</span>
+        <span class="a">How the roster is directed</span>
+        <span class="why">Standing instructions in the staff.ts model — delegate with a
+        policy — or Majesty-style bounties, where autonomous people take the work that
+        pays best. The second is more interesting and considerably less proven.
+        <strong>Stage 0 can answer it.</strong></span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Deep Holdings · redesign draft 3</span>
+    <span>docs/design/redesign.md</span>
+    <span>docs/research/reference-class.md</span>
+    <span>All figures measured, not modelled</span>
+  </footer>
+</div>
+
+<div class="tt" id="tt" role="status" aria-live="polite"></div>
+
+<script type="module">
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  /* ───────── hero contours ───────── */
+  const cv = document.getElementById('contours');
+  const ctx = cv.getContext('2d');
+  let W = 0, H = 0, t = 0;
+
+  function size() {
+    const r = cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = r.width; H = r.height;
+    cv.width = W * dpr; cv.height = H * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function contours() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.strokeStyle = css('--contour');
+    ctx.lineWidth = 1;
+    const cx = W * 0.74, cy = H * 0.52;
+    const rings = 17;
+    for (let i = 0; i < rings; i++) {
+      const base = 26 + i * 27;
+      ctx.beginPath();
+      for (let a = 0; a <= Math.PI * 2 + 0.02; a += 0.035) {
+        const w = Math.sin(a * 3 + i * 0.55 + t) * 12
+                + Math.sin(a * 5 - i * 0.3 - t * 0.7) * 7
+                + Math.sin(a * 2 + t * 0.4) * 9;
+        const r = base + w;
+        const x = cx + Math.cos(a) * r * 1.28;
+        const y = cy + Math.sin(a) * r * 0.72;
+        a === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.globalAlpha = 1 - i / (rings + 5);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function loop() { t += 0.0016; contours(); requestAnimationFrame(loop); }
+  size(); contours();
+  if (!reduced) loop();
+  window.addEventListener('resize', () => { size(); contours(); });
+
+  /* ───────── tooltip ───────── */
+  const tt = document.getElementById('tt');
+  const showTip = (html, x, y) => {
+    tt.innerHTML = html;
+    tt.style.left = x + 'px';
+    tt.style.top = y + 'px';
+    tt.classList.add('on');
+  };
+  const hideTip = () => tt.classList.remove('on');
+
+  /* ───────── figure 1 · retreat sweep ───────── */
+  const sweep = [
+    { r: 5,  v: 108, d: 148.2 }, { r: 10, v: 96,  d: 49.4 },
+    { r: 15, v: 116, d: 27.6 }, { r: 20, v: 154, d: 17.4 },
+    { r: 25, v: 212, d: 9.2 },  { r: 30, v: 271, d: 1.7 },
+    { r: 35, v: 280, d: 0.2 },  { r: 40, v: 281, d: 0 },
+    { r: 50, v: 279, d: 0 },    { r: 60, v: 279, d: 0 }
+  ];
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const el = (n, a = {}) => {
+    const e = document.createElementNS(NS, n);
+    for (const k in a) e.setAttribute(k, a[k]);
+    return e;
+  };
+
+  (function drawSweep() {
+    const svg = document.getElementById('sweep');
+    const P = { l: 52, r: 18, t: 16, b: 30 };
+    const w = 720, h = 300;
+    const paneH = 108, gap = 34;
+    const plotW = w - P.l - P.r;
+
+    const xs = sweep.map(d => d.r);
+    const xMin = 5, xMax = 60;
+    const X = v => P.l + ((v - xMin) / (xMax - xMin)) * plotW;
+
+    // shaded dead zone: 35 → 60
+    const dz = el('rect', {
+      x: X(35), y: P.t, width: X(60) - X(35), height: paneH * 2 + gap,
+      fill: 'var(--rule)', opacity: '.28'
+    });
+    svg.appendChild(dz);
+    const dzl = el('line', { x1: X(35), y1: P.t, x2: X(35), y2: P.t + paneH * 2 + gap,
+      stroke: 'var(--ink-3)', 'stroke-width': 1, 'stroke-dasharray': '3 3' });
+    svg.appendChild(dzl);
+    // annotation sits in the gutter between the two panes, clear of both lines
+    const dzt = el('text', { x: X(35) + 9, y: P.t + paneH + 20, 'font-size': 9.5, fill: 'var(--ink-2)' });
+    dzt.textContent = 'one setting, from 35 all the way to 80';
+    svg.appendChild(dzt);
+
+    function pane(idx, key, max, color, label, fmt) {
+      const top = P.t + idx * (paneH + gap);
+      const Y = v => top + paneH - (v / max) * paneH;
+
+      // baseline + faint grid
+      [0, .5, 1].forEach(f => {
+        const g = el('line', { x1: P.l, y1: Y(max * f), x2: w - P.r, y2: Y(max * f),
+          stroke: 'var(--rule)', 'stroke-width': f === 0 ? 1 : .5, opacity: f === 0 ? 1 : .55 });
+        svg.appendChild(g);
+      });
+
+      const ly = el('text', { x: 0, y: top - 6, 'font-size': 9.5, fill: color });
+      ly.textContent = label;
+      svg.appendChild(ly);
+
+      // axis labels
+      [0, max].forEach(v => {
+        const tx = el('text', { x: P.l - 8, y: Y(v) + 3.5, 'font-size': 9, 'text-anchor': 'end' });
+        tx.textContent = fmt(v);
+        svg.appendChild(tx);
+      });
+
+      const pts = sweep.map(d => [X(d.r), Y(d[key])]);
+      const area = el('path', {
+        d: `M${pts[0][0]},${top + paneH} ` + pts.map(p => `L${p[0]},${p[1]}`).join(' ') +
+           ` L${pts[pts.length - 1][0]},${top + paneH} Z`,
+        fill: color, opacity: '.13'
+      });
+      svg.appendChild(area);
+
+      const line = el('path', {
+        d: `M` + pts.map(p => `${p[0]},${p[1]}`).join(' L'),
+        fill: 'none', stroke: color, 'stroke-width': 2,
+        'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+      });
+      svg.appendChild(line);
+
+      sweep.forEach((d, i) => {
+        const c = el('circle', {
+          cx: pts[i][0], cy: pts[i][1], r: 4.2,
+          fill: color, stroke: 'var(--paper-2)', 'stroke-width': 2
+        });
+        svg.appendChild(c);
+      });
+
+      return { Y, top };
+    }
+
+    const p0 = pane(0, 'v', 300, 'var(--gold)', 'VALUE PER HOUR', v => v);
+    const p1 = pane(1, 'd', 150, 'var(--oxide)', 'DEATHS PER WEEK', v => v);
+
+    // x axis — ticks on one line, the axis title on its own below them
+    sweep.forEach(d => {
+      const tx = el('text', { x: X(d.r), y: h - 20, 'font-size': 9, 'text-anchor': 'middle' });
+      tx.textContent = d.r;
+      svg.appendChild(tx);
+    });
+    const xlab = el('text', { x: w - P.r, y: h - 4, 'font-size': 8.5, 'text-anchor': 'end',
+      fill: 'var(--ink-3)', 'letter-spacing': '.1em' });
+    xlab.textContent = 'RETREAT THRESHOLD  →';
+    svg.appendChild(xlab);
+
+    // direct labels on the flat end
+    const dl1 = el('text', { x: X(60) - 4, y: p0.Y(281) - 12, 'font-size': 10, 'text-anchor': 'end', fill: 'var(--gold)' });
+    dl1.textContent = '≈280 g/h, flat';
+    svg.appendChild(dl1);
+    const dl2 = el('text', { x: X(5) + 10, y: p1.Y(148.2) + 4, 'font-size': 10, fill: 'var(--oxide)' });
+    dl2.textContent = '148.2';
+    svg.appendChild(dl2);
+
+    // hover targets
+    sweep.forEach((d, i) => {
+      const bw = plotW / sweep.length;
+      const hit = el('rect', {
+        x: X(d.r) - bw / 2, y: P.t, width: bw, height: paneH * 2 + gap,
+        fill: 'transparent', class: 'hit', tabindex: '0',
+        role: 'img',
+        'aria-label': `Retreat ${d.r}: ${d.v} value per hour, ${d.d} deaths per week.`
+      });
+      const show = (ev) => {
+        const r = hit.getBoundingClientRect();
+        showTip(
+          `<span class="k">retreat</span> ${d.r}<br>` +
+          `<span class="k">value/h</span> ${d.v}<br>` +
+          `<span class="k">deaths/wk</span> ${d.d}`,
+          r.left + r.width / 2, r.top + 40
+        );
+      };
+      hit.addEventListener('pointerenter', show);
+      hit.addEventListener('focus', show);
+      hit.addEventListener('pointerleave', hideTip);
+      hit.addEventListener('blur', hideTip);
+      svg.appendChild(hit);
+    });
+  })();
+
+  /* ───────── figure 2 · unit chart ───────── */
+  (function units() {
+    const host = document.getElementById('units');
+    for (let i = 1; i <= 19; i++) {
+      const d = document.createElement('div');
+      d.className = 'unit';
+      d.textContent = i;
+      host.appendChild(d);
+    }
+  })();
+
+  /* ───────── figure 3 · 90-day grid ───────── */
+  (function daygrid() {
+    const host = document.getElementById('daygrid');
+    for (let i = 1; i <= 90; i++) {
+      const d = document.createElement('div');
+      const isNew = i <= 39;
+      d.className = 'day ' + (isNew ? 'new' : 'empty');
+      d.tabIndex = 0;
+      d.setAttribute('role', 'img');
+      d.setAttribute('aria-label', `Day ${i}: ${isNew ? 'something new' : 'nothing new'}`);
+      const show = () => {
+        const r = d.getBoundingClientRect();
+        showTip(
+          `<span class="k">day</span> ${i}<br>${isNew ? 'something new' : '<span class="k">nothing new</span>'}`,
+          r.left + r.width / 2, r.top
+        );
+      };
+      d.addEventListener('pointerenter', show);
+      d.addEventListener('focus', show);
+      d.addEventListener('pointerleave', hideTip);
+      d.addEventListener('blur', hideTip);
+      host.appendChild(d);
+    }
+  })();
+
+  /* ───────── figure 4 · procedural seam survey ─────────
+     Deterministic from a seed, exactly like the resolver's tickSeed.
+     Same seed in, same seam out — no asset, no artist. */
+  const seamCv = document.getElementById('seam');
+  const sctx = seamCv.getContext('2d');
+  const seedOut = document.getElementById('seedval');
+  let seed = 4821;
+
+  // mulberry32 — the same shape of PRNG the server already uses
+  function rngOf(s) {
+    return function () {
+      s |= 0; s = s + 0x6D2B79F5 | 0;
+      let x = Math.imul(s ^ s >>> 15, 1 | s);
+      x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+      return ((x ^ x >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function drawSeam() {
+    const r = seamCv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = r.width, h = r.height;
+    seamCv.width = w * dpr; seamCv.height = h * dpr;
+    sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    sctx.clearRect(0, 0, w, h);
+
+    const rand = rngOf(seed);
+    const ink3 = css('--ink-3'), rule = css('--rule'),
+          gold = css('--gold'), blue = css('--blue');
+
+    const top = 28, bottom = h - 22, floors = 7;
+    const step = (bottom - top) / floors;
+
+    // depth rules
+    sctx.font = '9px ui-monospace, monospace';
+    sctx.textBaseline = 'middle';
+    for (let i = 0; i <= floors; i++) {
+      const y = top + i * step;
+      sctx.strokeStyle = rule;
+      sctx.lineWidth = i === 0 ? 1 : .5;
+      sctx.globalAlpha = i === 0 ? 1 : .6;
+      sctx.beginPath(); sctx.moveTo(52, y); sctx.lineTo(w - 14, y); sctx.stroke();
+      sctx.globalAlpha = 1;
+      sctx.fillStyle = ink3;
+      sctx.fillText(i === 0 ? 'SURFACE' : 'FLOOR ' + i, 6, y);
+    }
+
+    // tunnel network — walk down, branch, terminate in chambers
+    const chambers = [];
+    sctx.lineCap = 'round';
+    sctx.lineJoin = 'round';
+
+    (function walk(x, y, depth, width) {
+      // a working ends when it runs out of depth, room, or seam
+      if (depth >= floors || width < 0.55) { chambers.push([x, y, width, depth]); return; }
+      if (depth > 2 && rand() < 0.2) { chambers.push([x, y, width, depth]); return; }
+
+      const branches = depth === 0
+        ? 3
+        : (rand() < 0.44 && width > 0.95 ? 2 : 1);
+
+      for (let b = 0; b < branches; b++) {
+        // fan hard near the surface, run straighter as the seam narrows
+        const fan = branches > 1 ? 250 : 95;
+        const taper = 1 - (depth / floors) * 0.55;
+        let nx = x + (rand() - 0.5) * fan * taper;
+        // steer away from the walls rather than clamping flat against them
+        if (nx < 74) nx = 74 + rand() * 40;
+        if (nx > w - 30) nx = w - 30 - rand() * 40;
+
+        const ny = y + step;
+        const nw = width * (branches > 1 ? 0.74 : 0.93);
+
+        sctx.strokeStyle = blue;
+        sctx.globalAlpha = 0.28 + 0.5 * (nw / 3);
+        sctx.lineWidth = Math.max(0.7, nw);
+        sctx.beginPath();
+        sctx.moveTo(x, y);
+        sctx.bezierCurveTo(x, y + step * 0.55, nx, ny - step * 0.55, nx, ny);
+        sctx.stroke();
+        sctx.globalAlpha = 1;
+
+        // an occasional chamber part-way along a working, not only at its end
+        if (depth > 1 && rand() < 0.22) chambers.push([nx, ny, nw * 0.8, depth + 1]);
+
+        walk(nx, ny, depth + 1, nw);
+      }
+    })(w * (0.34 + rand() * 0.3), top, 0, 3.2);
+
+    // chambers — richer the deeper they sit
+    chambers.forEach(([x, y, wd]) => {
+      const richness = (y - top) / (bottom - top);
+      const rad = 3 + wd * 1.6 + richness * 5;
+      sctx.beginPath(); sctx.arc(x, y, rad, 0, Math.PI * 2);
+      sctx.fillStyle = gold; sctx.globalAlpha = .22 + richness * .45; sctx.fill();
+      sctx.globalAlpha = 1;
+      sctx.strokeStyle = gold; sctx.lineWidth = 1.2; sctx.stroke();
+
+      // yield ring on the richest
+      if (richness > 0.62) {
+        sctx.beginPath(); sctx.arc(x, y, rad + 5, 0, Math.PI * 2);
+        sctx.strokeStyle = gold; sctx.globalAlpha = .38;
+        sctx.setLineDash([2, 3]); sctx.lineWidth = 1; sctx.stroke();
+        sctx.setLineDash([]); sctx.globalAlpha = 1;
+      }
+    });
+
+    sctx.fillStyle = ink3;
+    sctx.textAlign = 'right';
+    sctx.fillText(chambers.length + ' CHAMBERS', w - 14, top - 14);
+    sctx.textAlign = 'left';
+    seedOut.textContent = seed;
+  }
+
+  drawSeam();
+  document.getElementById('reseed').addEventListener('click', () => {
+    seed = Math.floor(Math.random() * 99999);
+    drawSeam();
+  });
+
+  /* redraw canvases when the theme changes, so ink follows the sheet */
+  const repaint = () => { contours(); drawSeam(); };
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', repaint);
+  new MutationObserver(repaint).observe(document.documentElement, {
+    attributes: true, attributeFilter: ['data-theme']
+  });
+  window.addEventListener('resize', drawSeam);
+
+  window.addEventListener('scroll', hideTip, { passive: true });
+</script>

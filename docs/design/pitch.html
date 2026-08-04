@@ -735,7 +735,7 @@
     <div class="sec-head">
       <div class="plate">04</div>
       <div class="titles">
-        <h2>Six changes, in order of how much they matter</h2>
+        <h2>Seven changes, in order of how much they matter</h2>
         <div class="prose">
           <p class="lead">Stop selling multipliers on one producer. Build several
           producers, several chains, and make the player allocate between them.</p>
@@ -744,6 +744,38 @@
     </div>
 
     <div class="changes">
+      <div class="change">
+        <div class="lhs">
+          <span class="num">CHANGE 00</span>
+          <h3>Put an orb on the screen and mine it</h3>
+        </div>
+        <div class="body">
+          <p>The game is currently screens of text. <em>(the) Gnorp Apologue</em> is a
+          rock in the middle of the screen that little creatures hit until shards fly
+          off, and it is beloved for exactly that — the design write-up is titled
+          <em>"You have to hit the rock."</em></p>
+          <p>So: <strong>one object, centre screen, always visible, visibly changing.</strong>
+          Cracked, pitted, shedding, worked. It does three jobs at once.</p>
+          <p><strong>It unifies the escalation.</strong> A working, a district, a world,
+          a star — every rung of the ladder is <em class="term">an orb</em>, and enclosing
+          a star is building an orb around an orb. One renderer covers hour one and the
+          endgame (Figure 7).</p>
+          <p><strong>It makes upgrades behavioural.</strong> Gnorp's developer names the
+          mechanism exactly: <em>"with individually simulated units, it allows you to
+          create interesting upgrades beyond a simple percentage increase to their
+          output."</em> When a recruit is a row in a table, an upgrade can only scale it.</p>
+          <p><strong>It gives the fiction something to be about.</strong> An orb invites
+          <em class="term">orb worshippers</em> — and under the Authority, a theological
+          objection is a form. Received, logged, overruled on a schedule. Free content
+          axis, free restrictions for the challenge catalogue, funny at no art cost.</p>
+          <p class="src">AND STEAL THEIR BEST MECHANIC — THE ORB RECLAIMS.<br>
+          Unprocessed output gets absorbed back, faster the more of it there is. A
+          bottleneck that moves, punishes hoarding, and cannot be solved by
+          accumulating — only by throughput. Gold has bound this game for an entire
+          career; this is the second constraint it has never had.</p>
+        </div>
+      </div>
+
       <div class="change">
         <div class="lhs">
           <span class="num">CHANGE 01</span>
@@ -1191,9 +1223,14 @@
           that generated it</strong> — the picture and the simulation are the same
           object, and a site always looks like itself.</p>
           <p>This is why the direction is cartographic rather than illustrative.
-          Contours, seam lattices, node graphs, plotted survey sheets: all of it is
-          arithmetic and two colours of ink. No character art, no item icons, no
+          Orbs, contours, seam lattices, node graphs, plotted survey sheets: all of
+          it is arithmetic and two colours of ink. No character art, no item icons, no
           sprite sheet, nothing that needs a hand.</p>
+          <p>Gnorp's other free trick, worth taking whole: it ships
+          <em>"a mostly monochromatic colour scheme so that players would feel they
+          were bringing colour into the world as they progressed."</em> The orb starts
+          dead and gains colour as it is worked — <strong>progress made legible without
+          a single drawn asset.</strong></p>
         </div>
       </div>
     </div>
@@ -1222,23 +1259,33 @@
 
     <figure>
       <div class="fig-frame">
-        <p class="fig-title">Figure 7 · Enclosure survey — the same renderer, thirty orders of magnitude later</p>
-        <p class="fig-sub">The last rung of the ladder, drawn by the same kind of code
-        as Figure 6. A seeded walk placed the chambers in a seam; a seeded placement
-        lays collector shells around a star. <strong>Neither costs an asset.</strong></p>
-        <canvas id="dyson" style="width:100%;height:360px;display:block;border:1px solid var(--rule-soft);border-radius:2px"></canvas>
+        <p class="fig-title">Figure 7 · One object, three scales, one renderer</p>
+        <p class="fig-sub">The thing you mine is an <strong>orb</strong> — and so is
+        the district, and the world, and the star. Enclosing a star is
+        <strong>building an orb around an orb</strong>. Same drawing code, one
+        parameter. This is what makes the endgame shippable without an artist.</p>
+
+        <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-bottom:1.1rem">
+          <span class="mono" style="font-size:.66rem;letter-spacing:.14em;color:var(--ink-3)">SCALE</span>
+          <button id="sc-orb" type="button" data-on="true">The orb</button>
+          <button id="sc-world" type="button">A world</button>
+          <button id="sc-star" type="button">An enclosure</button>
+        </div>
+
+        <canvas id="orb" style="width:100%;height:380px;display:block;border:1px solid var(--rule-soft);border-radius:2px"></canvas>
         <div style="display:flex;flex-wrap:wrap;gap:.8rem 1.4rem;align-items:center;margin-top:.9rem">
-          <button id="reseed2" type="button">Survey another star</button>
+          <button id="reseed2" type="button">Re-survey</button>
           <span class="mono" style="font-size:.7rem;letter-spacing:.08em;color:var(--ink-3)">
             SEED <span id="seedval2" style="color:var(--gold)">—</span>
           </span>
         </div>
       </div>
       <figcaption>
-        A dungeon and a Dyson sphere are the same drawing problem: <b>a seed, a
-        topology, and a set of yields.</b> This is the strongest argument for the
-        generated-art constraint — it is the only way a two-person project gets to
-        promise an endgame at this scale and actually ship it.
+        Drawn live, from a seed, in about a hundred lines. <b>A dungeon, a planet and
+        a Dyson sphere are the same drawing problem</b> — a seed, a topology and a set
+        of yields. Gnorp's other free trick applies here too: the orb starts
+        monochrome and gains colour as it is worked, so <b>progress is legible without
+        a single drawn asset</b>.
       </figcaption>
     </figure>
   </section>
@@ -1290,6 +1337,14 @@
         Seams, contours, roster diagrams and charts are all functions of the seed the
         resolver already computes. The cartographic direction was chosen because it is
         the one that a program can draw convincingly.</span>
+      </div>
+      <div class="lock">
+        <span class="q">What you are looking at</span>
+        <span class="a">An orb, at every scale</span>
+        <span class="why">One object centre screen, mined visibly. The same renderer
+        draws the working, the world and the enclosure, which is the only reason a
+        project with no artist can promise a stellar endgame. It reclaims what you
+        fail to process, and people worship it.</span>
       </div>
       <div class="lock open">
         <span class="q">Still open</span>
@@ -1890,97 +1945,169 @@
     drawSeam();
   });
 
-  /* ───────── figure 7 · the Enclosure, same trick at stellar scale ───────── */
-  const dysCv = document.getElementById('dyson');
-  const dctx = dysCv.getContext('2d');
+  /* ───────── figure 7 · one orb renderer, three scales ─────────
+     The whole ladder is the same shape at different radii, which is the only
+     reason a project with no artist can promise a stellar endgame. */
+  const orbCv = document.getElementById('orb');
+  const octx = orbCv.getContext('2d');
   const seedOut2 = document.getElementById('seedval2');
   let seed2 = 1771;
+  let orbMode = 'orb';
 
-  function drawDyson() {
-    const r = dysCv.getBoundingClientRect();
+  const ORB_SPEC = {
+    orb:   { r: .40, cracks: 14, pits: 22, shells: 0, worked: .35, label: 'ORB · GRADE II WORKING',  unit: 'chambers cut' },
+    world: { r: .46, cracks: 24, pits: 52, shells: 0, worked: .62, label: 'WORLD · CRUST LET',       unit: 'districts let' },
+    star:  { r: .17, cracks: 0,  pits: 0,  shells: 6, worked: 1,   label: 'ENCLOSURE IN PROGRESS',   unit: 'collectors sited' }
+  };
+
+  function drawOrb() {
+    const box = orbCv.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = r.width, h = r.height;
-    dysCv.width = w * dpr; dysCv.height = h * dpr;
-    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    dctx.clearRect(0, 0, w, h);
+    const w = box.width, h = box.height;
+    orbCv.width = w * dpr; orbCv.height = h * dpr;
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.clearRect(0, 0, w, h);
 
+    const spec = ORB_SPEC[orbMode];
     const rand = rngOf(seed2);
     const ink3 = css('--ink-3'), rule = css('--rule'),
           gold = css('--gold'), blue = css('--blue');
-    const cx = w * 0.5, cy = h * 0.54;
-    const maxR = Math.min(w * 0.42, h * 0.42);
+    const cx = w / 2, cy = h * 0.52;
+    const maxR = Math.min(w * 0.44, h * 0.44);
+    const R = maxR * (spec.r / 0.46);
 
-    dctx.font = '9px ui-monospace, monospace';
-    dctx.textBaseline = 'middle';
+    octx.font = '9px ui-monospace, monospace';
+    octx.textBaseline = 'middle';
+    octx.lineCap = 'round';
 
-    // the star
-    dctx.beginPath(); dctx.arc(cx, cy, maxR * 0.13, 0, Math.PI * 2);
-    dctx.fillStyle = gold; dctx.globalAlpha = .5; dctx.fill();
-    dctx.globalAlpha = 1; dctx.strokeStyle = gold; dctx.lineWidth = 1.4; dctx.stroke();
+    // ── the body: concentric ink hatching, denser at the limb ──
+    const rings = 26;
+    for (let i = 0; i < rings; i++) {
+      const t = i / rings;
+      const rr = R * Math.sqrt(1 - t * t);       // even spacing over a sphere
+      octx.beginPath();
+      octx.arc(cx, cy - R * t * 0.26, rr, 0, Math.PI * 2);
+      octx.strokeStyle = orbMode === 'star' ? gold : ink3;
+      // colour arrives as the orb is worked — monochrome is "untouched"
+      octx.globalAlpha = (0.10 + t * 0.30) * (0.5 + spec.worked * 0.5);
+      octx.lineWidth = 1;
+      octx.stroke();
+    }
+    octx.globalAlpha = 1;
 
-    const shells = 6;
-    let placed = 0, total = 0;
+    // ── the rim ──
+    octx.beginPath(); octx.arc(cx, cy, R, 0, Math.PI * 2);
+    octx.strokeStyle = orbMode === 'star' ? gold : css('--ink-2');
+    octx.lineWidth = 1.6; octx.stroke();
 
-    for (let s = 0; s < shells; s++) {
-      const rr = maxR * (0.26 + (s / (shells - 1)) * 0.74);
-
-      // the shell's construction guide — the part not built yet
-      dctx.beginPath(); dctx.arc(cx, cy, rr, 0, Math.PI * 2);
-      dctx.strokeStyle = rule; dctx.lineWidth = .8;
-      dctx.setLineDash([2, 4]); dctx.stroke(); dctx.setLineDash([]);
-
-      // collectors: completion falls off with radius, so the outer shells are frontier
-      const segs = 30 + s * 16;
-      const completion = Math.max(0.05, 0.99 - s * 0.185 - rand() * 0.08);
-      const phase = rand() * Math.PI * 2;
-      total += segs;
-
-      for (let i = 0; i < segs; i++) {
-        if (rand() > completion) continue;
-        placed++;
-        const a0 = phase + (i / segs) * Math.PI * 2;
-        const a1 = a0 + (Math.PI * 2 / segs) * 0.88;
-        dctx.beginPath();
-        dctx.arc(cx, cy, rr, a0, a1);
-        dctx.strokeStyle = s < 3 ? gold : blue;
-        dctx.globalAlpha = .35 + completion * 0.55;
-        dctx.lineWidth = 2.4 + (1 - s / shells) * 1.6;
-        dctx.lineCap = 'butt';
-        dctx.stroke();
-        dctx.globalAlpha = 1;
-      }
-
-      // label each shell at its own crown, so six labels do not stack on one line
-      dctx.fillStyle = ink3;
-      dctx.textAlign = 'center';
-      dctx.fillText('SHELL ' + (s + 1), cx, cy - rr - 7);
+    if (orbMode === 'star') {
+      octx.beginPath(); octx.arc(cx, cy, R * 0.92, 0, Math.PI * 2);
+      octx.fillStyle = gold; octx.globalAlpha = .62; octx.fill(); octx.globalAlpha = 1;
     }
 
-    dctx.textAlign = 'left';
-    dctx.fillStyle = ink3;
-    dctx.fillText('ENCLOSURE IN PROGRESS', 12, 18);
-    dctx.textAlign = 'right';
-    dctx.fillStyle = gold;
-    dctx.fillText(Math.round((placed / total) * 100) + '% OF SURFACE TITLED', w - 12, 18);
-    dctx.textAlign = 'left';
-    dctx.fillStyle = ink3;
-    dctx.fillText(placed.toLocaleString('en-GB') + ' COLLECTORS SITED', 12, h - 14);
+    // ── cracks: a seeded branching walk across the face ──
+    let cut = 0;
+    (function cracks(n) {
+      for (let c = 0; c < n; c++) {
+        const a = rand() * Math.PI * 2;
+        const startR = R * (0.15 + rand() * 0.5);
+        let x = cx + Math.cos(a) * startR, y = cy + Math.sin(a) * startR;
+        let dir = rand() * Math.PI * 2;
+        const segs = 4 + Math.floor(rand() * 7);
+        octx.beginPath(); octx.moveTo(x, y);
+        for (let sgm = 0; sgm < segs; sgm++) {
+          dir += (rand() - 0.5) * 1.1;
+          const len = R * (0.05 + rand() * 0.11);
+          const nx = x + Math.cos(dir) * len, ny = y + Math.sin(dir) * len;
+          if (Math.hypot(nx - cx, ny - cy) > R * 0.96) break;
+          octx.lineTo(nx, ny); x = nx; y = ny;
+        }
+        octx.strokeStyle = blue;
+        octx.globalAlpha = .45 + rand() * .45;
+        octx.lineWidth = 0.8 + rand() * 1.2;
+        octx.stroke(); octx.globalAlpha = 1;
+      }
+    })(spec.cracks);
+
+    // ── workings: pits cut into the face, gold where they are producing ──
+    for (let i = 0; i < spec.pits; i++) {
+      const a = rand() * Math.PI * 2;
+      const rr = R * Math.sqrt(rand()) * 0.9;
+      const px = cx + Math.cos(a) * rr, py = cy + Math.sin(a) * rr;
+      const pr = 1.6 + rand() * (R * 0.035);
+      const live = rand() < spec.worked;
+      // a shadowed lip, so a pit reads as cut into the face rather than sat on it
+      octx.beginPath(); octx.arc(px + pr * .22, py + pr * .22, pr, 0, Math.PI * 2);
+      octx.fillStyle = css('--ink-2'); octx.globalAlpha = .28; octx.fill();
+      octx.beginPath(); octx.arc(px, py, pr, 0, Math.PI * 2);
+      octx.fillStyle = live ? gold : css('--paper-3');
+      octx.globalAlpha = live ? .85 : .9; octx.fill();
+      octx.globalAlpha = 1;
+      octx.strokeStyle = live ? gold : ink3; octx.lineWidth = live ? 1.1 : .8; octx.stroke();
+      if (live) cut++;
+    }
+
+    // ── shells: the enclosure is an orb built around an orb ──
+    let sited = 0;
+    for (let sh = 0; sh < spec.shells; sh++) {
+      const rr = R + (maxR - R) * ((sh + 1) / spec.shells);
+      octx.beginPath(); octx.arc(cx, cy, rr, 0, Math.PI * 2);
+      octx.strokeStyle = rule; octx.lineWidth = .8;
+      octx.setLineDash([2, 4]); octx.stroke(); octx.setLineDash([]);
+
+      const segs = 30 + sh * 16;
+      const completion = Math.max(.05, .99 - sh * .185 - rand() * .08);
+      const phase = rand() * Math.PI * 2;
+      for (let i = 0; i < segs; i++) {
+        if (rand() > completion) continue;
+        sited++;
+        const a0 = phase + (i / segs) * Math.PI * 2;
+        octx.beginPath();
+        octx.arc(cx, cy, rr, a0, a0 + (Math.PI * 2 / segs) * .88);
+        octx.strokeStyle = sh < 3 ? gold : blue;
+        octx.globalAlpha = .35 + completion * .55;
+        octx.lineWidth = 2.4 + (1 - sh / spec.shells) * 1.6;
+        octx.stroke(); octx.globalAlpha = 1;
+      }
+      octx.fillStyle = ink3; octx.textAlign = 'center';
+      octx.fillText('SHELL ' + (sh + 1), cx, cy - rr - 7);
+    }
+
+    // ── read-out ──
+    octx.textAlign = 'left'; octx.fillStyle = ink3;
+    octx.fillText(spec.label, 12, 18);
+    octx.textAlign = 'right'; octx.fillStyle = gold;
+    octx.fillText(Math.round(spec.worked * 100) + '% WORKED', w - 12, 18);
+    octx.textAlign = 'left'; octx.fillStyle = ink3;
+    octx.fillText((spec.shells ? sited : cut) + ' ' + spec.unit, 12, h - 14);
     seedOut2.textContent = seed2;
   }
 
-  drawDyson();
-  document.getElementById('reseed2').addEventListener('click', () => {
-    seed2 = Math.floor(Math.random() * 99999);
-    drawDyson();
-  });
+  (function orbControls() {
+    const btns = { orb: 'sc-orb', world: 'sc-world', star: 'sc-star' };
+    const set = (mode) => {
+      orbMode = mode; drawOrb();
+      Object.entries(btns).forEach(([k, id]) => {
+        const b = document.getElementById(id);
+        b.dataset.on = k === mode ? 'true' : 'false';
+        b.setAttribute('aria-pressed', k === mode ? 'true' : 'false');
+      });
+    };
+    Object.entries(btns).forEach(([k, id]) =>
+      document.getElementById(id).addEventListener('click', () => set(k)));
+    document.getElementById('reseed2').addEventListener('click', () => {
+      seed2 = Math.floor(Math.random() * 99999); drawOrb();
+    });
+    set('orb');
+  })();
 
   /* redraw canvases when the theme changes, so ink follows the sheet */
-  const repaint = () => { contours(); drawSeam(); drawDyson(); };
+  const repaint = () => { contours(); drawSeam(); drawOrb(); };
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', repaint);
   new MutationObserver(repaint).observe(document.documentElement, {
     attributes: true, attributeFilter: ['data-theme']
   });
-  window.addEventListener("resize", () => { drawSeam(); drawDyson(); });
+  window.addEventListener("resize", () => { drawSeam(); drawOrb(); });
 
   window.addEventListener('scroll', hideTip, { passive: true });
 </script>

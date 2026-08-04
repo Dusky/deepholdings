@@ -117,6 +117,90 @@ Everything below follows from that.
 
 ## 3. The six changes
 
+### 3.0 The Orb — the game needs a face, and one shape at every scale
+
+Deep Holdings is screens of text. (the) Gnorp Apologue is a rock in the middle of
+the screen that little creatures hit until shards fly off, and it is beloved for
+exactly that. See [`../research/gnorp.md`](../research/gnorp.md).
+
+**Put one object in the centre of the screen and mine it.** An orb. Always
+visible, always the subject, visibly changing: cracked, pitted, shedding,
+dimming, worked.
+
+Three reasons this is more than presentation.
+
+**1. It unifies the escalation into a single renderer.** The chain in §3.6 runs
+one working → a district → a world → a system → a star. Every one of those is
+*an orb*, and enclosing a star means **building an orb around an orb**. One
+piece of drawing code, parameterised by scale, covers the entire ladder from
+hour one to the endgame. Under §3.7's no-artist constraint that is not a
+convenience, it is what makes the endgame shippable at all.
+
+**2. It makes upgrades behavioural rather than numeric.** Gnorp's developer
+states the mechanism plainly: *"with individually simulated units, it allows you
+to create interesting upgrades beyond a simple percentage increase to their
+output."* When a recruit is a row in a table the only thing an upgrade can do is
+scale it. When recruits are visible things working a visible object, an upgrade
+can change **what they do** — and Gnorp's own unit types are genuinely different
+machines rather than stat variants (one flies and slams, one climbs the spoil
+pile and stomps, one shoots from a building).
+
+**3. It gives the fiction something to be about.** An orb invites **orb
+worshippers** — a faction that objects, on principle, to the Authority
+dismantling it. Under the bureaucratic costume that is a *form*: theological
+objections are received, logged, and overruled on a schedule. It is a free
+content axis, a source of restrictions for `assignments.ts` challenges, and it
+is funny at no art cost.
+
+#### Adopt their upgrade test verbatim
+
+Better stated than §3.4's version, and from a shipped game. Every upgrade must:
+
+1. **change behaviour fundamentally**
+2. **remain optional rather than mandatory**
+3. **work synergistically with the wider system**
+
+Point 2 is the one we did not have. An upgrade every player must buy is a tax
+with a purchase button, which describes most of the nineteen.
+
+#### The orb reclaims
+
+Steal Gnorp's second-tier mechanic outright: **the orb absorbs unprocessed
+output back into itself**, at a rate proportional to how much is sitting
+unprocessed, scaling exponentially.
+
+This is the moving bottleneck the game has never had. Gold binds for an entire
+career today; reclamation is a second constraint that arrives on its own
+schedule, punishes hoarding, and **cannot be solved by accumulating** — only by
+throughput. It converts "wait for the number" into "keep the line clear", which
+is a decision.
+
+#### Colour is the progression
+
+Gnorp ships *"a mostly monochromatic colour scheme so that players would feel
+they were bringing colour into the world as they progressed."* The orb starts
+dead and gains colour as it is worked. Free, artist-free, and it sits exactly on
+a two-ink palette.
+
+#### The architectural line we must not cross
+
+Gnorp is local, single-player and real-time. We are server-authoritative with
+lazy resolution — nothing runs per player between requests. **We cannot simulate
+two thousand recruits per account on the server.**
+
+The split that keeps both: **the server stays aggregate and deterministic; the
+client renders a crowd from the aggregate numbers.** Two thousand particles
+drawn from one resolved figure is a rendering problem, not a simulation one, and
+it is compatible with `tickSeed` — the same span draws the same picture. What
+must never be promised is per-unit server simulation.
+
+#### And the warning that comes with it
+
+Gnorp is 8–10 hours and its consistent criticism is the endgame, which *"transitions
+from active management to long-term idling"*. A compelling centrepiece is not by
+itself a long game. **The orb is the face; the ladder in §3.6 is the length.**
+Neither substitutes for the other.
+
 ### 3.1 A roster, not a recruit — *the big one*
 
 Several recruits working in parallel, each with their own aptitudes, each

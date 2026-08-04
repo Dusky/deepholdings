@@ -932,3 +932,35 @@ Not a milestone; pick these up as they start to hurt.
 - **Onboarding cliff.** Worth restating as a risk, not just a task: competitors
   lose most churned players inside thirty minutes, to the interface rather than
   the game.
+
+## Next up (handoff, 2026-08-04)
+
+Two things queued, in priority order.
+
+1. **The Dispensation to Work Below Grade is priced wrong.** It is now a real
+   decision — reckless officers die 15% more often and work a floor deeper than
+   cautious ones — but they earn *less* gold for it (762k against 789k). A risk
+   lever that pays less than the safe option is a trap rather than a choice.
+   Likely fix is depth-scaled yield rather than more floors. Small, and it is
+   the difference between the repaired Commendation catalogue working and not.
+
+2. **The concurrent-postings prestige layer**, if a bigger swing is wanted.
+   Three attempts — the clause pool, Tier III licences, the Commendation repair
+   — each improved pacing while failing to produce a build decision worth more
+   than single digits, because every reward in this game lands on the same few
+   numbers and those are bounded by depth, grade and the caps. Allocation across
+   several recruits is the one shape that cannot be expressed as a multiplier on
+   one career. Reasoning in `docs/design/balance.md`.
+
+### Two live caveats
+
+- **`balance.md` carries a correction banner at the top.** Every figure taken
+  with `longrun --annexe` before commit `5cc3948` is unreliable — the flag was
+  switching off the officer's commendations inside the resolver. Read the banner
+  before building on any number in that document.
+- **`advance.test.ts` is genuinely flaky in CI** ("the default orders are not a
+  dead end"). It now prints a per-day trace on failure — depth, grade, hp,
+  supplies, gold, permit, tick — so the next red run should say which property
+  actually broke. Separately, the `.dockerignore` fix for the `image` job has
+  never been built locally: this sandbox has no Docker daemon, so CI is its
+  first real test.

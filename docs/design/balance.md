@@ -1,5 +1,14 @@
 # Balance: what the numbers do, and how we know
 
+> **Read this before trusting anything below.** Every figure in this document
+> measured with `longrun --annexe` before commit `5cc3948` is unreliable. That
+> flag substituted `['secondment1']` for the officer's real commendations
+> instead of adding to them, so the resolver never saw intake, patronage,
+> audience or stretch. Affected results include the Tier III licence's
+> 56 → 29 desert and the Commendation repair's "7.3%". The section
+> *"Correction: `--annexe` was switching off commendations"* at the end has the
+> details and the corrected numbers. Figures without `--annexe` are unaffected.
+
 Every tuning number in this game started as a guess by someone who had never
 played it. This document records what the simulation measured, what was wrong,
 and what the numbers mean now.

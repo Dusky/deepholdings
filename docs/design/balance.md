@@ -1694,3 +1694,59 @@ a success's clothes.
   whether the game is fun.
 - **`cadence` still does not model staff**, so its genuine-empty figure and this
   one are measuring adjacent but different things.
+
+## The clause pool: 20 to 80, and what the instrument could not see
+
+**Re-measured 2026-08-04, after Phase 2b of the content-cliff programme.** This
+phase changes what drops, so unlike Phases 0 and 1 it is expected to move the
+harnesses — these are new baselines, not a reproduction.
+
+| | Before | After |
+| --- | --- | --- |
+| Clauses | 20 (11 endorsements, 9 riders) | **80** (46, 34) |
+| Stat dimensions | 3 | **6** |
+| Last milestone | 66 sessions | 65 sessions |
+| Sessions containing a milestone | 18 of 180 | 18 of 180 |
+| **Clauses seen** | not measured | **68 of 80, last one new at session 171** |
+| `cadence` genuine-empty | 4.3% | **5.4%** |
+
+### The instrument was blind to the thing being measured
+
+Widening the pool by sixty clauses moved every existing figure by **nothing**:
+same 45 milestones, same 18 sessions, endpoint within noise. That is not because
+the work achieved nothing — it is because `longrun`'s `note()` covers permits,
+floors, requisitions, unlocks, staff, commendations and transfers, and has never
+once looked at a clause. The entire crafting system was invisible to the tool
+built to measure content.
+
+`cadence.ts` records having had precisely this hole for case-file openings, and
+the lesson it drew then applies again: under-counting the system being measured
+is how a probe reports a regression that is really its own blind spot.
+
+With clause discovery reported, the picture inverts. The milestone endpoint sits
+at session 65; the **last new clause arrives at session 171**, out of a
+180-session run. The pool is now carrying novelty nearly three times further than
+everything the endpoint metric tracks put together.
+
+It is reported as its own line rather than folded into `milestones`, deliberately.
+A clause is real novelty but it is not the same size of event as a screen
+unlocking, and eighty of them dropped into a list of forty-five would swamp the
+endpoint and make every future phase incomparable to this one.
+
+### The cadence movement is the pool, not the new dimensions
+
+Genuine-empty windows went from 4.3% to 5.4%, and that needed explaining rather
+than waving through. Isolated by clamping `MAX_EXPERTISE`, `MAX_THRIFT` and
+`MAX_RECOVERY` to zero — leaving the new pool in place but neutering the three
+new stats — which measured **5.3%**.
+
+So the three new dimensions account for about 0.1 points and the pool's
+composition for the remaining 1.0. The likely mechanism is that the wider pool
+carries more survival at higher grades (six survival endorsements to the old
+three, topping out at 0.05 rather than 0.03), so recruits die slightly less —
+and a death is a genuine event. Fewer deaths, fewer events, more empty windows.
+
+That is a real if small cost, and it is the direction the ceilings exist to
+police. 5.4% remains well inside the band the per-career spread already showed
+(p90 7%, worst 18%), so it is recorded rather than acted on. If it climbs again
+with the next drop-table change, the survival values are where to look first.

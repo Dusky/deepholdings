@@ -21,6 +21,7 @@
  *   npm run longrun -w @deepholdings/server -- --days 90 --runs 8
  */
 import {
+  ALL_CLAUSES,
   DEFAULT_ORDERS,
   PENSION_DEPTH_FACTOR,
   PENSION_ESTATE_RATE,
@@ -127,11 +128,30 @@ function playOne(seed: number): {
    */
   goldEarned: number;
   deepestFloor: number;
+  clausesSeen: Map<string, number>;
 } {
   const accountId = `long-${seed}`;
   const total = DAYS * 1440;
   const milestones: Milestone[] = [];
   const seen = new Set<string>();
+
+  /*
+   * Clauses this career has laid eyes on, and when.
+   *
+   * Kept apart from `milestones` deliberately. Seeing a clause you have never
+   * seen is real novelty and the pool is where most of the game's authored
+   * content now lives — but a clause is not the same size of event as a screen
+   * unlocking, and folding eighty of them into a list of forty-five would
+   * swamp the endpoint metric and make every future phase incomparable to this
+   * one. Reported as its own line instead.
+   *
+   * This was a blind spot rather than a decision: widening the pool from 20 to
+   * 80 moved the novelty figures by nothing at all, because nothing here was
+   * looking at clauses. `cadence.ts` records having had exactly the same hole
+   * for case files, and under-counting the system being measured is the way a
+   * probe reports a regression that is really its own.
+   */
+  const clausesSeen = new Map<string, number>();
 
   const note = (tick: number, what: string) => {
     if (seen.has(what)) return;
@@ -215,6 +235,11 @@ function playOne(seed: number): {
     character = out.character;
     inventory = out.inventory;
     caseFiles = out.caseFiles;
+    for (const cf of caseFiles) {
+      for (const id of cf.clauseIds) {
+        if (!clausesSeen.has(id)) clausesSeen.set(id, character.lastResolvedTick);
+      }
+    }
     filings = out.filings;
     permitAppliedTick = out.permitAppliedTick;
     tick = character.lastResolvedTick;
@@ -362,6 +387,7 @@ function playOne(seed: number): {
     shortPension,
     goldEarned,
     deepestFloor: deepest,
+    clausesSeen,
   };
 }
 
@@ -424,7 +450,25 @@ console.log(
 );
 console.log(
   `in days, for comparison: median day ${day(medianLast)}  ` +
-    `earliest ${day(Math.min(...lasts))}  latest ${day(Math.max(...lasts))}\n`,
+    `earliest ${day(Math.min(...lasts))}  latest ${day(Math.max(...lasts))}`,
+);
+
+/*
+ * Clause discoveries, reported apart from the milestone endpoint.
+ *
+ * The pool is where most of this game's authored content now lives, and until
+ * this line existed none of it was measured: widening it from 20 clauses to 80
+ * moved every figure above by nothing, because nothing was looking.
+ *
+ * Deliberately not folded into `milestones`. A clause is real novelty but it is
+ * not the same size of event as a screen unlocking, and eighty of them would
+ * swamp a list of forty-five and make this phase incomparable to the next.
+ */
+const clauseCounts = runs.map((r) => r.clausesSeen.size);
+const clauseLast = runs.map((r) => Math.max(0, ...r.clausesSeen.values()));
+console.log(
+  `clauses seen: median ${med(clauseCounts)} of ${ALL_CLAUSES.length}, ` +
+    `the last one new at session ${sessionOf(med(clauseLast))}\n`,
 );
 
 console.log('--- everything that ever happens, first career ---');

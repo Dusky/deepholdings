@@ -469,7 +469,10 @@ export function resolve(options: ResolveOptions): ResolveResult {
 
     // 2. Resting at the surface: recover, resupply per spend policy.
     if (character.depth === 0 && character.hp < character.maxHp) {
-      character.hp = Math.min(character.maxHp, character.hp + Math.round(character.maxHp * 0.04));
+      character.hp = Math.min(
+        character.maxHp,
+        character.hp + Math.round(character.maxHp * 0.04 * (1 + stats.recovery)),
+      );
       if (character.hp >= character.maxHp) {
         log(tick, 'Rested at Depot 3.');
       }
@@ -530,7 +533,15 @@ export function resolve(options: ResolveOptions): ResolveResult {
     }
 
     // 5. Delving: supplies burn, things happen.
-    if (tick % SUPPLY_DRAIN_TICKS === 0) {
+    //
+    // `thrift` stretches the interval rather than skipping drains, so a recruit
+    // carrying it eats less often instead of sometimes eating nothing — the
+    // same total effect with no tick that behaves differently from its
+    // neighbours. Capped in `statsOf` well short of removing the drain, because
+    // starvation is a real cause of death and a stat that quietly deleted one
+    // way to die is exactly what the ceilings exist to stop.
+    const drainTicks = Math.max(1, Math.round(SUPPLY_DRAIN_TICKS / (1 - stats.thrift)));
+    if (tick % drainTicks === 0) {
       character.supplies = Math.max(0, character.supplies - 1);
     }
     if (character.supplies === 0 && rngChance(rng, 0.3)) {
@@ -556,7 +567,9 @@ export function resolve(options: ResolveOptions): ResolveResult {
         site.danger,
       );
       character.hp -= damage;
-      character.xp += Math.round(encounterXp(character.depth) * loot.xp * site.xp);
+      character.xp += Math.round(
+        encounterXp(character.depth) * loot.xp * site.xp * (1 + stats.expertise),
+      );
 
       if (character.hp <= 0) {
         const cause: string =

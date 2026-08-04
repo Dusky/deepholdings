@@ -77,8 +77,22 @@ Grade II · Provenance: Disputed
 | **3-B — Amendment** | Adds a clause to a vacant slot | Gold + Union Standing | ~1 hour |
 | **12-C — Arbitration** ✅ | Rerolls one contested clause | Gold + Union Standing | ~2 hours |
 | **19 — Requisition** ✅ | Merges two items; the survivor inherits one clause, the other is *filed* | Gold, both items | ~4 hours |
-| **N-1 — Notarisation** | Locks a clause so future arbitration cannot alter it | Expensive | ~1 hour |
+| **N-1 — Notarisation** ⛔ | Locks a clause so future arbitration cannot alter it | Expensive | ~1 hour |
 | **44 — Provenance Settlement** | Resolves Disputed → Clear, protecting it from audit, at the cost of one clause | Gold | ~6 hours |
+
+**⛔ N-1 is blocked, and not on effort.** It was picked up first during the
+content-cliff work because it needs no drop-table change and is therefore the
+cheapest form left — and that reasoning was wrong. Nothing in the game can alter
+a clause the officer did not choose: 12-C targets a clause index and *refuses*
+rather than ruling if that clause has moved, and Form 19 places into a slot the
+officer picks. A lock protects against an event that cannot happen, so shipping
+it would add a form whose correct usage is never.
+
+It becomes worth building the moment an **untargeted** alteration exists — a
+whole-file reroll of the kind `docs/research/progression-depth.md` describes in
+Idle Hacking, where Reroll gambles across the item and Lock Affix is what makes
+that gamble survivable. That is a design decision, not a scheduling one, and it
+is open. Until it is taken, N-1 has no job.
 
 Arbitration can fail: **"Case dismissed. Fee retained."** The fee is spent, the
 clause is unchanged. This is the risk that makes a good roll feel earned, and

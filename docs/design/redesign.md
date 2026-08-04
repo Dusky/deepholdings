@@ -7,6 +7,14 @@
 > **the player is the handler, not the adventurer.** Everything else — the 1983
 > terminal, the Authority, forms, permits, grades, pensions — is available to
 > cut, and most of it is cut here.
+>
+> **Revised after research.** [`../research/reference-class.md`](../research/reference-class.md)
+> examined the games this design is actually adjacent to — Lifeline, Sunless
+> Sea, Darkest Dungeon, Loop Hero, Majesty, Fallen London — none of which the
+> earlier research had looked at. Five amendments are folded in below and marked
+> **[R]**. One of them reverses a decision (death is now a choice), and one
+> answers an objection this document had not anticipated (Loop Hero's, in §4.7).
+> That note also raises a business-model question this document cannot settle.
 
 ## 1. The diagnosis
 
@@ -244,18 +252,37 @@ worried about: facts are cheap to write, combine with each other, and a player
 who has read them all has *actually learned something*, which is the one form of
 progression a competitor cannot grant with a bigger number.
 
-### 4.5 Death
+### 4.5 Death is a choice — **[R]**
 
 Harsh again, and finally meaningful.
 
 Death costs you the **relationship and the skills** — the nerve, the trust, the
 traits you had learned to work with, the fact that she could talk to the choir.
-It does not cost you the casebook, because that is yours.
 
-So a new recruit arrives knowing nothing while you know everything, and the
-opening of a new career is you teaching them what you know. It is fast, because
-you can hand them the book. It is different, because they are a different
-person and your doctrines land differently on them.
+The first draft of this document then had the casebook survive automatically,
+because it is *yours* rather than theirs. Research says that is the weaker
+design. Sunless Sea shipped this exact mechanic a decade ago and made it a
+**decision**: when a captain dies you choose what relationship the next one had
+to them, and therefore what they inherit — the Correspondent legacy hands over
+"the entirety of their discovered chart", which is precisely our casebook.
+
+So: at a death you choose who the next adventurer is to the last one.
+
+| Legacy | They inherit |
+| --- | --- |
+| **Correspondent** | the casebook — everything you had written down |
+| **Pupil** | their skills and something of their temperament, but not the book |
+| **Creditor** | the money, and the debts |
+| **Rival** | the grudge, and one thing the dead one had been hiding from you |
+
+Giving up the casebook has to be genuinely tempting, or this is a menu with one
+real item. That is a tuning problem, and it is a much better one to have than an
+automatic transfer that turns death into something that merely happens to you.
+
+A new adventurer then arrives knowing whatever you chose to give them while you
+know everything, and the opening of a career is you teaching them the rest. It
+is fast, because you can hand them the book. It is different, because they are a
+different person and your doctrines land differently on them.
 
 **Delete the pension entirely.** Delete the unlock tree. The prestige currency
 existed to move value across the death line; the casebook already crosses it,
@@ -271,6 +298,67 @@ you cannot send anyone down until what came back is sold.
 That gives failure a texture — a bad month is a real setback you can feel —
 without a currency treadmill, and it keeps law 1 intact: no amount of money
 buys a fact or buys trust.
+
+### 4.7 Why caution does not win — **[R]**
+
+The strongest objection to this whole design comes from Loop Hero, which shares
+its premise — you shape a run you do not directly control — and drew this
+critique:
+
+> Because you have no direct control over your character, you always want to
+> play it safe, which reduces both the number of viable ways to play and which
+> cards you take.
+
+That is the failure mode. If a player cannot rescue a situation once it turns,
+the rational response is to never let it turn, and a game about judgment
+collapses into a game about caution. **We have already lived this**: the retreat
+slider swept as one setting from 35 to 80 because safety was free.
+
+Two mechanisms, and the design is not finished without both.
+
+- **The casebook only fills in where you do not already know.** Safe work in
+  charted ground earns money, and money is a constraint rather than a score.
+  A cautious officer therefore stops progressing on the only axis that
+  compounds — and can watch it not happening, which is the part that makes it a
+  decision rather than a punishment.
+- **One intervention per shift.** A recall, or a message that reaches them out
+  of band, at real cost. Its purpose is not rescue; it is *permission*. A player
+  who holds a rescue is a player who will risk something, and choosing when to
+  spend it is itself the decision the retreat slider never was.
+
+### 4.8 The check-in, concretely — **[R]**
+
+Two independent sources land on the same cadence. Kittens Game asks for a
+meaningful decision roughly **once an hour** and is credited with depth for it
+rather than slowness. Lifeline wrote its waits to match how long the activity
+would plausibly take — an hour early on to set expectations, shorter later to
+signal urgency.
+
+So: the tick stays a minute internally, situations accumulate into **shifts of
+about an hour**, and two or three check-ins a day is a complete experience
+rather than a compromise. Waits are written to fit what is being done, which
+makes the pacing diegetic instead of a schedule.
+
+**And the ruling must be answerable from the notification itself.** Not a
+notification that opens the app — the decision, in the banner, answered from the
+lock screen. Lifeline built its entire game on that and reported 81% day-one
+retention. It is the highest-leverage retention feature available to us and it
+constrains the content format — two or three options, short enough to read in a
+banner — so it belongs here rather than in a mobile milestone.
+
+### 4.9 Situations are data, not code — **[R]**
+
+Fallen London's Quality-Based Narrative is the proven architecture for exactly
+this shape: the world is a bag of **storylets**, each gated on requirements over
+player **qualities**, and the game offers what you currently qualify for.
+
+Casebook facts are qualities. Traits are qualities. Doctrines are qualities.
+Region state is qualities.
+
+The consequence worth stating: **content ships without a deploy**, and a
+situation's requirements are inspectable, which is what makes the divergence
+test in §6 measurable rather than anecdotal. Build the engine — StoryNexus, the
+platform Failbetter opened for this, shut down in January 2026.
 
 ---
 
@@ -350,15 +438,29 @@ this game does not care about.
   have rebuilt a dial with prose on it. The defences are non-commensurable
   outcomes and imperfect information, and both need enforcing per situation,
   which is what decision weight measures.
-- **A different retention hook.** The pull becomes narrative curiosity rather
-  than number-go-up. That is a less reliable hook on mobile and we should not
-  pretend otherwise. The compensating gain is that push notifications finally
-  have something worth saying: *she is waiting at the sealed door for your
-  answer* is a better notification than any number this game could send.
-- **Monetisation changes shape.** "Convenience and cosmetics, time skips capped
-  and free" was settled for a game where time is the resource. Here a time skip
-  skips *content*, which is the product. What sells is more dungeon. That
-  settled decision should be reopened, not inherited.
+- **A different retention hook** — *partly retired by research.* **[R]** The
+  pull becomes narrative curiosity rather than number-go-up, and this document
+  originally called that unproven on mobile. It is not: Lifeline is this exact
+  loop — decisions delivered and answered as push notifications, real waiting in
+  between — and it briefly displaced Minecraft as the #1 *paid* game on iOS with
+  a reported 81% day-one retention and 7M series installs. The hook works. What
+  remains unproven is that it works **in the store category and business model
+  we were planning for**, which is the next risk and a bigger one.
+- **We may be changing product category, not just design.** **[R]** The
+  incremental sample (CIFI, ISEPS, Tap Titans 2, Melvor) is F2P, ad-and-IAP
+  funded, and sells volume of numbers. The narrative sample (Lifeline, Bury Me
+  My Love, Sunless Sea) is premium or narrative-DLC and sells a story you are
+  inside of. Both contain real successes at our scale; we cannot be in both.
+  The roadmap's settled monetisation decision — *convenience and cosmetics, time
+  skips capped and free* — was written for the first column, and in the second
+  a time skip sells the player a way to skip the product. **Owner decision, not
+  a research finding.** See `research/reference-class.md` §3.
+- **The single adventurer may be too fragile.** **[R]** Darkest Dungeon's
+  guidance is a roster of 20+ so no death cripples the campaign, and Sunless Sea
+  had to *add* the Legacy system because single-captain death read as too
+  punishing. This design's shock absorber is the casebook alone. That is a
+  thinner cushion than either precedent, and it should be tested in Stage 0
+  rather than assumed.
 
 ---
 
@@ -370,6 +472,9 @@ Staged so the thesis is falsifiable before it is expensive.
   one adventurer with traits. No UI, no persistence beyond the harness. Run the
   divergence test. **If two different players converge, stop here** — the idea is
   wrong and we have spent a week rather than a quarter.
+  Two questions ride along, both cheap once the harness exists: does a cautious
+  player actually fall behind (§4.7), and is one adventurer enough of a shock
+  absorber or do we need a roster.
 - **Stage 1 — the spine.** Dispatch, rulings, doctrine, live vs standing
   situations, on the existing resolution architecture. One region. No economy,
   no death.
@@ -384,16 +489,25 @@ Staged so the thesis is falsifiable before it is expensive.
 
 ## 9. Open questions for the owner
 
-1. **How long is a shift?** The current tick is one minute and a check-in shows
-   a wall of lines. Situations want something coarser — a shift measured in
-   hours, two or three check-ins a day. This changes the tick constant and
-   nothing structural, but it should be a decision rather than an inheritance.
+1. ~~**How long is a shift?**~~ **Answered by research** — about an hour, with
+   waits written to match what is being done. See §4.8.
 2. **One adventurer or several?** The roadmap's "concurrent postings" idea was
    the right instinct — allocation across several people is a decision shape
    that cannot be collapsed into a multiplier. It is also a large addition. This
-   document assumes **one** through Stage 4, and treats several as the natural
-   expansion once the single-handler loop is proven.
-3. **What replaces the 1983 desk?** Not specified here on purpose — art
+   document assumes **one** through Stage 4 — but research now argues against
+   that assumption from two directions (Darkest Dungeon's roster, Sunless Sea's
+   legacy), so Stage 0 should answer it rather than Stage 5. **[R]**
+3. **Which column are we in?** Premium narrative or F2P incremental. It
+   determines the monetisation model, the store category, and how much writing
+   we are signing up for. Research can only say both are winnable and we cannot
+   be both. **[R]**
+4. **Is doctrine the right verb, or is it bounties?** Majesty controls
+   autonomous heroes with *incentives* rather than instructions — flags with
+   money attached, which heroes take or ignore according to their own
+   personalities. Doctrine is instructions. A bounty layer ("what this is worth
+   to me") may be the better fit for someone who does not have to obey, and it
+   is a small enough addition to prototype in Stage 2. **[R]**
+5. **What replaces the 1983 desk?** Not specified here on purpose — art
    direction should not be settled in a systems document. The requirement it has
    to meet: reading must be the primary pleasure, and the screen should look
    like documents from a place. The desk itself was the good part of the old

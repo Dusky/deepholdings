@@ -221,16 +221,31 @@ for (const adapter of adapters) {
       const startTier = start.character.permitTier;
 
       // A week, claiming pensions the way the overlay would.
+      //
+      // The per-day trace exists because this test failed in CI for days while
+      // passing everywhere else, and "earned no pension at all" does not say
+      // whether the recruit died and paid nothing, never descended, or never
+      // got simulated. A property assertion that cannot say which property
+      // broke costs more to debug than it saves.
       let banked = 0;
+      let deaths = 0;
+      const trace: string[] = [];
       for (let day = 0; day < 7; day += 1) {
         await solo.inject({
           method: 'POST', url: '/v1/dev/advance', headers, payload: { hours: 24 },
         });
         const now = await read();
         if (now.pendingDeath) {
+          deaths += 1;
           banked += now.pendingDeath.pensionAwarded;
           await solo.inject({ method: 'POST', url: '/v1/pension/claim', headers });
         }
+        trace.push(
+          `d${day}: depth ${now.character.depth} grade ${now.character.level} ` +
+            `hp ${now.character.hp}/${now.character.maxHp} supplies ${now.character.supplies} ` +
+            `gold ${now.character.gold} permit D-${now.character.permitTier} ` +
+            `tick ${now.character.lastResolvedTick}${now.pendingDeath ? ' DIED' : ''}`,
+        );
       }
 
       const end = await read();
@@ -249,7 +264,10 @@ for (const adapter of adapters) {
       // The flake was the endpoint, and the right response to a test that
       // fails an eighth of the time is to find out why, not to weaken it.
       const pension = banked + (await fresh.getPension(start.account.id)).total;
-      assert.ok(pension > 0, 'a week on default orders earned no pension at all');
+      assert.ok(
+        pension > 0,
+        `a week on default orders earned no pension at all — ${deaths} deaths over\n${trace.join('\n')}`,
+      );
 
       // Not asserted here: a service review. It is measured from bornTick, so
       // it needs a recruit who serves twelve unbroken hours, and at the

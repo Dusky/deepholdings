@@ -888,6 +888,13 @@
           and also <em class="term">feeds itself</em>. That self-feeding term is what
           makes a ladder accelerate rather than merely stack, and it is what a flat
           "prestige 2 grants +200%" never has.</p>
+          <p><strong>And it does not top out.</strong> The last rung's mechanic is
+          allocation across offices, each of which runs the whole ladder below — the
+          structure recurses, and a recursive structure has no ceiling. Six rungs are
+          authored and distinct; past them it repeats at a higher order with generated
+          parameters. <em>Infinite games cannot be authored — only generated</em>, which
+          is why the no-artist constraint (§08) turned out to be the most load-bearing
+          decision here.</p>
           <p>And each rung <strong>zooms out</strong>. One shaft, then a career, then a
           district, a world, a system — and finally a star, enclosed shell by shell.
           Universal Paperclips starts on a clicker and ends disassembling the universe;
@@ -1324,11 +1331,22 @@
       </div>
       <div class="lock">
         <span class="q">Where the ladder stops</span>
-        <span class="a">Six rungs designed, five to build</span>
-        <span class="why">Enclosure is the designed terminal and the seventh rung is
-        deliberately unbuilt. A rung that cannot buy a different <em>kind</em> of thing
-        than the rung below it is not a rung — that test decides whether there is ever
-        a seventh.</span>
+        <span class="a">It doesn't — that's the point</span>
+        <span class="why">Six rungs are authored and genuinely distinct; the seventh
+        recurses, and a recursive structure has no top. What keeps that honest is that
+        every cycle is generated rather than replayed. <strong>No enumerated catalogue
+        may exist anywhere</strong> — if a system is an array of hand-written entries,
+        it terminates, and most of ours currently are.</span>
+      </div>
+      <div class="lock open">
+        <span class="q">Decide before Stage 0</span>
+        <span class="a">The number type</span>
+        <span class="why">JavaScript doubles overflow past 1.8e308 and an infinite
+        incremental goes there — it is why Antimatter Dimensions' author wrote
+        break_infinity.js. Every currency becomes a Decimal, Postgres columns become
+        text, and the deterministic resolver must stay deterministic through it.
+        <strong>Retrofitting this is the migration that kills the project.</strong>
+        The Stage 0 harness should be Decimal from its first line.</span>
       </div>
       <div class="lock">
         <span class="q">How the art gets made</span>
@@ -1579,8 +1597,8 @@
       because: 'every rock in the system, quarried for collectors, is still a rounding error against what the deep draw needs', c: 'var(--gold)' },
     { m: 'PLACEMENT — you build it shell by shell',          f: 'consumes everything below it',   s: 'A STAR',
       because: 'a star’s entire output is finite, and the dig has not stopped', c: 'var(--blue)' },
-    { m: 'ALLOCATION across offices — the ladder eats its tail', f: 'every office runs the whole ladder below', s: 'MANY STARS',
-      because: null, c: 'var(--oxide)' }
+    { m: 'ALLOCATION across offices — and the ladder recurses', f: 'every office runs the whole ladder below', s: 'MANY STARS',
+      because: 'nothing above this is authored — the structure repeats at a higher order, with generated parameters. That is the engine, not an ending.', c: 'var(--oxide)' }
   ];
 
   const COSTUME = {
@@ -1593,7 +1611,7 @@
         { n: 'COMMISSION',   p: 'weeks',   cur: 'Clauses',   r: 'you are granted a bureau of your own' },
         { n: 'STATUTE',      p: 'months',  cur: 'Precedent', r: 'you write what every office files under' },
         { n: 'ENCLOSURE',    p: 'the long run', cur: 'Title', r: 'the star is fenced, shell by shell' },
-        { n: 'THE AUTHORITY',p: 'not built yet', cur: 'Mandate', r: 'you become the thing that was sending you memos' }
+        { n: 'THE AUTHORITY',p: 'the loop point', cur: 'Mandate', r: 'you become the thing that was sending you memos' }
       ],
       note: 'every rung is a promotion away from the job you had just got good at'
     },
@@ -1606,7 +1624,7 @@
         { n: 'CHARTER',     p: 'weeks',   cur: 'Seals',     r: 'a new concession, rolled from a seed' },
         { n: 'SURVEY',      p: 'months',  cur: 'Bearings',  r: 'you map the whole deep' },
         { n: 'THE SPHERE',  p: 'the long run', cur: 'Yield', r: 'the star becomes the power station for the hole' },
-        { n: 'THE COMPANY', p: 'not built yet', cur: 'Shares', r: 'you charter the companies that do this' }
+        { n: 'THE COMPANY', p: 'the loop point', cur: 'Shares', r: 'you charter the companies that do this' }
       ],
       note: 'every rung resets everything above it, and buys what nothing above it could'
     }

@@ -480,6 +480,93 @@ competitors lose most churned players, and the theme historically invited more
 *vocabulary* rather than more *systems*. The condition above exists to answer
 exactly that last failure.
 
+### 3.6c Infinite — and what that actually requires
+
+The target is not an 8–10 hour game with a good centrepiece. That is Gnorp, and
+Gnorp's own criticism is the endgame. **The target is an incremental that does
+not end.** That is a stronger claim than "long", and it has four requirements,
+one of which is urgent.
+
+#### 1. No enumerated catalogue may exist anywhere — *the design rule*
+
+The current game terminates by construction. `MAX_DEPTH` is 12. Permits stop at
+D-8. There are exactly 19 unlocks, 7 requisitions, 3 tiers of everything. Every
+one of those is a **list**, and a list ends.
+
+An infinite game replaces every list with a **function of the tier**. Depth is
+`f(n)` with no cap. Grid rows generate tier *n* from a formula. Clause rolls are
+generated, not drawn from a fixed pool of eighty. The catalogue is a generator.
+
+This is a hard rule and it is checkable: **if a system is stored as an array of
+hand-written entries, it terminates.** Most of ours are.
+
+#### 2. The ladder must loop, not top out — *the structural engine*
+
+§3.6's seventh rung is *allocation across offices, where every office runs the
+whole ladder below it*. That is not a joke ending, it is **the infinity
+mechanism**: the structure recurses, and a recursive structure has no top.
+
+The honest version of the deal, which should be stated plainly rather than
+oversold:
+
+- The first six rungs are **authored and genuinely distinct** — six different
+  machines, hundreds of hours.
+- Beyond that the structure **repeats at a higher order**, with procedurally
+  varied parameters.
+
+Naive recursion is "the same game with bigger numbers", which violates §3.6's
+own rule. What keeps it honest is requirement 3.
+
+#### 3. Procedural variety is the content engine
+
+Every cycle must differ, and §3.7 already gives us the means: orbs are seeds,
+topologies are seeds, clause rolls are generated, worshipper restrictions are
+generated. A new holding costs no asset and no writer.
+
+**This is the reason the generated-art constraint turned out to be the most
+important decision in this document.** An infinite game cannot be authored. It
+can only be generated, and we already committed to generating everything.
+
+#### 4. The number type — *decide this before Stage 0*
+
+**JavaScript numbers cannot do this.** A double overflows to `Infinity` a little
+past **1.8 × 10³⁰⁸**, and an infinite incremental passes that. This is not
+theoretical: it is exactly why Antimatter Dimensions' author wrote
+`break_infinity.js`, a mantissa-and-exponent Decimal built for this genre and
+optimised for speed over arbitrary precision.
+
+The consequences reach further here than in a browser-only game, because we are
+server-authoritative:
+
+- **Every currency, yield and cap** becomes a Decimal rather than a `number`.
+- **Postgres columns** become text or numeric, not `bigint`. Arithmetic moves
+  out of SQL and into the resolver.
+- **The deterministic resolver must stay deterministic.** `tickSeed` is fine —
+  it produces the roll — but every accumulation must be Decimal, or two replays
+  of the same span diverge at the edges. The whole test suite asserts on
+  replayed journals, so this is load-bearing.
+- **The client formats, never computes.** It already has that rule for a
+  different reason.
+
+**Retrofitting this is the migration that kills the project.** It touches every
+number, every column, every test, and the one part of the architecture that is
+genuinely excellent. It costs little now and enormously later, so it belongs in
+Stage 0 — the headless harness should be Decimal from its first line, which also
+tests the decision immediately.
+
+#### What "infinite" does not mean
+
+It does not mean endless grind, which is the failure mode the genre is full of
+and the one Gnorp is criticised for. Infinite structure is worthless if the rate
+of *novelty* goes to zero — a player who has seen everything is finished whether
+or not the numbers continue.
+
+So the measurement in §6 changes with it. `longrun`'s question is no longer "when
+does the last new thing happen" but **"does the interval between new things stay
+bounded"**. A game where novelty arrives every session at hour 10 and every
+session at hour 500 is infinite. One where the gap doubles is a treadmill with
+good marketing, and our own harness will say which we built.
+
 ## 3.7 All art is generated — a constraint, and an advantage
 
 There is no artist on this project, so nothing in the game may depend on a

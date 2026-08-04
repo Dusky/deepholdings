@@ -7,6 +7,12 @@
 > **No number here is tuned.** Every figure is a placeholder with a shape — the
 > harness (`simulate`, `longrun`) owns them, and this project has been burned
 > before by numbers that were guesses wearing a confident face.
+>
+> **And nothing here is a fixed list.** The target is an *infinite* incremental
+> (§3.6c), so every table below is the authored bottom of a generator rather than
+> a catalogue. Six posts at rung one; post *n* is a formula. Three material grades
+> here; grade *n* is a formula. A system stored as an array of hand-written entries
+> terminates — which is precisely how the current game ends on day 39.
 
 ## The loop, before any upgrades
 

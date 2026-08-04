@@ -189,7 +189,7 @@ The test, borrowed from the project's own `tuning.ts` comment about permit D-5 �
 the player did the work of noticing it"* — becomes a rule: **if a rung cannot be
 described without the words "faster", "more" or "cheaper", it is not a rung.**
 
-### 3.5 Mastery, not a casebook
+### 3.5 Familiarity — mastery in the register
 
 The first draft's best idea was that knowledge should be the meta-progression.
 The genre already has that idea and it is a number: **Melvor's Mastery.** Every
@@ -455,8 +455,10 @@ Capacitor wrapper.
 | Permits / grade as depth gates | cut — eight rungs saying the same sentence |
 | Death as the prestige trigger | cut; R-1 promoted (§3.3) |
 | `resolve.ts` rules | rebuilt for a roster; structure kept |
-| Case files, clauses, commendations, licences, filings, clearance | cut or folded into mastery and the lattice |
-| The bureaucratic frame and the 1983 terminal | re-skinned — the owner's call, and orthogonal to everything above |
+| Case files, licences, filings, clearances | cut, or folded into Familiarity and the lattice |
+| **Clauses, endorsements, riders** | **kept and promoted** — eighty across six dimensions with Form 12-C to reroll one. That is the Commission rung (§3.6), already built. |
+| Vocabulary that names no mechanic | cut — the §3.4 test, aimed at the writing |
+| The 1983 terminal | re-skinned. The *frame* is recommended to stay (§3.6b) |
 
 Rough scale: **4–6k lines**, against the 12–14k the first draft proposed. The
 difference is entirely because the previous draft was leaving the genre.

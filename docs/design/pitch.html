@@ -282,7 +282,7 @@
 
   /* ---------- horizon ---------- */
   .horizon { display: grid; grid-template-columns: 1fr; gap: 1.3rem; }
-  @media (min-width: 900px) { .horizon { grid-template-columns: repeat(3, 1fr); } }
+  @media (min-width: 760px) { .horizon { grid-template-columns: repeat(auto-fit, minmax(15.5rem, 1fr)); } }
   .card {
     background: var(--paper-2); border: 1px solid var(--rule-soft); border-radius: 2px;
     box-shadow: var(--shadow); display: flex; flex-direction: column;
@@ -295,7 +295,7 @@
   }
   .card .cap .when { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
   .card .cap .scale { font-family: var(--mono); font-size: .68rem; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-  .card .inner { padding: 1.15rem; display: flex; flex-direction: column; gap: .85rem; }
+  .card .inner { padding: 1.15rem; display: flex; flex-direction: column; gap: .85rem; flex: 1; }
   .card h3 { font-size: 1.06rem; }
   .card p { font-size: .92rem; color: var(--ink-2); }
   .card .readout {
@@ -307,7 +307,7 @@
   .card .readout .lbl { color: var(--ink-3); }
   .card .ask {
     font-size: .9rem; color: var(--ink); border-top: 1px dashed var(--rule);
-    padding-top: .8rem;
+    padding-top: .8rem; margin-top: auto;
   }
   .card .ask b { color: var(--gold); font-weight: 600; }
 
@@ -488,7 +488,7 @@
 
       <div class="panel next">
         <h3><span class="tag">Next</span> A lattice</h3>
-        <svg viewBox="0 0 420 250" role="img" aria-label="Diagram: a roster of delvers feeds three seams, which feed raw material into refining and then equipment, which feeds back into deeper delving.">
+        <svg viewBox="0 0 420 250" role="img" aria-label="Diagram: a roster of recruits feeds three seams, which feed raw material into refining and then equipment, which feeds back into deeper delving.">
           <defs>
             <marker id="abl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" fill="var(--blue)"/>
@@ -750,9 +750,9 @@
           <h3>A roster, not a recruit</h3>
         </div>
         <div class="body">
-          <p>Several delvers working in parallel, each with their own aptitudes,
-          each assigned to a seam and a depth. This is the single change that
-          creates decisions without needing a writer — and roster size and delver
+          <p>Several recruits working in parallel, each with their own aptitudes,
+          each assigned to a working and a depth. This is the single change that
+          creates decisions without needing a writer — and roster size and recruit
           quality are both numbers to buy.</p>
           <p class="src">Darkest Dungeon keeps a roster of 20+ so no death cripples the
           campaign. Majesty directs autonomous heroes with bounties rather than orders.
@@ -782,9 +782,10 @@
           <h3>Prestige becomes the loop, and you time it</h3>
         </div>
         <div class="body">
-          <p>Form R-1 promoted from a form to <strong>the</strong> progression path.
-          Death becomes a failure mode of pushing too hard, not the payout mechanism —
-          so depth is a real risk instead of the only route forward.</p>
+          <p>Form R-1 promoted from a form to <strong>the</strong> progression path —
+          this is <em class="term">Discharge</em>, rung one. Death becomes a failure mode
+          of pushing too hard, not the payout mechanism, so depth is a real risk instead
+          of the only route forward.</p>
           <p>And <strong>you choose what carries over.</strong> Sunless Sea offers five
           inheritances at a captain's death; the Correspondent hands over the entire
           discovered chart. That is a prestige <em>decision</em> rather than a payout,
@@ -804,7 +805,7 @@
         <div class="body">
           <p>Retire the nineteen rate multipliers, or demote them to a cheap
           background tier bought without thinking. Meta-currency should buy
-          <em class="term">new systems</em>: a second delver slot, a new chain, a seam
+          <em class="term">new systems</em>: a second recruit slot, a new chain, a working
           with its own rules, a piece of automation, a challenge that replays content
           you've beaten with one rule changed.</p>
           <p class="src">The test, borrowed from our own tuning comment about the permit
@@ -816,13 +817,14 @@
       <div class="change">
         <div class="lhs">
           <span class="num">CHANGE 05</span>
-          <h3>Mastery, in the genre's own idiom</h3>
+          <h3>Familiarity — mastery in the register</h3>
         </div>
         <div class="body">
-          <p>Knowledge should be what survives a delver — and the genre already has
+          <p>Knowledge should be what survives a recruit — and the genre already has
           that idea as a number. Melvor's Mastery accrues per activity with use, plus
           a pool that accelerates the rest, with thresholds that unlock capability.</p>
-          <p>So: per-seam mastery that accrues with use, survives the roster, and
+          <p>So: <strong>Familiarity</strong>, accrued per working, held by the
+          <em>office</em> rather than the recruit. It survives every discharge, and it
           unlocks options at thresholds rather than only rates. Number-go-up,
           genre-native, and it does the job the pension was failing to do.</p>
           <p class="src">Melvor rebuilt Mastery entirely after launch because the first
@@ -905,8 +907,8 @@
         player chose; each dip returns higher than it fell.</p>
         <ul class="legend">
           <li><span class="swatch" style="background:var(--gold)"></span>Output per hour (log scale)</li>
-          <li><span class="swatch" style="background:var(--blue)"></span>Closure — the holding is worked out</li>
-          <li><span class="swatch" style="background:var(--oxide)"></span>Charter</li>
+          <li><span class="swatch" style="background:var(--blue)"></span>Reassignment — the posting is worked out</li>
+          <li><span class="swatch" style="background:var(--oxide)"></span>Commission</li>
         </ul>
         <svg id="ladderchart" viewBox="0 0 760 280" role="img"
              aria-label="A projected log-scale curve of output per hour over ninety days, rising in a sawtooth. Each closure drops output sharply and then it recovers past its previous peak; two charters drop it further and recover higher still.">
@@ -915,9 +917,9 @@
       <figcaption>
         <b style="color:var(--oxide)">This figure is a projection, not a measurement</b> —
         it is the shape the design is aiming at, and the thing <span class="mono">longrun</span>
-        should be pointed at the moment Closure exists. Every other figure on this
-        sheet is measured. The question stops being “is one holding fun” and becomes
-        <b>“does output rise across holdings”</b>.
+        should be pointed at the moment Reassignment exists. Every other figure on this
+        sheet is measured. The question stops being “is one posting fun” and becomes
+        <b>“does output rise across postings”</b>.
       </figcaption>
     </figure>
 
@@ -1008,63 +1010,81 @@
     <div class="sec-head">
       <div class="plate">05</div>
       <div class="titles">
-        <h2>What it feels like, at three depths</h2>
+        <h2>Four postings, one career</h2>
         <div class="prose">
-          <p>The north star. If the game at day 30 doesn't look meaningfully unlike
-          the game at day 1 — different screens, different questions, a different
-          bottleneck — the redesign hasn't landed.</p>
+          <p>The north star, in the Authority's own words. If the game at week one
+          does not look meaningfully unlike hour one — different screens, different
+          questions, a different binding constraint — the redesign has not landed.</p>
         </div>
       </div>
     </div>
 
     <div class="horizon">
       <div class="card">
-        <div class="cap"><span class="when">Day 1</span><span class="scale">10³</span></div>
+        <div class="cap"><span class="when">Hour one</span><span class="scale">10³</span></div>
         <div class="inner">
-          <h3>One delver, one seam</h3>
-          <p>You hire someone, point them at the shallow workings, and close the app.
-          Twenty minutes later your phone says they've hit a seam of something you
-          don't have a name for yet.</p>
+          <h3>One recruit, one working</h3>
+          <p>You file a duty roster, point somebody at the shallow workings and close
+          the app. Twenty minutes later your phone says they have opened a seam of
+          something the schedule has no code for.</p>
           <div class="readout">
-            <span class="lbl">roster</span> <span class="n">1</span> / 1<br>
-            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">4,120</span><br>
-            <span class="lbl">seams&nbsp;</span> <span class="n">1</span> known
+            <span class="lbl">roster&nbsp;&nbsp;</span> <span class="n">1</span> / 1<br>
+            <span class="lbl">purse&nbsp;&nbsp;&nbsp;</span> <span class="n">4,120</span><br>
+            <span class="lbl">bound&nbsp;&nbsp;&nbsp;</span> <span class="n">one pair of hands</span>
           </div>
-          <p class="ask"><b>The question:</b> push deeper, or bank and hire a second?</p>
+          <p class="ask"><b>The question:</b> work them deeper, or discharge and spend
+          the Service?</p>
         </div>
       </div>
 
       <div class="card">
-        <div class="cap"><span class="when">Day 30</span><span class="scale">10⁷</span></div>
+        <div class="cap"><span class="when">Week one</span><span class="scale">10⁷</span></div>
         <div class="inner">
-          <h3>Three seams, and a refinery that can't keep up</h3>
-          <p>Six delvers. Two chains running. Your refinery is capped and half your
-          raw output is spoiling in the yard — so the interesting question stopped
-          being "how deep" a week ago.</p>
+          <h3>Your third posting</h3>
+          <p>Six recruits, two chains. Your refinery is capped and half the raw output
+          is spoiling in the yard, so "how deep" stopped being the interesting question
+          days ago. The district is nearly worked out and you can see it in the yields.</p>
           <div class="readout">
-            <span class="lbl">roster</span> <span class="n">6</span> / 8<br>
-            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">12.4M</span><br>
-            <span class="lbl">bound&nbsp;</span> <span class="n">refining cap</span>
+            <span class="lbl">roster&nbsp;&nbsp;</span> <span class="n">6</span> / 8<br>
+            <span class="lbl">purse&nbsp;&nbsp;&nbsp;</span> <span class="n">12.4M</span><br>
+            <span class="lbl">bound&nbsp;&nbsp;&nbsp;</span> <span class="n">refining cap</span>
           </div>
-          <p class="ask"><b>The question:</b> starve a seam to fund storage, or retire
-          your best delver now and take the chart?</p>
+          <p class="ask"><b>The question:</b> starve a working to fund storage, or file
+          for reassignment now and take the Seniority?</p>
         </div>
       </div>
 
       <div class="card">
-        <div class="cap"><span class="when">Day 90</span><span class="scale">10¹²</span></div>
+        <div class="cap"><span class="when">Month three</span><span class="scale">10¹²</span></div>
         <div class="inner">
-          <h3>You are running a department</h3>
-          <p>Hiring is automatic under a policy you set. Selling is automatic under a
-          floor price you set. Four chains, two of which didn't exist on day 30, and
-          a challenge running that has taken your equipment away on purpose.</p>
+          <h3>You write what other offices file under</h3>
+          <p>Hiring runs under a policy you set. Selling runs under a floor price you
+          set. Four chains, two of which did not exist last month, and a commission
+          whose clauses have taken your equipment away on purpose.</p>
           <div class="readout">
-            <span class="lbl">roster</span> <span class="n">19</span> / 24<br>
-            <span class="lbl">gold&nbsp;&nbsp;</span> <span class="n">4.71e12</span><br>
-            <span class="lbl">bound&nbsp;</span> <span class="n">deep-seam mastery</span>
+            <span class="lbl">offices&nbsp;</span> <span class="n">5</span> reporting<br>
+            <span class="lbl">purse&nbsp;&nbsp;&nbsp;</span> <span class="n">4.71e12</span><br>
+            <span class="lbl">bound&nbsp;&nbsp;&nbsp;</span> <span class="n">planetary power</span>
           </div>
           <p class="ask"><b>The question:</b> which of four chains do you let run dry
           to finish the fifth?</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cap"><span class="when">The long run</span><span class="scale">10³⁰</span></div>
+        <div class="inner">
+          <h3>The Enclosure</h3>
+          <p>The dig never stopped. It simply needs more power than a world can make,
+          so the Authority has fenced a star and is titling its surface shell by shell.
+          The forms are unchanged. The boot allowance schedule is unchanged.</p>
+          <div class="readout">
+            <span class="lbl">shells&nbsp;&nbsp;</span> <span class="n">3</span> / 12 sited<br>
+            <span class="lbl">titled&nbsp;&nbsp;</span> <span class="n">35%</span> of surface<br>
+            <span class="lbl">bound&nbsp;&nbsp;&nbsp;</span> <span class="n">one star is finite</span>
+          </div>
+          <p class="ask"><b>The question:</b> the same one as hour one, six orders of
+          magnitude up — <b>who works where?</b></p>
         </div>
       </div>
     </div>
@@ -1077,9 +1097,10 @@
       <div class="titles">
         <h2>This is a spine transplant, not a rewrite</h2>
         <div class="prose">
-          <p>An earlier draft of this proposal deleted 12–14k lines. It was pointed at
-          the wrong genre, and it was about to throw away the two most
-          genre-correct systems in the codebase. <strong>Roughly 4–6k lines change.</strong></p>
+          <p>An earlier draft deleted 12–14k lines, pointed at the wrong genre, and was
+          about to throw away the three most genre-correct things in the codebase — the
+          automation ladder, the challenge catalogue, and the clause system that turns
+          out to be an entire prestige rung. <strong>Roughly 4–6k lines change.</strong></p>
         </div>
       </div>
     </div>
@@ -1093,6 +1114,7 @@
           <li><b>The simulation harness.</b> <span class="mono">simulate</span>, <span class="mono">longrun</span>, <span class="mono">forecast</span> — the most valuable asset here. It needs new questions, not new code.</li>
           <li><b>staff.ts</b> — an automation ladder where every hire takes a standing instruction rather than a toggle. "Automation that removes the decision removes the game." Exactly right.</li>
           <li><b>assignments.ts</b> — Antimatter Dimensions-style challenges. Best content-per-authored-line mechanic in the genre.</li>
+          <li><b>Clauses, endorsements and riders.</b> Eighty across six dimensions, with Form 12-C to reroll one and Form 19 to move one. <b>That is the Commission rung's glyph system, already built</b> — the hardest rung on the ladder, and the previous draft was deleting it.</li>
           <li>Storage ports, migrations, auth, rate limiting, idempotency, health. All of it.</li>
         </ul>
       </div>
@@ -1103,8 +1125,8 @@
           <li><b>Permits and grade as depth gates</b> — eight rungs saying the same sentence.</li>
           <li><b>Death as the prestige trigger</b> — decoupled; R-1 promoted in its place.</li>
           <li><b>resolve.ts rules</b> — rebuilt for a roster. The structure stays.</li>
-          <li><b>Case files, clauses, commendations, licences, filings, clearances</b> — folded into mastery and the lattice, or cut.</li>
-          <li><b>The paperwork</b> — the institution stays, the forms stop being the interface.</li>
+          <li><b>Case files, licences, filings, clearances</b> — folded into Familiarity and the lattice, or cut. <b>Clauses are not in this list</b> — see opposite.</li>
+          <li><b>Vocabulary that names nothing.</b> The institution stays and the register stays, but every term must name a mechanic. A glossary entry with no system behind it is cut — the unlock test, aimed at the writing.</li>
         </ul>
       </div>
     </div>
@@ -1122,7 +1144,7 @@
     <div class="kill">
       <p class="eyebrow" style="color:var(--oxide)">Stage 0 · headless · no UI</p>
       <div class="prose">
-        <p class="lead">Three delvers, two seams, one extra chain. Run the
+        <p class="lead">Three recruits, two workings, one extra chain. Run the
         allocation-spread test: do simulated players who allocate differently end
         the week materially apart?</p>
         <p><strong>If allocation converges on one best assignment, stop.</strong>
@@ -1136,13 +1158,19 @@
     <div class="stages">
       <div class="stage"><span class="s">STAGE 1</span><span class="t">The lattice</span>
         <span class="d">Two or three interlocking chains with real bottlenecks, and storage caps that bind.</span></div>
-      <div class="stage"><span class="s">STAGE 2</span><span class="t">Prestige</span>
-        <span class="d">R-1 promoted to the loop, legacy choice at retirement, death decoupled from payout.</span></div>
+      <div class="stage"><span class="s">STAGE 2</span><span class="t">Discharge — rung one</span>
+        <span class="d">R-1 promoted to the loop, a legacy choice at discharge, death decoupled from payout. The flat grid.</span></div>
       <div class="stage"><span class="s">STAGE 3</span><span class="t">Verbs</span>
-        <span class="d">The unlock catalogue rebuilt as systems, wired to the automation ladder and the challenge catalogue.</span></div>
-      <div class="stage"><span class="s">STAGE 4</span><span class="t">Mastery</span>
-        <span class="d">Per-seam progression that survives the delver.</span></div>
-      <div class="stage"><span class="s">STAGE 5</span><span class="t">Surface</span>
+        <span class="d">The unlock catalogue rebuilt as systems, wired to <span class="mono">staff.ts</span> and <span class="mono">assignments.ts</span>.</span></div>
+      <div class="stage"><span class="s">STAGE 4</span><span class="t">Familiarity</span>
+        <span class="d">Per-working progression that survives the recruit, held by the office.</span></div>
+      <div class="stage"><span class="s">STAGE 5</span><span class="t">Reassignment — rung two</span>
+        <span class="d">Seams deplete, the exclusive tree lands, and the next posting is generated from a seed. <b>This is the stage the “months, not a fortnight” claim rests on</b> — point longrun at it the day it exists.</span></div>
+      <div class="stage"><span class="s">STAGE 6</span><span class="t">Commission — rung three</span>
+        <span class="d">The clause system promoted to the glyph rung. Mostly already written.</span></div>
+      <div class="stage"><span class="s">LATER</span><span class="t">Statute, then Enclosure</span>
+        <span class="d">The compiler and the placement board. Neither is worth building until Reassignment has been measured over several cycles.</span></div>
+      <div class="stage"><span class="s">THROUGHOUT</span><span class="t">Surface</span>
         <span class="d">New frame, mobile, push — and the notification carries a decision, not a number. Lifeline reported 81% day-one retention on exactly that.</span></div>
     </div>
   </section>
@@ -1234,17 +1262,26 @@
       </div>
       <div class="lock">
         <span class="q">What is the fiction</span>
-        <span class="a">Keep the frame, cut the paperwork</span>
-        <span class="why">Still an institution that sends people underground — but forms,
-        permits and clearances stop being the interface. The department fantasy survives:
-        you start doing your own filing and end up running a department. That line was
-        already in the codebase, and it is a roster game's premise.</span>
+        <span class="a">Keep the Authority — recommended, your call</span>
+        <span class="why">The ladder settles an argument this document previously got
+        backwards. Prestige reads as promotion, the clause rung is already built, and
+        paperwork that never changes scale is a joke that <em>improves</em> as the
+        objects get absurd. The condition: every term must name a mechanic.</span>
       </div>
       <div class="lock">
-        <span class="q">What survives a delver</span>
-        <span class="a">Mastery and the chart</span>
-        <span class="why">Not a pension. Per-seam knowledge that accrues with use, plus
-        whichever inheritance you choose at retirement.</span>
+        <span class="q">What survives a recruit</span>
+        <span class="a">Familiarity, and whatever you chose</span>
+        <span class="why">Not a pension. Per-working knowledge held by the office, plus
+        the inheritance you pick at discharge. The office remembers; the recruit does
+        not.</span>
+      </div>
+      <div class="lock">
+        <span class="q">Where the ladder stops</span>
+        <span class="a">Six rungs designed, five to build</span>
+        <span class="why">Enclosure is the designed terminal and the seventh rung is
+        deliberately unbuilt. A rung that cannot buy a different <em>kind</em> of thing
+        than the rung below it is not a rung — that test decides whether there is ever
+        a seventh.</span>
       </div>
       <div class="lock">
         <span class="q">How the art gets made</span>
